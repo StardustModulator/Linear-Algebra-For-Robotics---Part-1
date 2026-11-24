@@ -206,7 +206,7 @@ code { background: var(--paper-2); padding: .1em .35em; border: 1px solid var(--
 .mx input { width: 3.1em; font: inherit; color: inherit; text-align: center; background: transparent; border: 0; border-bottom: 1px dashed var(--chalk-3); padding: .05em 0; border-radius: 0; -moz-appearance: textfield; }
 .mx input::-webkit-outer-spin-button, .mx input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .mx input:focus { outline: none; border-bottom: 1px solid var(--m1); background: var(--m1-wash); }
-.mx-cap { display: block; text-align: center; font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-top: .45em; }
+.mx-cap { display: block; text-align: center; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .03em; color: var(--ink-3); margin-top: .45em; }
 .board .mx-cap { color: var(--chalk-3); }
 .mx-wrap { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; }
 
