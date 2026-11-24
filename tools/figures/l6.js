@@ -42,7 +42,7 @@ module.exports = {
     { file: 'l6-shifted-lines', lab: 'lab-shifted',
       caption: 'The solutions of A x = (1, 2, 3, 4) form the amber line. It is the blue nullspace line shifted by one particular solution (red arrow), so it misses the origin and is not a subspace.' },
     { file: 'l6-shifted-two-solutions', lab: 'lab-shifted', part: 'canvas',
-      setup: async (p, lab, h) => { await h.slider(1, 2); await h.slider(0, 1.5); },
+      setup: async (p, lab, h) => { await h.slider(1, 2); await h.slider(0, 1); },
       caption: 'Doubling b doubles the shift. The point x on the amber line is always the point on the blue nullspace line plus the same red arrow.' },
     { file: 'l6-shifted-b-zero', lab: 'lab-shifted', part: 'canvas',
       setup: async (p, lab, h) => { await h.slider(1, 0); await h.slider(0, 1); },

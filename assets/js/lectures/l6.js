@@ -437,6 +437,7 @@
     function update() {
       var g = parts(), dec = function (v) { return num(v, 2); }, op = function (t) { return '<span class="op">' + t + '</span>'; };
       var Am = UI.mx(A, { cls: 'sm' });
+      plot.span = 8.8 + 1.5 * Math.max(0, g.s - 1);      /* a bigger b needs a wider view */
       eq.innerHTML = UI.eq(
         group(Am, UI.mx(g.x, { cols: { 0: 'h3' }, cls: 'sm', fmt: dec, cap: 'x' }), op('='), UI.mx(LA.mv(A, g.x).map(LA.clean), { cols: { 0: 'h3' }, cls: 'sm', fmt: dec, cap: 'b' })),
         group(Am, UI.mx(g.xn, { cols: { 0: 'h2' }, cls: 'sm', fmt: dec, cap: 'x<sub>n</sub>' }), op('='), UI.mx(LA.mv(A, g.xn).map(LA.clean), { cols: { 0: 'h2' }, cls: 'sm', fmt: dec, cap: 'zero' })));

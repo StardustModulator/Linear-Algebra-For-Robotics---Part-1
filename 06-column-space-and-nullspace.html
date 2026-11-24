@@ -21,6 +21,7 @@
 .eqg { display: inline-flex; align-items: center; gap: .35em; margin: 0 .5em; }
 .lab-math .step-text { margin-top: 2px; }
 .robolink-body ul { display: grid; gap: 6px; }
+.lab-main > .lab-stage { align-self: start; }
 </style>
 </head>
 <body>
@@ -718,7 +719,7 @@
         <p>Subtract the second equation from the first: <span class="m">2x = b<sub>1</sub> − b<sub>2</sub></span>. The third says <span class="m">x = b<sub>3</sub></span>. Both can be true only if <span class="m">b<sub>1</sub> − b<sub>2</sub> = 2b<sub>3</sub></span>. That is the condition for <span class="m"><b>b</b></span> to be in the column space.</p>
         <p><strong>(a)</strong> <span class="m"><b>b</b> = (5, −3, 4)</span>: <span class="m">5 − (−3) = 8 = 2 · 4</span>. Consistent. Then <span class="m">x = 4</span> and <span class="m">d = 5 − 4 = 1</span>.</p>
         <p><strong>(b)</strong> <span class="m"><b>b</b> = (5, −3, 5)</span>: <span class="m">5 − (−3) = 8</span> but <span class="m">2 · 5 = 10</span>. The readings contradict each other.</p>
-        <p><strong>Answer:</strong> (a) <span class="m">x = 4</span> m and <span class="m">d = 1</span> m. (b) There is no exact solution, because <span class="m"><b>b</b></span> has left the column space. At least one sensor is wrong, and these three numbers alone cannot say which. An extra sensor never guarantees a better answer, but it does give the robot a way to notice that something is off.</p>
+        <p><strong>Answer:</strong> (a) <span class="m">x = 4</span> m and <span class="m">d = 1</span> m. (b) There is no exact solution, because <span class="m"><b>b</b></span> has left the column space. At least one sensor is wrong, and these three numbers alone cannot say which. An extra sensor cannot promise a better answer. What it gives the robot is a way to notice that something is off.</p>
       </div></details>
   </div>
 </section>

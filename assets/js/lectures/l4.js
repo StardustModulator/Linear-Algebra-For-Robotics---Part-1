@@ -200,6 +200,8 @@
       else if (st.kind === 'fail') UI.status(status, 'bad', '<b>Singular matrix.</b> A pivot is missing, so elimination cannot finish and there is nothing to factor into.');
       else if (st.kind === 'upper' || st.kind === 'rebuild' || st.kind === 'evsl') {
         UI.status(status, 'ok', '<b>' + (form === 'ldu' ? 'A = L D U' : 'A = L U') + '.</b> No row exchanges were needed, so ' + (F.total === 1 ? 'the multiplier went' : 'all ' + F.total + ' multipliers went') + ' straight into L and the pivots sit on the diagonal of ' + (form === 'ldu' ? 'D' : 'U') + '.');
+      } else if (F.halted) {
+        UI.status(status, 'hot', '<b>This matrix runs into trouble.</b> A pivot position will turn out to hold a zero. Step forward to see where elimination gets stuck.');
       } else {
         UI.status(status, '', '<b>' + nk + ' of ' + F.total + ' multiplier' + (F.total > 1 ? 's' : '') + ' recorded.</b> Each elimination step drops one number into L. Press <b>Next step</b>, or <b>Play</b> to watch it run.');
       }
@@ -306,7 +308,7 @@
         UI.status(status, 'ok', '<b>Home.</b> The last move was taken back first, so the rover retraced its own tracks. In symbols: (AB)<sup>−1</sup> = B<sup>−1</sup>A<sup>−1</sup>.');
       } else if (mode === 'wrong') {
         if (dist < 0.02) UI.status(status, 'hot', '<b>Home, but only because there is no turn.</b> Two drives along one straight line commute, so here the order of the undo moves makes no difference. Add a turn and try again.');
-        else UI.status(status, 'bad', '<b>Lost: ' + fix(dist, 2) + ' m from home.</b> Each undo move was correct on its own. Doing them in the wrong order backed the rover along a line it never drove on.');
+        else UI.status(status, 'bad', '<b>Lost: ' + fix(dist, 2) + ' m from home.</b> Each undo move was correct on its own. In this order the rover took back A while still facing the way B had turned it, so it backed off in the wrong direction.');
       } else {
         UI.status(status, '', 'The rover drove <b>A</b>, then turned and drove <b>B</b>. It is now ' + fix(dist, 2) + ' m from home. Both moves must be undone. Which one first?');
       }
@@ -442,7 +444,7 @@
         if (!r || !r.same || r.residual > 1e-6 || !(r.once > 0)) { UI.status(timing, 'bad', 'The timing run did not complete on this device. The operation counts above still hold.'); return; }
         if (n !== n0 || k !== k0) note = ' (The timed run is capped at n = 300 and about 50 million operations so that the page stays responsive.)';
         function ms(t) { return t >= 10 ? fix(t, 0) : (t >= 1 ? fix(t, 1) : fix(t, 2)); }
-        UI.status(timing, 'ok', '<b>Measured: ' + fix(r.scratch / r.once, 1) + ' times faster.</b> For n = ' + n + ' and ' + commas(k) + ' right-hand side' + (k > 1 ? 's' : '') + ', from scratch took ' + ms(r.scratch) + ' ms and factor-once took ' + ms(r.once) + ' ms. Counting operations predicts ' + fix(c.scratch / c.once, 1) + ' times. A real processor also spends time fetching numbers from memory, so the two agree only roughly.' + note);
+        UI.status(timing, 'ok', '<b>Measured: ' + fix(r.scratch / r.once, 1) + ' times faster.</b> For n = ' + n + ' and ' + commas(k) + ' right-hand side' + (k > 1 ? 's' : '') + ', from scratch took ' + ms(r.scratch) + ' ms and factor-once took ' + ms(r.once) + ' ms. Counting operations predicts ' + fix(c.scratch / c.once, 1) + ' times. Counting treats every operation as equal, and a real processor does not: fetching numbers from memory and running the loops cost time too. Expect the two figures to agree roughly, never exactly.' + note);
       }, 60);
     }
     UI.status(timing, '', 'The bars count operations. Press the button to run both strategies for real, with the sizes on the sliders, and compare.');
@@ -528,10 +530,10 @@
       }
       eq.innerHTML = UI.eq(
         UI.mx(T, { cls: 'sm', cap: 'T · never changes', dim: function (a, b) { return Math.abs(a - b) > 1; } }),
-        UI.mx(Mm, { cls: 'sm', fmt: f1, cols: { 0: 'h2', 1: 'h2' }, cap: 'accelerations · x, y' }), '=',
-        UI.mx(R, { cls: 'sm', fmt: f1, cols: { 0: 'h3', 1: 'h3' }, cap: 'from the waypoints · x, y' }));
+        UI.mx(Mm, { cls: 'sm', fmt: f1, cols: { 0: 'h2', 1: 'h2' }, cap: 'accelerations' }), '=',
+        UI.mx(R, { cls: 'sm', fmt: f1, cols: { 0: 'h3', 1: 'h3' }, cap: 'right-hand side' }));
       out.nf(String(nFactor)); out.ns(commas(nSolve)); out.ops((3 * m - 2) + ' (full: ' + (m * m) + ')'); out.acc(fix(big, 2) + ' m/s²');
-      if (event === 'drag') UI.status(status, 'ok', '<b>Matrix factored once; this drag changed only the right-hand side.</b> Two quick solves with the stored L and U, one for x and one for y, redrew the whole path.');
+      if (event === 'drag' || event === 'reset') UI.status(status, 'ok', '<b>' + (nFactor === 1 ? 'Matrix factored once; ' : 'No new factorization; ') + (event === 'drag' ? 'this drag' : 'the reset') + ' changed only the right-hand side.</b> Two quick solves with the stored L and U, one for x and one for y, redrew the whole path.');
       else if (event === 'count') UI.status(status, 'hot', '<b>The number of waypoints changed, so the matrix changed size and was factored again.</b> That is factorization number ' + nFactor + '. Now drag a waypoint: the count will not move.');
       else UI.status(status, '', '<b>Factored once.</b> T = L U was worked out when the lab loaded, before any waypoint was known to be final. Drag a waypoint and watch the counters: solves climb, factorizations stay put.');
       plot.draw();
@@ -543,7 +545,7 @@
         set: function (x, y) { P[i] = [LA.clamp(x, -6.1, 6.1), LA.clamp(y, -4.45, 4.45)]; event = 'drag'; resolve(); },
         hidden: function () { return i >= P.length; },
         color: C.s3,
-        label: function () { return i === 0 ? 'start' : (i === P.length - 1 ? 'end' : String(i)); }
+        label: function () { return (i === 0 || i === P.length - 1) ? '' : String(i); }
       });
     }
     for (var h = 0; h < 8; h++) addHandle(h);
@@ -557,7 +559,7 @@
       playing = !playing;
       bPlay.innerHTML = icon(playing ? 'pause' : 'play') + '<span>' + (playing ? 'Pause the rover' : 'Drive the rover') + '</span>';
     } });
-    UI.button(btns, { label: 'Reset waypoints', icon: 'reset', onClick: function () { P = fromDefault(P.length); s = 0; hold = 0; event = 'drag'; resolve(); segCount.set(String(P.length), false); } });
+    UI.button(btns, { label: 'Reset waypoints', icon: 'reset', onClick: function () { P = fromDefault(P.length); s = 0; hold = 0; event = 'reset'; resolve(); segCount.set(String(P.length), false); } });
     UI.check(btns, { label: 'Show accelerations', checked: true, onChange: function (v) { showAcc = v; plot.draw(); } });
 
     plot.onDraw(function (p) {
@@ -568,6 +570,8 @@
       for (i = 0; i <= n * 24; i++) { t = i / 24; pts.push([piece(P, Mx, 0, t)[0], piece(P, My, 1, t)[0]]); }
       p.path(pts, { color: C.chalk, width: 2.6 });
       if (showAcc) for (i = 1; i < n; i++) p.arrow(P[i], [P[i][0] + Mx[i] * .3, P[i][1] + My[i] * .3], { color: C.s2, width: 2, head: 8 });
+      p.text('start', P[0], { color: C.s3, dx: 17, dy: 13 });
+      p.text('end', P[n], { color: C.s3, dx: P[n][0] > 3.6 ? -17 : 17, dy: -15, align: P[n][0] > 3.6 ? 'right' : 'left' });
       x = piece(P, Mx, 0, s); y = piece(P, My, 1, s); v = Math.atan2(y[1], x[1]);
       Robots.drawRover(p, { x: x[0], y: y[0], th: v }, { L: .95, W: .66 });
     });
@@ -590,7 +594,7 @@
       { p: [2, 1, 0], html: 'P<sub>13</sub>', say: 'exchange 1, 3' },
       { p: [0, 2, 1], html: 'P<sub>23</sub>', say: 'exchange 2, 3' },
       { p: [1, 2, 0], html: 'C', say: 'cycle: 2, 3, 1' },
-      { p: [2, 0, 1], html: 'C<sup>2</sup>', say: 'cycle twice: 3, 1, 2' }
+      { p: [2, 0, 1], html: 'C<sup>2</sup>', say: 'cycle: 3, 1, 2' }
     ];
     var SIG = ['h1', 'h2', 'h4'];
     var a = 1, b = 4;                       /* P and Q: start with a pair that does not commute */

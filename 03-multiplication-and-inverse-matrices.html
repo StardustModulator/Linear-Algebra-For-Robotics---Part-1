@@ -20,6 +20,8 @@
 .eq-name { font-size: 1.2em; }
 .lc { text-transform: none; font-style: italic; font-family: var(--font-math); font-size: 1.25em; letter-spacing: 0; }
 .eq-gap { width: 1.4em; }
+.lab .mx-cap { line-height: 1.5; }
+[data-slot="shape"] .eq { gap: 1.1em; }
 .mx.dots { gap: 4px; padding: 8px 10px; }
 .mx.dots > i { display: block; width: 11px; height: 11px; background: var(--chalk-3); }
 .mx.dots > i.r { background: var(--s1); }
@@ -88,7 +90,7 @@
       <div class="eq left wrapok"><span class="m">x<sub>world</sub> = (<span class="u">cos</span> θ) a − (<span class="u">sin</span> θ) b + x</span><span class="op">&nbsp;&nbsp;&nbsp;</span><span class="m">y<sub>world</sub> = (<span class="u">sin</span> θ) a + (<span class="u">cos</span> θ) b + y</span></div>
       <p>Here <span class="m"><span class="u">cos</span> θ</span> and <span class="m"><span class="u">sin</span> θ</span> are just two numbers. They say how much of one step in the direction <span class="m">θ</span> goes along the world <span class="m">x</span> axis and how much along the world <span class="m">y</span> axis. At 0° they are 1 and 0. At 90° they are 0 and 1.</p>
       <p>Roboticists pack both lines into one matrix by giving every point a third entry that is always 1:</p>
-      <div class="eq left"><span data-mx="x_world; y_world; 1" data-cls="sm"></span><span class="op">=</span><span data-mx="cos_θ -sin_θ x; sin_θ cos_θ y; 0 0 1" data-cols="0:h1,1:h2,2:h3" data-cap="T · the pose"></span><span data-mx="a; b; 1"></span></div>
+      <div class="eq left wrapok"><span data-mx="x_world; y_world; 1" data-cls="sm"></span><span class="op">=</span><span data-mx="cos_θ -sin_θ x; sin_θ cos_θ y; 0 0 1" data-cols="0:h1,1:h2,2:h3" data-cap="T · the pose"></span><span data-mx="a; b; 1"></span></div>
       <p>This 3 by 3 matrix <span class="m">T</span> is called a <span class="term">homogeneous transform</span>. It holds the whole pose, and multiplying by it converts rover coordinates into world coordinates. The extra 1 is a bookkeeping trick that lets one multiplication both turn and shift. This page stays in the flat plane. A robot working in three dimensions uses the same idea with 4 by 4 matrices.</p>
       <p><strong>Example.</strong> A rover stands at (3, 1) and faces 90°, straight up the page. A rock lies 2 m ahead of it, so the rock is at (2, 0) in the rover's frame.</p>
       <div class="eq left"><span data-mx="0 -1 3; 1 0 1; 0 0 1" data-cols="0:h1,1:h2,2:h3"></span><span data-mx="2; 0; 1"></span><span class="op">=</span><span data-mx="3; 3; 1"></span></div>
@@ -289,7 +291,7 @@
       <div class="eq left"><span data-mx="left; right"></span><span class="op">=</span><span data-mx="1 -0.25; 1 0.25" data-rows="0:h1,1:h2" data-cap="W"></span><span data-mx="v; ω"></span></div>
       <p>Read it by rows. The <span class="hl1">left wheel's row</span> says: take all of the forward speed and subtract a quarter of the turn rate. The <span class="hl2">right wheel's row</span> says: add a quarter instead. Each wheel speed is a weighted mix of the body velocities, and its row holds the weights. The 0.25 is half the distance between the wheels.</p>
       <p>Now put a joystick in front. A second matrix <span class="m">G</span> turns the two stick positions into a body velocity: full forward stick means 0.8 m/s, full turn stick means 2 rad/s. The product goes straight from stick to wheels:</p>
-      <div class="eq left"><span data-mx="1 -0.25; 1 0.25" data-cap="W"></span><span data-mx="0.8 0; 0 2" data-cap="G"></span><span class="op">=</span><span data-mx="0.8 -0.5; 0.8 0.5" data-rows="0:h1,1:h2" data-cap="WG"></span></div>
+      <div class="eq left wrapok"><span data-mx="1 -0.25; 1 0.25" data-cap="W"></span><span data-mx="0.8 0; 0 2" data-cap="G"></span><span class="op">=</span><span data-mx="0.8 -0.5; 0.8 0.5" data-rows="0:h1,1:h2" data-cap="WG"></span></div>
       <p>By the row way, the left wheel's row of the product is 1 times the first row of <span class="m">G</span> minus 0.25 times the second: (0.8, 0) − 0.25 (0, 2) = (0.8, −0.5). The mixing that a wheel used to do to body velocities, it now does to whole rows of <span class="m">G</span>. This model assumes ideal wheels that never slip.</p>
     </div>
   </div>
@@ -549,8 +551,8 @@
     <div class="lab-main stack">
       <div class="lab-stage">
         <div class="duo">
-          <figure><figcaption>In · the shape, P, Q and x</figcaption><canvas class="sq" aria-label="Input plane with a robot outline, two marked points and the vector x"></canvas></figure>
-          <figure><figcaption>Out · A times every point</figcaption><canvas class="sq" aria-label="Output plane with the transformed outline and the columns of A"></canvas></figure>
+          <figure><figcaption>In · what goes in</figcaption><canvas class="sq" aria-label="Input plane with a robot outline, two marked points and the vector x"></canvas></figure>
+          <figure><figcaption>Out · A times it</figcaption><canvas class="sq" aria-label="Output plane with the transformed outline and the columns of A"></canvas></figure>
         </div>
         <div class="lab-caption"><span class="key k1">unit arrow (1, 0) and column 1</span><span class="key k2">unit arrow (0, 1) and column 2</span><span class="key k4">x, the points P and Q, and their images</span><span class="key k3">undo: A⁻¹ applied to the output</span></div>
         <div class="lab-math" data-slot="eq"></div>

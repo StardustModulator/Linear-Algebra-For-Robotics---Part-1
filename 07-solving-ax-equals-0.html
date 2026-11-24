@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lecture 7 · Solving Ax = 0: Pivot Variables, Special Solutions</title>
+<meta name="description" content="Elimination on a rectangular matrix, rank, pivot and free variables, special solutions and reduced row echelon form, taught from scratch with a four-joint arm and a four-thruster vehicle.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
+<link rel="stylesheet" href="assets/css/mit.css">
+<style>
+/* Lecture 7 only. Everything is built from the shared colour tokens. */
+/* a matrix with a name above every column and a label (pivot / free) under it */
+.cmx { display: inline-grid; grid-template-columns: repeat(var(--cols, 1), auto); gap: .1em .2em; vertical-align: middle; padding: .3em .62em; margin: 0 .12em; font-family: var(--font-math); font-size: 1.06em; font-style: normal; line-height: 1.25; color: var(--m-ink); font-variant-numeric: tabular-nums lining-nums; }
+.cmx.sm { font-size: .92em; }
+.cmx > span { display: block; text-align: center; padding: .12em .42em; min-width: 1.5em; white-space: nowrap; border: 1px solid transparent; transition: background-color .25s, color .25s, opacity .25s; }
+.cmx > .br { margin: -.3em -.62em; padding: 0; min-width: 0; border: 0; position: relative; pointer-events: none; }
+.cmx > .br::before, .cmx > .br::after { content: ""; position: absolute; top: 0; bottom: 0; width: .42em; border: 1.6px solid currentColor; }
+.cmx > .br::before { left: 0; border-right: 0; }
+.cmx > .br::after { right: 0; border-left: 0; }
+.cmx > .h1 { color: var(--m1); background: var(--m1-wash); }
+.cmx > .h2 { color: var(--m2); background: var(--m2-wash); }
+.cmx > .h3 { color: var(--m3); background: var(--m3-wash); }
+.cmx > .pv { border: 1.6px solid var(--m1); color: var(--m1); font-weight: 600; border-radius: 50%; }
+.cmx > .dim { opacity: .34; }
+.cmx > .hd { font-size: .88em; padding-bottom: .6em; color: var(--ink-3); }
+.cmx > .lb { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 1em .1em 0; color: var(--ink-3); }
+.cmx > .rh { text-align: right; padding-right: 1.05em; font-size: .88em; color: var(--ink-3); }
+.board .cmx > .hd, .board .cmx > .lb, .board .cmx > .rh { color: var(--chalk-3); }
+.cmx > .hd.kp, .cmx > .lb.kp, .cmx > .rh.kp, .board .cmx > .hd.kp, .board .cmx > .lb.kp, .board .cmx > .rh.kp { color: var(--m1); }
+.cmx > .hd.kf, .cmx > .lb.kf, .cmx > .rh.kf, .board .cmx > .hd.kf, .board .cmx > .lb.kf, .board .cmx > .rh.kf { color: var(--m2); }
+/* back-substitution lines in Lab 7.2 */
+.bs { display: grid; gap: 12px; }
+.bs-row { display: grid; grid-template-columns: 6.2em minmax(0, 1fr); gap: 2px 12px; align-items: baseline; }
+.bs-row > .label { color: var(--chalk-3); }
+.bs-row .m { display: block; white-space: normal; font-size: 1.14em; line-height: 1.7; }
+@media (max-width: 480px) { .bs-row { grid-template-columns: minmax(0, 1fr); } }
+/* thrust effort bar in Lab 7.4 */
+.meter { display: grid; gap: 7px; }
+.meter-top { display: flex; justify-content: space-between; gap: 10px; font-family: var(--font-mono); font-size: 12px; color: var(--chalk-2); }
+.meter-top b { color: var(--chalk); font-weight: 500; font-variant-numeric: tabular-nums; }
+.meter-bar { position: relative; height: 10px; background: var(--board-3); border: 1px solid var(--board-rule); }
+.meter-bar i { position: absolute; inset: 0 auto 0 0; background: var(--s3); transition: width .12s; }
+.meter-bar em { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--chalk); }
+.meter-foot { font-family: var(--font-mono); font-size: 11.5px; color: var(--chalk-3); }
+/* A beside its transpose in Lab 7.5 */
+.duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 22px 30px; }
+.duo-col { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.duo-col > .label { color: var(--chalk-3); }
+.lab-caption b { color: var(--chalk); font-weight: 500; }
+.lab .eq.gap { column-gap: 1.6em; }
+#lab-rank .readouts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.side-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px 26px; align-items: start; }
+</style>
+</head>
+<body>
+<main data-lecture="7">
+
+<section class="lec-hero">
+  <div class="wrap">
+    <div class="lec-num">07<i>.</i></div>
+    <div class="lec-kicker label"><span class="bars"></span><span>MIT 18.06 · Lecture 7</span><span><i data-ic="clock"></i> 43:20</span></div>
+    <h1>Solving Ax = 0: Pivot Variables, Special Solutions</h1>
+    <p class="lec-lede">Lecture 6 said what the nullspace <em>is</em>. This lecture is the <strong>algorithm</strong> that computes it, for any matrix of any shape. Along the way it produces the single most useful number about a matrix, its <strong>rank</strong>. For a robot, the rank counts the directions it can truly control, and the <strong>free variables</strong> count its spare actuators.</p>
+    <div class="lec-meta">
+      <a class="btn primary" data-ocw="video" href="#"><i data-ic="video"></i><span>Watch the lecture on OCW</span></a>
+      <a class="btn" data-ocw="summary" href="#"><i data-ic="book"></i><span>Lecture summary</span></a>
+      <a class="btn" href="article/07-solving-ax-equals-0.md"><i data-ic="pen"></i><span>Article notes</span></a>
+    </div>
+  </div>
+</section>
+
+<div class="wrap lec-layout">
+<nav class="toc"></nav>
+<article class="lec-body">
+
+<!-- ============================================================ 7.0 -->
+<section class="concept" id="start" data-toc="Start here: more motors than jobs">
+  <header class="concept-head">
+    <span class="concept-no">7.0</span>
+    <h2>Start here: more motors than jobs</h2>
+    <p class="concept-sub">What this lecture solves, and the three things you need from earlier lectures.</p>
+  </header>
+  <div class="prose">
+    <p class="big">Some machines have more motors than jobs. An arm with four joints only has to put its hand on one point of a table. A vehicle with four thrusters only has to push forward, push sideways and turn. A machine like this is called <span class="term">over-actuated</span>: it has actuators to spare.</p>
+    <p>Spare actuators give spare freedom. There are ways to run the motors that change nothing about the job. The joints turn and the hand stays where it is. The thrusters fire and the hull feels no net push. Lecture 6 gave these do-nothing commands a home: they are the solutions of <span class="m">A<b>x</b> = <b>0</b></span>, and together they form the <span class="term">nullspace</span> of <span class="m">A</span>.</p>
+    <p>In Lecture 6 we found a nullspace by staring at a small matrix until the answer appeared. That does not scale. This lecture gives the method that always works. It is the elimination of Lecture 2, taken a little further.</p>
+    <h3>What you need to remember</h3>
+    <ul>
+      <li><strong>From Lecture 1:</strong> <span class="m">A<b>x</b></span> is a combination of the columns of <span class="m">A</span>. The entries of <span class="m"><b>x</b></span> say how much of each column to take.</li>
+      <li><strong>From Lecture 2:</strong> elimination subtracts a multiple of one row from the rows below it to make zeros. The entry that does the work is called a pivot.</li>
+      <li><strong>From Lecture 6:</strong> the nullspace of <span class="m">A</span> is every <span class="m"><b>x</b></span> with <span class="m">A<b>x</b> = <b>0</b></span>. It always contains <span class="m"><b>x</b> = <b>0</b></span>.</li>
+    </ul>
+    <p>One thing is new. The matrix is no longer square. A matrix with <span class="m">m</span> rows and <span class="m">n</span> columns is called <span class="m">m</span> by <span class="m">n</span>, and when the two numbers differ it is a <span class="term">rectangular</span> matrix. The whole lecture works on this one:</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's matrix</span>
+    <div class="eq">
+      <span data-mx="1 2 2 2; 2 4 6 8; 3 6 8 10" data-cap="A · 3 rows, 4 columns"></span>
+    </div>
+    <p>Strang asks the class to notice two things before doing any arithmetic. <strong>Column 2 is 2 times column 1</strong>: (2, 4, 6) against (1, 2, 3). And <strong>row 3 is row 1 plus row 2</strong>: (1, 2, 2, 2) + (2, 4, 6, 8) = (3, 6, 8, 10). So the columns do not all point in new directions, and neither do the rows. Elimination is not told any of this. Watch it discover both.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="robot"></i>Robotics link<em>reading the shape</em></div>
+    <div class="robolink-body">
+      <h3>The shape of the matrix is the shape of the machine</h3>
+      <p>Each <strong>column</strong> belongs to one actuator, so <span class="m">n</span> is the number of motors or joints. Each <strong>row</strong> is one thing the machine has to control, so <span class="m">m</span> is the size of the job.</p>
+      <p>A four-joint arm that places a point on a table has a matrix with 2 rows (hand speed across, hand speed up) and 4 columns (one per joint). A four-thruster vehicle seen from above has 3 rows (forward force, side force, turning torque) and 4 columns (one per thruster). More columns than rows means actuators to spare. This lecture counts exactly how many, and says what the spare ones can do.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 7.1 -->
+<section class="concept" id="rectangular" data-toc="Elimination on a rectangular matrix">
+  <header class="concept-head">
+    <span class="concept-no">7.1</span>
+    <h2>Elimination on a rectangular matrix</h2>
+    <p class="concept-sub">The same row operations as Lecture 2, and one new situation.</p>
+  </header>
+  <div class="prose">
+    <p>We are solving <span class="m">A<b>x</b> = <b>0</b></span>. In Lecture 2 the right-hand side rode along as an extra column. Here the right-hand side is all zeros, and a multiple of zero taken away from zero is still zero. There is nothing to carry, so we work on <span class="m">A</span> alone.</p>
+    <p>Row operations do not change the solutions. If <span class="m"><b>x</b></span> satisfies two equations, it satisfies their difference too, and every step can be undone. So the matrix we finish with has exactly the same nullspace as the matrix we started with.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's elimination</span>
+    <div class="eq wrapok">
+      <span data-mx="1 2 2 2; 2 4 6 8; 3 6 8 10" data-pivots="0.0" data-cap="A"></span>
+      <span class="op">→</span>
+      <span data-mx="1 2 2 2; 0 0 2 4; 0 0 2 4" data-pivots="0.0,1.2" data-cells="1.1:h2,2.1:h2" data-cap="column 2: no pivot"></span>
+      <span class="op">→</span>
+      <span data-mx="1 2 2 2; 0 0 2 4; 0 0 0 0" data-pivots="0.0,1.2" data-cap="U"></span>
+    </div>
+    <p><strong>Column 1.</strong> The first pivot is the 1 in the top corner. Row 2 − 2 × row 1 gives (0, 0, 2, 4). Row 3 − 3 × row 1 also gives (0, 0, 2, 4).</p>
+    <p><strong>Column 2.</strong> The next pivot should sit in row 2, column 2. That entry is zero. In Lecture 2 we would look below it for something to exchange into place, but the entry below is zero as well (both tinted blue). There is nothing to use, so <strong>column 2 has no pivot</strong>. This is the new situation. Do not stop. Stay on row 2 and move right.</p>
+    <p><strong>Column 3.</strong> The second pivot is the 2 in row 2, column 3. Row 3 − row 2 gives (0, 0, 0, 0).</p>
+    <p><strong>Column 4.</strong> The pivot position is now row 3, and row 3 is all zeros. No pivot here either.</p>
+  </div>
+  <div class="prose">
+    <p>The result <span class="m">U</span> is in <span class="term">echelon form</span>. Echelon means staircase: each pivot sits further right than the pivot above it, and everything under the staircase is zero. A square matrix with all its pivots gave a tidy triangle. A rectangular one gives stairs of uneven width.</p>
+    <p>Both facts from the start have surfaced. Column 2 got no pivot because it adds nothing new after column 1. Row 3 turned into zeros because it adds nothing new after rows 1 and 2.</p>
+  </div>
+
+  <div class="lab board" id="lab-rref">
+    <div class="lab-head"><span class="lab-tag">LAB 7.1</span><h3>From A to U to R, one row operation at a time</h3><i data-ic="rref"></i></div>
+    <p class="lab-intro">Press <b>Next step</b> to run the lecture's elimination. Pivots are circled, pivot columns turn <b>red</b> and free columns turn <b>blue</b>. Keep going past U and the lab carries on to the reduced form R of section 7.6. Then load another matrix or type your own.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <div data-slot="stepper"></div>
+        <div class="lab-caption"><span class="key k1">pivot column</span><span class="key k2">free column</span><span class="key k3">row just changed</span></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Load a matrix</span><div data-slot="presets"></div><div class="lab-caption" data-slot="about"></div></div>
+        <div class="lab-group"><span class="label">Or edit it · up to 4 rows and 5 columns</span><div class="lab-math" data-slot="matrix"></div><div class="lab-row" data-slot="size"></div></div>
+        <div data-slot="readouts"></div>
+        <div data-slot="status"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Step through the <b>Lecture matrix</b>. At column 2 there is nothing to exchange into the pivot position, so the column is declared free and elimination moves right. A missing pivot does not stop the method. It marks a free column.</li>
+        <li>Load <b>Its transpose</b>. This time a zero sits in the pivot position but a non-zero entry lies below it, so a row exchange rescues the pivot. A column is free only when the pivot position <b>and everything under it</b> is zero.</li>
+        <li>Load <b>Square and invertible</b> and run to the end: every column has a pivot and R is the identity. Now change the bottom-right entry from 1 to −4. A free column appears, and with it a special solution.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="wheel"></i>Robotics link<em>repeated measurements</em></div>
+    <div class="robolink-body">
+      <h3>A zero row is an equation the robot already knew</h3>
+      <p>A two-wheeled robot moves with forward speed <span class="m">v</span> and turn rate <span class="m">ω</span>. A sensor on the left wheel reads <span class="m">v − 0.2ω</span>, one on the right wheel reads <span class="m">v + 0.2ω</span>, and a camera pointed at the floor reads <span class="m">v</span> directly. Three equations, two unknowns. The camera's row is half the left row plus half the right row, so elimination turns it into zeros, just as it did to row 3 of the lecture's matrix.</p>
+      <p>The third sensor tells the robot nothing new about its motion. It is still worth its weight. Apply the same row operations to the three readings and the last line should also come out as zero. Readings of 0.9, 1.1 and 1.0 m/s give 0. Readings of 0.9, 1.4 and 1.0 give −0.15, which is impossible if all three sensors are honest. A wheel is slipping. Robots use their repeated equations as alarms.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 7.2 -->
+<section class="concept" id="rank" data-toc="Rank: count the pivots">
+  <header class="concept-head">
+    <span class="concept-no">7.2</span>
+    <h2>Rank: count the pivots</h2>
+    <p class="concept-sub">One number that says how much the matrix really contains.</p>
+  </header>
+  <div class="prose">
+    <p>Count the pivots in <span class="m">U</span>. That count is the <span class="term">rank</span> of the matrix, written <span class="m">r</span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's count</span>
+    <div class="eq">
+      <span data-mx="1 2 2 2; 0 0 2 4; 0 0 0 0" data-pivots="0.0,1.2" data-cap="U · two pivots"></span>
+      <span class="op">&nbsp;&nbsp;so&nbsp;&nbsp;</span>
+      <span class="m">r = 2</span>
+    </div>
+    <p>The matrix has 3 rows and 4 columns, which looks like 3 equations in 4 unknowns. The rank says it holds only 2 independent equations. The third was a repeat.</p>
+  </div>
+  <div class="prose">
+    <p>Strang calls the rank the number that matters most about a matrix, more than its number of rows or columns. The size tells you how the matrix is written. The rank tells you what is in it.</p>
+    <p>A row can hold at most one pivot, and so can a column. So the rank is never larger than the number of rows and never larger than the number of columns: <span class="m">r ≤ m</span> and <span class="m">r ≤ n</span>.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="rank"></i>Robotics link<em>true degrees of freedom</em></div>
+    <div class="robolink-body">
+      <h3>Rank is the number of directions the machine can really command</h3>
+      <p>It is easy to count motors. It is the rank that counts <em>independent</em> motors. Bolt four thrusters along the centre line of a boat, all pointing forward. Four motors, four columns, and every column is the same: (1, 0, 0). Elimination finds one pivot. The rank is 1 and the boat can push forward or backward and do nothing else.</p>
+      <p>A healthy arm working on a table has rank 2: its hand can move in every direction on the table. Stretch the arm out straight and each joint can only swing the hand sideways. The columns line up, the second pivot disappears and the rank falls to 1. Lecture 1 called this pose a <span class="term">singularity</span>. Now it has a measurement: <strong>a singularity is a drop in rank</strong>.</p>
+    </div>
+  </div>
+  <div class="note warn">
+    <i data-ic="warn"></i>
+    <span class="note-title">Watch out</span>
+    <div class="note-body"><p>On paper a pivot is either zero or it is not. In a robot the numbers come from sensors, and a pivot of 0.000001 is a zero in disguise. Software has to pick a small threshold and treat anything below it as zero. Close to a singularity the rank on paper is still 2, yet the machine already behaves as if it were 1.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 7.3 -->
+<section class="concept" id="pivot-free" data-toc="Pivot variables and free variables">
+  <header class="concept-head">
+    <span class="concept-no">7.3</span>
+    <h2>Pivot variables and free variables</h2>
+    <p class="concept-sub">Sort the columns, and the unknowns sort themselves.</p>
+  </header>
+  <div class="prose">
+    <p>Each column of the matrix multiplies one unknown: column 1 multiplies <span class="m">x<sub>1</sub></span>, column 2 multiplies <span class="m">x<sub>2</sub></span>, and so on. So when elimination sorts the columns into two kinds, it sorts the unknowns too.</p>
+    <ul>
+      <li>A column that holds a pivot is a <span class="term">pivot column</span>. Its unknown is a <span class="term">pivot variable</span>.</li>
+      <li>A column with no pivot is a <span class="term">free column</span>. Its unknown is a <span class="term">free variable</span>.</li>
+    </ul>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's sorting</span>
+    <div class="eq">
+      <span data-cmx="1 2 2 2; 0 0 2 4; 0 0 0 0" data-kinds="p f p f" data-heads="x1 x2 x3 x4" data-labels data-pivots="0.0,1.2" data-dimrows="2"></span>
+    </div>
+    <p>Pivot columns are 1 and 3, so <span class="m c1">x<sub>1</sub></span> and <span class="m c1">x<sub>3</sub></span> are the pivot variables. Free columns are 2 and 4, so <span class="m c2">x<sub>2</sub></span> and <span class="m c2">x<sub>4</sub></span> are the free variables. Written out as equations, <span class="m">U<b>x</b> = <b>0</b></span> says:</p>
+    <div class="eq wrapok">
+      <span class="m">x<sub>1</sub> + 2x<sub>2</sub> + 2x<sub>3</sub> + 2x<sub>4</sub> = 0</span><span class="op">&nbsp;&nbsp;&nbsp;</span><span class="m">2x<sub>3</sub> + 4x<sub>4</sub> = 0</span><span class="op">&nbsp;&nbsp;&nbsp;</span><span class="m">0 = 0</span>
+    </div>
+  </div>
+  <div class="prose">
+    <p>Two equations that say something, and four unknowns. Two unknowns are left over, and the word free means what it says: <strong>you may give <span class="m">x<sub>2</sub></span> and <span class="m">x<sub>4</sub></span> any values you like</strong>.</p>
+    <p>Once you have chosen them, the pivot variables have no freedom left. Each equation has exactly one pivot variable that the equations below it have not already fixed. So start at the bottom equation and work up, solving for one pivot variable at a time. That is the <span class="term">back-substitution</span> of Lecture 2.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="sliders"></i>Robotics link<em>who leads, who follows</em></div>
+    <div class="robolink-body">
+      <h3>Free actuators lead, pivot actuators compensate</h3>
+      <p>Read <span class="m"><b>x</b></span> as a list of motor commands and <span class="m">A<b>x</b> = <b>0</b></span> as "the job is not disturbed". The free variables are the actuators you may command however you please. The pivot variables are the actuators that must then make up for it, so that the net effect stays zero.</p>
+      <p>Which actuators get called free is bookkeeping. Elimination sweeps from left to right, so the columns that come first claim the pivots. Number the joints in a different order and different joints become free. The set of do-nothing commands is the same whatever the order. Only its description changes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 7.4 -->
+<section class="concept" id="special" data-toc="Special solutions">
+  <header class="concept-head">
+    <span class="concept-no">7.4</span>
+    <h2>Special solutions</h2>
+    <p class="concept-sub">Switch on one free variable at a time.</p>
+  </header>
+  <div class="prose">
+    <p>Any choice of the free variables gives a solution. Two choices are as simple as a choice can be: set one free variable to 1 and all the others to 0. The solutions that come out are called the <span class="term">special solutions</span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's two special solutions</span>
+    <p><strong>First choice: <span class="m c2">x<sub>2</sub> = 1</span>, <span class="m c2">x<sub>4</sub> = 0</span>.</strong> The second equation, <span class="m">2x<sub>3</sub> + 4x<sub>4</sub> = 0</span>, gives <span class="m">x<sub>3</sub> = 0</span>. The first, <span class="m">x<sub>1</sub> + 2x<sub>2</sub> + 2x<sub>3</sub> + 2x<sub>4</sub> = 0</span>, becomes <span class="m">x<sub>1</sub> + 2 = 0</span>, so <span class="m">x<sub>1</sub> = −2</span>.</p>
+    <p><strong>Second choice: <span class="m c2">x<sub>2</sub> = 0</span>, <span class="m c2">x<sub>4</sub> = 1</span>.</strong> The second equation becomes <span class="m">2x<sub>3</sub> + 4 = 0</span>, so <span class="m">x<sub>3</sub> = −2</span>. The first gives <span class="m">x<sub>1</sub> = −2x<sub>3</sub> − 2x<sub>4</sub> = 4 − 2 = 2</span>.</p>
+    <div class="eq">
+      <span data-mx="-2; 1; 0; 0" data-rows="0:h1,1:h2,2:h1,3:h2" data-cap="special solution 1"></span>
+      <span class="op">&nbsp;&nbsp;&nbsp;</span>
+      <span data-mx="2; 0; -2; 1" data-rows="0:h1,1:h2,2:h1,3:h2" data-cap="special solution 2"></span>
+    </div>
+    <p>Check them against the original <span class="m">A</span>. The first says: −2 of column 1 plus 1 of column 2 is zero. That is the fact we noticed at the start, column 2 is twice column 1. The second says: 2 of column 1, minus 2 of column 3, plus column 4 is zero. Try it: (2, 4, 6) − (4, 12, 16) + (2, 8, 10) = (0, 0, 0). Nobody would spot that one by eye.</p>
+  </div>
+
+  <div class="lab board" id="lab-special">
+    <div class="lab-head"><span class="lab-tag">LAB 7.2</span><h3>Choose the free variables, watch the pivot variables obey</h3><i data-ic="sliders"></i></div>
+    <p class="lab-intro">The two <b>blue</b> sliders are the free variables <b>x₂</b> and <b>x₄</b>. Set them to anything. Back-substitution then forces the <b>red</b> pivot variables x₃ and x₁, and the result always solves A<b>x</b> = <b>0</b>.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <div class="lab-math" data-slot="U"></div>
+        <div class="lab-group"><span class="label">Back-substitution, bottom equation first</span><div class="bs" data-slot="backsub"></div></div>
+        <div class="lab-group"><span class="label">Check with the original A: this mix of its columns</span><div class="lab-math" data-slot="check"></div><div class="lab-caption" data-slot="rows"></div></div>
+        <div class="lab-group"><span class="label">The same x as a mix of the two special solutions</span><div class="lab-math" data-slot="mix"></div></div>
+        <div class="lab-caption"><span class="key k1">pivot variable (forced)</span><span class="key k2">free variable (chosen)</span></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group" data-slot="sliders"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+        <div data-slot="status"></div>
+        <div class="lab-group"><span class="label">Looking ahead to 7.6 and 7.7</span><div class="lab-math" data-slot="npanel"></div>
+          <div class="lab-caption"><span>The blue columns of R hold a block called F. Flip its signs and it fills the red rows of N. The blue rows of N are the free variables taking turns to be 1.</span></div></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Press <b>Special solution 1</b>, then <b>Special solution 2</b>, and compare with the worked numbers above. Each one switches on a single free variable.</li>
+        <li>Set x₂ = 3 and x₄ = −1. The lab gives <b>x</b> = (−8, 3, 2, −1), which is 3 of the first special solution minus 1 of the second. The free variables are the mixing amounts.</li>
+        <li>Press <b>Both zero</b>. Everything collapses to the zero vector. A matrix with no free variables at all has only this one solution.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="joint"></i>Robotics link<em>basic self-motions</em></div>
+    <div class="robolink-body">
+      <h3>A special solution is one clean way to move without disturbing the job</h3>
+      <p>A motion of the joints that leaves the hand where it is has a name in robotics: a <span class="term">self-motion</span>. On an arm with two free joints, special solution 1 reads: turn free joint A at one unit of speed, hold free joint B still, and let the pivot joints compensate. Special solution 2 swaps the roles of A and B. Each one isolates a single spare joint, which makes them easy to understand and easy to test on a real machine.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 7.5 -->
+<section class="concept" id="nullspace" data-toc="The whole nullspace and n − r">
+  <header class="concept-head">
+    <span class="concept-no">7.5</span>
+    <h2>The whole nullspace, and the count n − r</h2>
+    <p class="concept-sub">Two special solutions are enough to build every solution.</p>
+  </header>
+  <div class="prose">
+    <p>Multiply a solution of <span class="m">A<b>x</b> = <b>0</b></span> by any number and it is still a solution. Add two solutions and the sum is a solution. That was the subspace rule of Lecture 6. So every combination of the special solutions lies in the nullspace.</p>
+    <p>And nothing is missing. A solution is completely decided by its free variables. The combination below has <span class="m">x<sub>2</sub> = c</span> and <span class="m">x<sub>4</sub> = d</span>, so by choosing <span class="m">c</span> and <span class="m">d</span> it can match the free variables of any solution, and then the pivot variables must match too.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's nullspace</span>
+    <div class="eq">
+      <span class="m"><b>x</b> = c</span><span data-mx="-2; 1; 0; 0" data-rows="0:h1,1:h2,2:h1,3:h2"></span><span class="op">+</span><span class="m">d</span><span data-mx="2; 0; -2; 1" data-rows="0:h1,1:h2,2:h1,3:h2"></span>
+    </div>
+    <p>The nullspace of <span class="m">A</span> is all of these: a flat two-dimensional sheet through the origin of four-dimensional space.</p>
+    <p><strong>The count.</strong> There is one special solution for each free variable. The matrix has <span class="m">n</span> columns and <span class="m">r</span> of them hold pivots, so <span class="m">n − r</span> are free. Here <span class="m">n − r = 4 − 2 = 2</span>.</p>
+  </div>
+  <div class="note idea">
+    <i data-ic="idea"></i>
+    <span class="note-title">Key idea</span>
+    <div class="note-body"><p>The rank r counts what the matrix can do. The number n − r counts what can be done to no effect. The two always add up to n, the number of columns.</p></div>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="infinity"></i>Robotics link<em>redundancy</em></div>
+    <div class="robolink-body">
+      <h3>n − r is how much redundancy the machine has</h3>
+      <p>Roboticists call <span class="m">n − r</span> the degree of <span class="term">redundancy</span>. It is the number of independent ways the actuators can move with no effect on the job.</p>
+      <p>The four-joint arm has <span class="m">n = 4</span> joints and rank 2, so 4 − 2 = 2: two independent self-motions, where the three-joint arm of Lecture 6 had one. The four-thruster vehicle has rank 3, so 4 − 3 = 1: a single pattern of thrusts that cancels itself exactly. Fired alone, that pattern does nothing except drain the battery. Section 7.9 shows why engineers are glad to have it anyway.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 7.6 -->
+<section class="concept" id="rref" data-toc="Reduced row echelon form R">
+  <header class="concept-head">
+    <span class="concept-no">7.6</span>
+    <h2>Reduced row echelon form R</h2>
+    <p class="concept-sub">Clean the matrix until the answer can simply be read off it.</p>
+  </header>
+  <div class="prose">
+    <p><span class="m">U</span> was enough to solve the problem. Strang takes the matrix further anyway, because the fully cleaned form shows the solutions with no back-substitution at all. Two more kinds of row operation are allowed:</p>
+    <ul>
+      <li><strong>Eliminate upward.</strong> Use each pivot to make zeros above it as well as below it.</li>
+      <li><strong>Scale.</strong> Divide each pivot row by its pivot, so that every pivot becomes 1.</li>
+    </ul>
+    <p>The result is the <span class="term">reduced row echelon form</span>, written <span class="m">R</span>. In software it is a single command, <code>rref(A)</code>, which Strang runs during the lecture.</p>
+  </div>
+  <div class="work">
+    <span class="label">From U to R in the lecture</span>
+    <div class="eq wrapok">
+      <span data-mx="1 2 2 2; 0 0 2 4; 0 0 0 0" data-pivots="0.0,1.2" data-cap="U"></span>
+      <span class="op">→</span>
+      <span data-mx="1 2 0 -2; 0 0 2 4; 0 0 0 0" data-pivots="0.0,1.2" data-rows="0:h3" data-cap="row 1 − row 2"></span>
+      <span class="op">→</span>
+      <span data-mx="1 2 0 -2; 0 0 1 2; 0 0 0 0" data-pivots="0.0,1.2" data-rows="1:h3" data-cap="row 2 ÷ 2 gives R"></span>
+    </div>
+    <p>These are still row operations, so <span class="m">R<b>x</b> = <b>0</b></span> has the same solutions as <span class="m">A<b>x</b> = <b>0</b></span>. Read <span class="m">R</span> one row at a time:</p>
+    <div class="eq wrapok">
+      <span class="m">x<sub>1</sub> + 2x<sub>2</sub> − 2x<sub>4</sub> = 0</span><span class="op">&nbsp;&nbsp;&nbsp;</span><span class="m">x<sub>3</sub> + 2x<sub>4</sub> = 0</span>
+    </div>
+    <p>Each equation now contains one pivot variable and, apart from that, only free variables. Move the free ones across and the answer is in front of you: <span class="m">x<sub>1</sub> = −2x<sub>2</sub> + 2x<sub>4</sub></span> and <span class="m">x<sub>3</sub> = −2x<sub>4</sub></span>.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="chip"></i>Robotics link<em>the compensation rule</em></div>
+    <div class="robolink-body">
+      <h3>Each row of R is an instruction to one pivot actuator</h3>
+      <p>In <span class="m">U</span> the pivot actuators are tangled together: you need the answer for one before you can work out the next. In <span class="m">R</span> they are untangled. Every non-zero row names a single pivot actuator and says what it must do in terms of the free ones alone. A controller can use the row as it stands: take the commands going to the free actuators, multiply by the numbers in the row, flip the sign, and send the result to that pivot actuator.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 7.7 -->
+<section class="concept" id="blocks" data-toc="R = [I F] and N = [−F; I]">
+  <header class="concept-head">
+    <span class="concept-no">7.7</span>
+    <h2>The pattern inside R, and the nullspace matrix N</h2>
+    <p class="concept-sub">Once R is known, the special solutions need no calculation.</p>
+  </header>
+  <div class="prose">
+    <p>Look at the pivot columns of <span class="m">R</span>, columns 1 and 3. They read (1, 0, 0) and (0, 1, 0). Put side by side, with the zero row left off, they are the <span class="term">identity matrix</span> <span class="m">I</span>, the matrix with ones on the diagonal that changes nothing when it multiplies (Lecture 3). There are <span class="m">r</span> pivots, so this <span class="m">I</span> is <span class="m">r</span> by <span class="m">r</span>.</p>
+    <p>The free columns, 2 and 4, hold whatever numbers elimination left there. Call that block <span class="m">F</span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">The blocks of the lecture's R</span>
+    <div class="eq wrapok">
+      <span data-cmx="1 2 0 -2; 0 0 1 2; 0 0 0 0" data-kinds="p f p f" data-heads="x1 x2 x3 x4" data-labels data-dimrows="2" data-cap="R"></span>
+      <span class="op">&nbsp;</span>
+      <span data-mx="1 0; 0 1" data-cols="0:h1,1:h1" data-cap="I · columns 1 and 3"></span>
+      <span data-mx="2 -2; 0 2" data-cols="0:h2,1:h2" data-cap="F · columns 2 and 4"></span>
+    </div>
+    <p>If the pivot columns stood first, <span class="m">R</span> would read as four blocks: <span class="m">I</span> then <span class="m">F</span> on top, and zeros underneath. Strang writes this as <span class="m">R = [ I F ; 0 0 ]</span>. The zero row at the bottom is the record that row 3 of <span class="m">A</span> was a combination of the rows above it.</p>
+  </div>
+  <div class="prose">
+    <p>Now gather the special solutions as the columns of one matrix. Strang calls it the <span class="term">nullspace matrix</span> <span class="m">N</span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's nullspace matrix</span>
+    <div class="eq wrapok">
+      <span data-cmx="-2 2; 1 0; 0 -2; 0 1" data-rowkinds="p f p f" data-rowheads="x1 x2 x3 x4" data-heads="s1 s2" data-cap="N"></span>
+      <span class="op">&nbsp;</span>
+      <span data-mx="-2 2; 0 -2" data-cols="0:h1,1:h1" data-cap="−F · rows 1 and 3"></span>
+      <span data-mx="1 0; 0 1" data-cols="0:h2,1:h2" data-cap="I · rows 2 and 4"></span>
+    </div>
+    <p>Every column of <span class="m">N</span> solves <span class="m">R<b>x</b> = <b>0</b></span>, so <span class="m">RN = 0</span>. With the pivot variables listed on top and the free variables below, <span class="m">N = [ −F ; I ]</span>. Multiply the blocks to see why it works: <span class="m">[ I F ]</span> times <span class="m">[ −F ; I ]</span> is <span class="m">−F + F = 0</span>.</p>
+    <p>The two pictures trade places. In <span class="m">R</span> the identity sits in the pivot columns and <span class="m">F</span> in the free columns. In <span class="m">N</span> the identity sits in the free rows, because each free variable takes its turn to be 1, and <span class="m">−F</span> fills the pivot rows. This second identity is <span class="m">n − r</span> by <span class="m">n − r</span>, one row for each free variable.</p>
+    <div class="eq"><span class="m"><b>x</b><sub><span class="u">pivot</span></sub> = −F <b>x</b><sub><span class="u">free</span></sub></span></div>
+    <p>That one line is the whole lecture. Once <span class="m">R</span> is known, copy its free columns, flip the signs, and place them in the pivot positions: (−2, 0) and (2, −2). The right-hand panel of Lab 7.2 shows exactly this.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="blocks"></i>Robotics link<em>a control law</em></div>
+    <div class="robolink-body">
+      <h3>x<sub>pivot</sub> = −F x<sub>free</sub> is something a robot can execute</h3>
+      <p>For the four-joint arm in its staircase pose (next section) the block is <span class="m">F = [ 1/2 −1/2 ; 0 1 ]</span>. Say you want the two free joints, 3 and 4, to turn at 0.4 and −0.2 radians per second. Multiply by <span class="m">−F</span>: the pivot joints, 1 and 2, must turn at −0.3 and 0.2. Send those four speeds to the motors and the hand does not move. The controller repeats the multiplication many times a second, with a fresh <span class="m">F</span> each time, because <span class="m">F</span> changes as the arm changes shape.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 7.8 -->
+<section class="concept" id="spare-joints" data-toc="The robot: spare joints">
+  <header class="concept-head">
+    <span class="concept-no">7.8</span>
+    <h2>The robot: spare joints</h2>
+    <p class="concept-sub">The whole lecture, run on a four-joint arm.</p>
+  </header>
+  <div class="prose">
+    <p>The arm has four links of 1 metre each, joined end to end by four turning joints, and it works on a flat table. Its job is to hold its hand at a point. That is 2 numbers to control with 4 joints.</p>
+    <p>Its matrix is the <span class="term">Jacobian</span> <span class="m">J</span> of Lecture 1. Column <span class="m">i</span> is the hand's velocity when only joint <span class="m">i</span> turns, at one radian per second. Geometrically it is the arrow from joint <span class="m">i</span> to the hand, turned a quarter turn. The joint speeds are the unknowns, and <span class="m">J<b>q̇</b> = <b>0</b></span> means "the hand stays still".</p>
+    <p>Bend the arm into a staircase: up, right, up, right. The joints sit at (0, 0), (0, 1), (1, 1) and (1, 2), and the hand is at (2, 2). The arrow from joint 1 to the hand is (2, 2), which a quarter turn sends to (−2, 2). The other three columns come the same way.</p>
+  </div>
+  <div class="work">
+    <span class="label">The staircase pose, start to finish</span>
+    <div class="eq wrapok">
+      <span data-mx="-2 -1 -1 0; 2 2 1 1" data-pivots="0.0" data-cap="J"></span>
+      <span class="op">→</span>
+      <span data-mx="-2 -1 -1 0; 0 1 0 1" data-pivots="0.0,1.1" data-cap="U · row 2 + row 1"></span>
+      <span class="op">→</span>
+      <span data-cmx="1 0 1/2 -1/2; 0 1 0 1" data-kinds="p p f f" data-heads="q̇1 q̇2 q̇3 q̇4" data-labels data-pivots="0.0,1.1" data-cap="R"></span>
+    </div>
+    <p>Two pivots, so the rank is 2 and the hand can be moved in any direction on the table. Joints 1 and 2 are the <span class="hl1">pivot joints</span>. Joints 3 and 4 are <span class="hl2">free</span>, and <span class="m">n − r = 4 − 2 = 2</span>. Reading −F off the free columns of <span class="m">R</span> gives the two special solutions:</p>
+    <div class="eq">
+      <span data-cmx="-1/2 1/2; 0 -1; 1 0; 0 1" data-rowkinds="p p f f" data-rowheads="q̇1 q̇2 q̇3 q̇4" data-heads="s1 s2"></span>
+    </div>
+    <p>The first reads: turn joint 3 at 1 rad/s, hold joint 4, turn joint 1 backwards at half that speed, and leave joint 2 alone. Check it in <span class="m">J</span>: (−2)(−1/2) + (−1)(1) = 0 across, and (2)(−1/2) + (1)(1) = 0 up. The hand does not move.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="arm"></i>Robotics link<em>redundant arms</em></div>
+    <div class="robolink-body">
+      <h3>Two spare joints are two things the arm can do while it works</h3>
+      <p>Every self-motion of this arm is some amount of special solution 1 plus some amount of special solution 2. Engineers spend that freedom on side jobs that must not disturb the tool: bending the elbow away from an obstacle, keeping each joint clear of the end of its travel, or steering the whole arm away from singular poses. Arms with seven joints are built for exactly this, because holding a tool in space takes six.</p>
+      <p>The model here is deliberately simple. It is flat, the joints are ideal and nothing has weight. A real arm adds a third dimension and more rows to <span class="m">J</span>, and the counting works in the same way.</p>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-arm4">
+    <div class="lab-head"><span class="lab-tag">LAB 7.3</span><h3>A four-joint arm: lead with the free joints</h3><i data-ic="arm"></i></div>
+    <p class="lab-intro">Elimination has sorted the joints: <b>red</b> joints hold pivots, <b>blue</b> joints are free. Slide <b>c</b> or <b>d</b> to feed in some of each special solution. The joints turn, the arm changes shape, and the hand stays on the amber ring.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="wide" aria-label="Four-joint planar arm with pivot joints in red and free joints in blue"></canvas>
+        <div class="lab-caption"><span class="key k1">pivot joint</span><span class="key k2">free joint</span><span class="key k3">marked point for the hand</span><span>grey arm: where the motion started</span></div>
+        <div class="lab-math" data-slot="eqJ"></div>
+        <div class="lab-math" data-slot="eqQ"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Pose</span><div data-slot="presets"></div></div>
+        <div class="lab-group" data-slot="angles"></div>
+        <div class="lab-group"><span class="label">Self-motion drive</span><div class="lab-group" data-slot="drive"></div></div>
+        <div data-slot="readouts"></div>
+        <div data-slot="status"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Slide <b>c</b> a little to the left and let it run. Free joint 3 leads at a steady speed, the two red joints counter-turn, and the readout "hand has moved" stays at zero. You are watching special solution 1.</li>
+        <li>The motion slows to a halt when joints 1 and 2 line up with the hand: they can no longer cover for joint 3. Slide c the other way and the arm runs back. Then set c to zero and try <b>d</b>, where joint 4 leads. Every self-motion of this arm is a mix of the two.</li>
+        <li>Press <b>Straighten the arm</b>. All four columns of J become parallel, the rank drops to 1 and a third free joint appears. The hand has lost a direction, which is a bad trade for one more special solution.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <i data-ic="warn"></i>
+    <span class="note-title">Watch out</span>
+    <div class="note-body"><p>Elimination hands out pivots first come, first served. If joints 1 and 2 happen to line up with the hand, they make a poor pair of pivot joints: the numbers in F grow huge and the compensating joints would have to spin wildly. The lab eases off when that happens. The nullspace itself is still perfectly healthy. Only this way of describing it has become awkward, and real robot software chooses a better-balanced description, which later lectures build.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 7.9 -->
+<section class="concept" id="spare-thrusters" data-toc="The robot: spare thrusters">
+  <header class="concept-head">
+    <span class="concept-no">7.9</span>
+    <h2>The robot: spare thrusters, and losing one</h2>
+    <p class="concept-sub">One special solution, and three good uses for it.</p>
+  </header>
+  <div class="prose">
+    <p>Lecture 1 drove an underwater vehicle with three thrusters, which is exactly enough for forward force <span class="m">F<sub>x</sub></span>, side force <span class="m">F<sub>y</sub></span> and turning torque <span class="m">τ</span>. Give it a fourth thruster and the matrix becomes 3 by 4. As before, one newton from a thruster mounted at <span class="m">(x, y)</span> and pushing along the angle <span class="m">a</span> contributes the column <span class="m">(<span class="u">cos</span> a, <span class="u">sin</span> a, x <span class="u">sin</span> a − y <span class="u">cos</span> a)</span>.</p>
+    <p>Take a layout that many working vessels use. Two propellers at the stern push forward: T1 on the left at (−1.3, 0.5) and T3 on the right at (−1.3, −0.5). Two side thrusters push to the left: T2 at the bow, (1, 0), and T4 near the stern, (−1, 0). Distances are in metres.</p>
+  </div>
+  <div class="work">
+    <span class="label">The four-thruster matrix, reduced</span>
+    <div class="eq wrapok">
+      <span data-cmx="1 0 1 0; 0 1 0 1; -1/2 1 1/2 -1" data-heads="T1 T2 T3 T4" data-cap="B · rows Fx, Fy, τ"></span>
+      <span class="op">→</span>
+      <span data-cmx="1 0 0 2; 0 1 0 1; 0 0 1 -2" data-kinds="p p p f" data-heads="T1 T2 T3 T4" data-labels data-pivots="0.0,1.1,2.2" data-cap="R"></span>
+      <span class="op">&nbsp;</span>
+      <span data-cmx="-2; -1; 2; 1" data-rowkinds="p p p f" data-rowheads="T1 T2 T3 T4" data-cap="special solution s"></span>
+    </div>
+    <p>Row 3 + ½ row 1, then row 3 − row 2, gives three pivots, all equal to 1. The rank is 3, so the vehicle has full control, and <span class="m">n − r = 4 − 3 = 1</span>: one free thruster and one special solution, <span class="m"><b>s</b> = (−2, −1, 2, 1)</span>.</p>
+    <p>Read it as thrusts in newtons. The two propellers push against each other, −2 and +2, which makes no net force but twists the hull by 2 newton-metres one way. The two side thrusters push against each other, −1 and +1, and twist it by 2 newton-metres the other way. Everything cancels. <span class="m">B<b>s</b> = <b>0</b></span>.</p>
+  </div>
+  <div class="prose">
+    <h3>Why keep a pattern that does nothing?</h3>
+    <p>Because any amount of it can be added to the thruster commands and the vehicle will not notice. If <span class="m"><b>f</b></span> produces the push you want, so does <span class="m"><b>f</b> + c<b>s</b></span> for every number <span class="m">c</span>. That choice is worth having.</p>
+    <ul>
+      <li><strong>Share the load.</strong> Ask for a 1 newton push to the side. With the free thruster held at zero, elimination answers (1, 1, −1, 0): the bow thruster pushes, and the two propellers fight each other to cancel the twist. Total thrust 3 newtons. Add half of <span class="m"><b>s</b></span> and the answer becomes (0, ½, 0, ½): the two side thrusters share the push. Total thrust 1 newton, for the same motion.</li>
+      <li><strong>Stay out of the dead zone.</strong> A propeller answers slowly and unevenly close to zero thrust. Adding some of <span class="m"><b>s</b></span> lets opposing thrusters lean on each other, so each one keeps working in the range where it responds well.</li>
+      <li><strong>Survive a failure.</strong> A failed thruster is a deleted column. Delete any one column of this <span class="m">B</span> and the remaining 3 by 3 matrix still has rank 3. Delete a second and only two columns are left. Two columns can hold at most two pivots, so a direction is lost.</li>
+    </ul>
+    <p>The special solution even says which thrusters are safe to lose. <strong>A thruster can fail without loss of control exactly when its entry in <span class="m"><b>s</b></span> is not zero.</strong> A non-zero entry means that thruster's column can be rebuilt from the other three, so they can cover for it. Here all four entries are non-zero. The second layout in the lab has <span class="m"><b>s</b> = (1, −2, 1, 0)</span>, and its fourth thruster has no understudy.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="thruster"></i>Robotics link<em>thrust allocation</em></div>
+    <div class="robolink-body">
+      <h3>One answer plus any amount of the nullspace</h3>
+      <p>Thrust allocation on an over-actuated vehicle is done in two parts. First find <em>one</em> set of thrusts that produces the wanted push and turn. The lab does it the lecture's way: set the free variable to zero and back-substitute for the pivot variables. Then add whatever multiple of the special solution suits the machine best. Lecture 8 makes this two-part recipe the official way to solve any <span class="m">A<b>x</b> = <b>b</b></span>.</p>
+      <p>The model is flat, each thruster can push both ways with equal ease, and the water resists motion with a simple drag.</p>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-thrust4">
+    <div class="lab-head"><span class="lab-tag">LAB 7.4</span><h3>Four thrusters, three jobs: spend the spare one</h3><i data-ic="thruster"></i></div>
+    <p class="lab-intro">The three amber sliders are the joystick. The lab finds one set of thrusts by setting the <b>free</b> thruster to zero. The blue <b>null amount</b> slider then adds c × s on top: the thrust arrows change, the effort bar changes, and the vehicle's motion does not. Tick a box to fail a thruster.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="wide" aria-label="Top view of a vehicle with four thrusters"></canvas>
+        <div class="lab-caption"><span class="key k1">pivot thruster</span><span class="key k2">free thruster</span><span class="key k3">net push and turn asked for</span><span>the grid scrolls as the vehicle moves</span></div>
+        <div class="lab-math" data-slot="eqB"></div>
+        <div class="lab-math" data-slot="eqF"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Thruster layout</span><div data-slot="presets"></div></div>
+        <div class="lab-group" data-slot="sliders"></div>
+        <div class="lab-group" data-slot="null"></div>
+        <div data-slot="meter"></div>
+        <div class="lab-group"><span class="label">Break something</span><div class="lab-row" data-slot="fail"></div></div>
+        <div data-slot="readouts"></div>
+        <div data-slot="status"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Ask for a side push only: F<sub>x</sub> = 0, F<sub>y</sub> = 1. With the null amount at zero the two propellers fight each other and the total is 3 N. Press <b>Least effort</b>: the total falls to 1 N and the vehicle's path does not change at all.</li>
+        <li>Tick <b>Fail T4</b>. The rank is still 3, so control survives, but the spare is gone: the null slider is dead and the 3 N answer is the only one. Untick it, then fail T1 and T3 together. Rank 2, and no forward force for any command.</li>
+        <li>Switch to <b>Three astern, one at the bow</b>. The special solution is now (1, −2, 1, 0). Fail T4, the thruster with the zero entry, and control is lost at once. Fail any other one and it survives.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 7.10 -->
+<section class="concept" id="transpose" data-toc="The transpose has the same rank">
+  <header class="concept-head">
+    <span class="concept-no">7.10</span>
+    <h2>The transpose has the same rank</h2>
+    <p class="concept-sub">The lecture's second example, and a fact that seems too neat to be true.</p>
+  </header>
+  <div class="prose">
+    <p>Strang ends by running the whole method again on a second matrix. He takes the <span class="term">transpose</span> of <span class="m">A</span>: the matrix whose rows are the columns of <span class="m">A</span> (Lecture 5). It has 4 rows and 3 columns.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's second example</span>
+    <div class="eq wrapok">
+      <span data-mx="1 2 3; 2 4 6; 2 6 8; 2 8 10" data-pivots="0.0" data-cap="Aᵀ"></span>
+      <span class="op">→</span>
+      <span data-cmx="1 2 3; 0 2 2; 0 0 0; 0 0 0" data-kinds="p p f" data-heads="x1 x2 x3" data-labels data-pivots="0.0,1.1" data-dimrows="2 3" data-cap="U"></span>
+      <span class="op">→</span>
+      <span data-cmx="1 0 1; 0 1 1; 0 0 0; 0 0 0" data-kinds="p p f" data-heads="x1 x2 x3" data-pivots="0.0,1.1" data-dimrows="2 3" data-cap="R"></span>
+    </div>
+    <p>Subtracting 2 × row 1 from each row below leaves (0, 0, 0), (0, 2, 2) and (0, 4, 4). The pivot position in column 2 holds a zero, but there is a 2 below it, so this time a row exchange finds the pivot. One more subtraction clears the last row.</p>
+    <p>Pivots in columns 1 and 2. <strong>The rank is 2 again.</strong> But now there are only 3 columns, so <span class="m">n − r = 3 − 2 = 1</span>: one free variable, <span class="m">x<sub>3</sub></span>, and one special solution.</p>
+    <p>From <span class="m">R</span>: <span class="m">F</span> is the single column (1, 1), so the special solution is <span class="m"><b>x</b> = (−1, −1, 1)</span>, and the nullspace of <span class="m">A<sup><span class="u">T</span></sup></span> is every multiple <span class="m">c(−1, −1, 1)</span>: a line. Read the special solution as a statement about columns: column 3 of <span class="m">A<sup><span class="u">T</span></sup></span> is column 1 plus column 2. Those columns are the rows of <span class="m">A</span>. It is the fact we noticed at the very start, row 3 = row 1 + row 2, found by the algorithm.</p>
+  </div>
+  <div class="prose">
+    <p>The rank came out the same, and that is no accident of this example. <strong>A matrix and its transpose always have the same rank.</strong> The number of independent columns equals the number of independent rows. What differs is the number of free variables: <span class="m">n − r</span> for <span class="m">A</span> and <span class="m">m − r</span> for <span class="m">A<sup><span class="u">T</span></sup></span>.</p>
+  </div>
+
+  <div class="lab board" id="lab-rank">
+    <div class="lab-head"><span class="lab-tag">LAB 7.5</span><h3>A and its transpose, side by side</h3><i data-ic="transpose"></i></div>
+    <p class="lab-intro">Type any numbers into <b>A</b>. The lab eliminates A and Aᵀ separately and circles the pivots of each. The two pivot counts always agree. The numbers of free variables usually do not.</p>
+    <div class="lab-main stack">
+      <div class="lab-stage">
+        <div class="duo">
+          <div class="duo-col"><span class="label">A · 3 rows, 4 columns · edit any entry</span><div class="lab-math" data-slot="A"></div><div class="lab-math" data-slot="UA"></div><div class="lab-caption" data-slot="countA"></div></div>
+          <div class="duo-col"><span class="label">Aᵀ · 4 rows, 3 columns</span><div class="lab-math" data-slot="AT"></div><div class="lab-math" data-slot="UT"></div><div class="lab-caption" data-slot="countT"></div></div>
+        </div>
+      </div>
+      <div class="lab-side">
+        <div class="side-grid">
+          <div class="lab-group"><span class="label">Load a matrix</span><div data-slot="presets"></div><div class="lab-row" data-slot="buttons"></div></div>
+          <div class="lab-group"><div data-slot="readouts"></div><div data-slot="status"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>With the <b>Lecture matrix</b>, A has pivots in columns 1 and 3 and Aᵀ has them in columns 1 and 2. Different places, the same count of 2.</li>
+        <li>Change the bottom-right entry of A from 10 to 11. Row 3 is no longer row 1 plus row 2, and both ranks jump to 3 together. Neither can move without the other.</li>
+        <li>Load <b>Rank 1</b>. One pivot each. A is left with 3 free variables and Aᵀ with 2: same rank, different amounts of freedom.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="bolt"></i>Robotics link<em>motion and force</em></div>
+    <div class="robolink-body">
+      <h3>The same count, read as motion and read as force</h3>
+      <p>Lecture 5 showed that an arm uses its Jacobian twice. Joint speeds go through <span class="m">J</span> to become hand velocity. A force at the hand goes through <span class="m">J<sup><span class="u">T</span></sup></span> to become the torques the joints must supply. Equal ranks mean the two readings agree: the number of independent directions in which the hand can move equals the number of independent directions in which the motors can push it.</p>
+      <p>In the staircase pose both ranks are 2 and <span class="m">J<sup><span class="u">T</span></sup></span> has <span class="m">m − r = 2 − 2 = 0</span> free variables: every force at the hand needs some torque. Stretch the arm straight and both ranks fall to 1. Now <span class="m">J<sup><span class="u">T</span></sup></span> has one free variable, and its special solution is a force along the arm. The motors feel nothing from it, because the links carry it like a pole. You do the same when you lock your arm straight to lean on a wall.</p>
+    </div>
+  </div>
+
+  <div class="tablewrap">
+    <table class="t">
+      <thead><tr><th>Lecture idea</th><th>In plain words</th><th>What it is in a robot</th></tr></thead>
+      <tbody>
+        <tr><td>Rectangular matrix, m by n</td><td>m equations, n unknowns, and the two numbers differ</td><td>n actuators doing a job that takes m numbers to describe</td></tr>
+        <tr><td>Solving A x = 0</td><td>Find every combination of the columns that cancels out</td><td>Find every command that leaves the job undisturbed</td></tr>
+        <tr><td>Echelon form U</td><td>What elimination leaves: pivots stepping down like stairs</td><td>The machine's equations with the repeats removed</td></tr>
+        <tr><td>Zero row</td><td>A row that was a combination of the rows above it</td><td>A sensor or constraint that repeats others; a built-in consistency check</td></tr>
+        <tr><td>Rank r</td><td>The number of pivots</td><td>The number of directions the machine can truly command; a singularity is a drop in rank</td></tr>
+        <tr><td>Pivot variables</td><td>Unknowns whose columns hold pivots; forced once the rest are chosen</td><td>The actuators that compensate</td></tr>
+        <tr><td>Free variables</td><td>Unknowns you may set to anything</td><td>The actuators you command as you like</td></tr>
+        <tr><td>Special solution</td><td>One free variable set to 1, the others to 0</td><td>A basic self-motion: one spare actuator leads, the pivot ones follow</td></tr>
+        <tr><td>Nullspace</td><td>All combinations of the special solutions</td><td>Every self-motion of an arm; every thrust pattern that cancels itself</td></tr>
+        <tr><td>n − r</td><td>The number of free variables and of special solutions</td><td>The degree of redundancy: how many spare actuators there really are</td></tr>
+        <tr><td>Reduced form R</td><td>Pivots equal to 1 with zeros above and below</td><td>The compensation rule, one row per pivot actuator</td></tr>
+        <tr><td>x<sub>pivot</sub> = −F x<sub>free</sub></td><td>Read the special solutions straight from R</td><td>A control law: choose the free commands, compute the rest</td></tr>
+        <tr><td>rank of A = rank of Aᵀ</td><td>Independent columns and independent rows are equally many</td><td>As many directions to move in as directions to push in</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ practice -->
+<section class="concept" id="practice" data-toc="Practice problems">
+  <header class="concept-head">
+    <span class="concept-no">7.11</span>
+    <h2>Practice problems</h2>
+    <p class="concept-sub">Ten problems, from first steps to robot design. Work each on paper, then open the solution. Every answer has been checked by the code for this lecture.</p>
+  </header>
+  <div class="quiz problems">
+    <details><summary><span class="q">P1</span><span>Eliminate <span data-mx="1 3 1 2; 2 6 4 8; 0 0 2 4" data-cls="sm"></span> to echelon form. Which columns are pivot columns, which are free, and what is the rank?<em class="tag">elimination</em></span></summary>
+      <div class="a">
+        <p>Row 2 − 2 × row 1 = (0, 0, 2, 4). Row 3 already starts with a zero.</p>
+        <p>Column 2: the pivot position in row 2 is zero and so is the entry under it. No pivot. Move right.</p>
+        <p>Column 3: the pivot is the 2 in row 2. Row 3 − row 2 = (0, 0, 0, 0).</p>
+        <div class="eq"><span data-mx="1 3 1 2; 0 0 2 4; 0 0 0 0" data-pivots="0.0,1.2" data-cap="U"></span></div>
+        <p><strong>Answer:</strong> pivot columns 1 and 3, free columns 2 and 4, rank 2.</p>
+      </div></details>
+    <details><summary><span class="q">P2</span><span>Find the special solutions of the matrix in P1 by back-substitution in its <span class="m">U</span>.<em class="tag">special solutions</em></span></summary>
+      <div class="a">
+        <p>The equations are <span class="m">x<sub>1</sub> + 3x<sub>2</sub> + x<sub>3</sub> + 2x<sub>4</sub> = 0</span> and <span class="m">2x<sub>3</sub> + 4x<sub>4</sub> = 0</span>. The free variables are <span class="m">x<sub>2</sub></span> and <span class="m">x<sub>4</sub></span>.</p>
+        <p><span class="m">x<sub>2</sub> = 1, x<sub>4</sub> = 0</span>: the second equation gives <span class="m">x<sub>3</sub> = 0</span>, then the first gives <span class="m">x<sub>1</sub> = −3</span>.</p>
+        <p><span class="m">x<sub>2</sub> = 0, x<sub>4</sub> = 1</span>: the second gives <span class="m">x<sub>3</sub> = −2</span>, then the first gives <span class="m">x<sub>1</sub> = 2 − 2 = 0</span>.</p>
+        <p><strong>Answer:</strong> (−3, 1, 0, 0) and (0, 0, −2, 1). The nullspace is every combination of the two.</p>
+        <p>Check the second in the original row 2: 2·0 + 6·0 + 4·(−2) + 8·1 = 0.</p>
+      </div></details>
+    <details><summary><span class="q">P3</span><span>Carry the <span class="m">U</span> of P1 on to <span class="m">R</span>. Write down <span class="m">F</span> and the nullspace matrix <span class="m">N</span>, and compare with P2.<em class="tag">rref</em></span></summary>
+      <div class="a">
+        <p>Clear above the second pivot: row 1 − ½ × row 2 = (1, 3, 0, 0). Then divide row 2 by 2.</p>
+        <div class="eq"><span data-mx="1 3 0 0; 0 0 1 2; 0 0 0 0" data-pivots="0.0,1.2" data-cap="R"></span><span data-mx="3 0; 0 2" data-cap="F"></span><span data-mx="-3 0; 1 0; 0 -2; 0 1" data-cap="N"></span></div>
+        <p><span class="m">F</span> is what the free columns 2 and 4 hold in the pivot rows. In <span class="m">N</span>, rows 1 and 3 (the pivot variables) are <span class="m">−F</span> and rows 2 and 4 (the free variables) are the identity.</p>
+        <p><strong>Answer:</strong> the columns of <span class="m">N</span> are (−3, 1, 0, 0) and (0, 0, −2, 1), the same as P2, with no back-substitution.</p>
+      </div></details>
+    <details><summary><span class="q">P4</span><span>Answer by counting, with no elimination. (a) A 3 by 5 matrix has rank 3. How many special solutions? (b) A 5 by 3 matrix has rank 3. What is its nullspace? (c) Can a 3 by 5 matrix have only the zero vector in its nullspace?<em class="tag">counting</em></span></summary>
+      <div class="a">
+        <p>(a) <span class="m">n − r = 5 − 3 = 2</span> special solutions.</p>
+        <p>(b) <span class="m">n − r = 3 − 3 = 0</span>. No free variables, so the nullspace is the zero vector alone.</p>
+        <p>(c) The rank is at most the number of rows, 3. So <span class="m">n − r</span> is at least 5 − 3 = 2.</p>
+        <p><strong>Answer:</strong> (a) 2. (b) Only <span class="m"><b>x</b> = <b>0</b></span>. (c) No. A matrix with more columns than rows always has free variables, so <span class="m">A<b>x</b> = <b>0</b></span> always has non-zero solutions.</p>
+      </div></details>
+    <details><summary><span class="q">P5</span><span>For <span data-mx="1 2 1; 2 4 3" data-cls="sm"></span>, find the rank and the special solutions of <span class="m">A</span>, then of <span class="m">A<sup><span class="u">T</span></sup></span>.<em class="tag">transpose</em></span></summary>
+      <div class="a">
+        <p><strong><span class="m">A</span>:</strong> row 2 − 2 × row 1 = (0, 0, 1). Pivots in columns 1 and 3, so the rank is 2 and <span class="m">x<sub>2</sub></span> is free. With <span class="m">x<sub>2</sub> = 1</span>: the second equation gives <span class="m">x<sub>3</sub> = 0</span>, the first gives <span class="m">x<sub>1</sub> = −2</span>.</p>
+        <p><strong><span class="m">A<sup><span class="u">T</span></sup></span></strong> has rows (1, 2), (2, 4), (1, 3). Row 2 − 2 × row 1 = (0, 0) and row 3 − row 1 = (0, 1). Exchange rows 2 and 3. Pivots in both columns.</p>
+        <p><strong>Answer:</strong> both have rank 2. <span class="m">A</span> has 3 − 2 = 1 special solution, (−2, 1, 0). <span class="m">A<sup><span class="u">T</span></sup></span> has 2 − 2 = 0, so its nullspace is the zero vector alone.</p>
+      </div></details>
+    <details><summary><span class="q">P6</span><span>A four-joint arm with 1 m links lies along the table for two links and then turns straight up for two. Its joints are at (0, 0), (1, 0), (2, 0), (2, 1) and its hand is at (2, 2). Find <span class="m">J</span>, its rank, the pivot and free joints, and the special solutions.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>Each column is the arrow from that joint to the hand, turned a quarter turn: <span class="m">(a, b)</span> becomes <span class="m">(−b, a)</span>. The arrows are (2, 2), (1, 2), (0, 2), (0, 1).</p>
+        <div class="eq"><span data-mx="-2 -2 -2 -1; 2 1 0 0" data-cap="J"></span><span class="op">→</span><span data-mx="-2 -2 -2 -1; 0 -1 -2 -1" data-pivots="0.0,1.1" data-cap="U"></span><span class="op">→</span><span data-mx="1 0 -1 -1/2; 0 1 2 1" data-pivots="0.0,1.1" data-cap="R"></span></div>
+        <p>Row 2 + row 1 gives <span class="m">U</span>. Then row 1 − 2 × row 2, and divide the rows by −2 and −1.</p>
+        <p><strong>Answer:</strong> rank 2. Joints 1 and 2 are pivot joints, joints 3 and 4 are free. Flipping the signs of the free columns of <span class="m">R</span>: special solutions (1, −2, 1, 0) and (½, −1, 0, 1).</p>
+        <p>Check the first: across, −2 + 4 − 2 = 0. Up, 2 − 2 = 0.</p>
+      </div></details>
+    <details><summary><span class="q">P7</span><span>In the pose of P6, joint 3 must turn at 0.2 rad/s to move the elbow away from an obstacle, and joint 4 must not turn. What should joints 1 and 2 do so that the hand stays still?<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>The free joints are 3 and 4, and the request is free speeds (0.2, 0). That is 0.2 of special solution 1 and none of special solution 2.</p>
+        <p>0.2 × (1, −2, 1, 0) = (0.2, −0.4, 0.2, 0).</p>
+        <p><strong>Answer:</strong> joint 1 at 0.2 rad/s and joint 2 at −0.4 rad/s. Check: across, −2(0.2) − 2(−0.4) − 2(0.2) = 0. Up, 2(0.2) + 1(−0.4) = 0.</p>
+        <p>Follow-up: if joint 4 also had to turn at 0.2, add 0.2 × (½, −1, 0, 1). The joint speeds become (0.3, −0.6, 0.2, 0.2).</p>
+      </div></details>
+    <details><summary><span class="q">P8</span><span>The same arm is stretched straight up the page: joints at (0, 0), (0, 1), (0, 2), (0, 3), hand at (0, 4). Find <span class="m">J</span>, its rank and <span class="m">n − r</span>. Which hand motion is lost?<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>The arrows to the hand are (0, 4), (0, 3), (0, 2), (0, 1). Turned a quarter turn they are (−4, 0), (−3, 0), (−2, 0), (−1, 0).</p>
+        <div class="eq"><span data-mx="-4 -3 -2 -1; 0 0 0 0" data-pivots="0.0" data-cap="J"></span><span class="op">→</span><span data-mx="1 3/4 1/2 1/4; 0 0 0 0" data-pivots="0.0" data-cap="R"></span></div>
+        <p><strong>Answer:</strong> rank 1 and <span class="m">n − r = 3</span>, with special solutions (−¾, 1, 0, 0), (−½, 0, 1, 0) and (−¼, 0, 0, 1). The second row of <span class="m">J</span> is zero, so the hand cannot move up or down the page, which is the direction along the arm. This pose is a singularity.</p>
+        <p>The third special solution is no bonus. The arm bought it by giving up a direction of hand motion.</p>
+      </div></details>
+    <details><summary><span class="q">P9</span><span>A vehicle has two propellers at (−1, 1) and (−1, −1) pushing forward (T1, T2), and two side thrusters at (1, 0) and (−1, 0) pushing to the left (T3, T4). Write <span class="m">B</span>, find its rank and its special solution, and say which single thrusters can fail without loss of control.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>A thruster at <span class="m">(x, y)</span> pushing along +x gives the column (1, 0, −y). Pushing along +y it gives (0, 1, x).</p>
+        <div class="eq"><span data-mx="1 1 0 0; 0 0 1 1; -1 1 1 -1" data-cap="B"></span><span class="op">→</span><span data-mx="1 1 0 0; 0 2 1 -1; 0 0 1 1" data-pivots="0.0,1.1,2.2" data-cap="U"></span><span class="op">→</span><span data-mx="1 0 0 1; 0 1 0 -1; 0 0 1 1" data-pivots="0.0,1.1,2.2" data-cap="R"></span></div>
+        <p>Row 3 + row 1 = (0, 2, 1, −1). In column 2 the pivot position holds a zero with a 2 below it, so exchange rows 2 and 3. For <span class="m">R</span>: row 2 − row 3, divide row 2 by 2, then row 1 − row 2.</p>
+        <p><strong>Answer:</strong> rank 3, one free thruster (T4), special solution <span class="m"><b>s</b> = (−1, 1, −1, 1)</span>. Every entry of <span class="m"><b>s</b></span> is non-zero, so any one thruster can fail and the other three still give rank 3.</p>
+        <p>Check <span class="m">B<b>s</b></span>: −1 + 1 = 0, −1 + 1 = 0, and 1 + 1 − 1 − 1 = 0.</p>
+      </div></details>
+    <details><summary><span class="q">P10</span><span>The pilot of the vehicle in P9 asks for a pure side push, <span class="m"><b>b</b> = (0, 2, 0)</span>. Find the thrusts with the free thruster at zero, then the thrusts with the least total thrust.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>With <span class="m">f<sub>4</sub> = 0</span>: row 2 gives <span class="m">f<sub>3</sub> = 2</span>. Row 1 gives <span class="m">f<sub>2</sub> = −f<sub>1</sub></span>. Row 3, <span class="m">−f<sub>1</sub> + f<sub>2</sub> + f<sub>3</sub> = 0</span>, gives <span class="m">f<sub>1</sub> = 1</span>. So <span class="m"><b>f</b> = (1, −1, 2, 0)</span>, a total of 4 N.</p>
+        <p>Every other answer is <span class="m"><b>f</b> + c<b>s</b> = (1 − c, −1 + c, 2 − c, c)</span>. At <span class="m">c = 1</span> both propellers switch off.</p>
+        <p><strong>Answer:</strong> (1, −1, 2, 0) with the free thruster at zero, and (0, 0, 1, 1) for least effort: the two side thrusters share the push, 2 N in total.</p>
+        <p>Follow-up: if T4 has failed, <span class="m">c</span> is stuck at 0 and the 4 N answer is the only one.</p>
+      </div></details>
+  </div>
+</section>
+
+<!-- ============================================================ check -->
+<section class="concept" id="check" data-toc="Check yourself">
+  <header class="concept-head">
+    <span class="concept-no">7.12</span>
+    <h2>Check yourself</h2>
+    <p class="concept-sub">Answer in your head first, then open each one.</p>
+  </header>
+  <div class="quiz">
+    <details><summary><span class="q">Q1</span><span>Why is no extra column carried along when we eliminate to solve <span class="m">A<b>x</b> = <b>0</b></span>?</span></summary>
+      <div class="a"><p>The right-hand side is all zeros, and every row operation subtracts a multiple of one zero from another. It stays all zeros, so writing it down would add nothing.</p></div></details>
+    <details><summary><span class="q">Q2</span><span>During elimination the pivot position holds a zero. When does that make the column free, and when does it not?</span></summary>
+      <div class="a"><p>Look below the zero in the same column. If there is a non-zero entry, exchange rows and you have a pivot. If everything below is zero too, there is no pivot: the column is free, and elimination moves one column to the right without moving down a row.</p></div></details>
+    <details><summary><span class="q">Q3</span><span>A matrix has 4 columns and its echelon form has pivots in columns 1 and 3. What is its rank, which variables are free, and how many special solutions are there?</span></summary>
+      <div class="a"><p>Rank 2, because there are two pivots. The free variables are <span class="m">x<sub>2</sub></span> and <span class="m">x<sub>4</sub></span>. There is one special solution per free variable, so <span class="m">n − r = 4 − 2 = 2</span>.</p></div></details>
+    <details><summary><span class="q">Q4</span><span><span class="m">R</span> has rows (1, 0, 1), (0, 1, 1), (0, 0, 0), (0, 0, 0). Write <span class="m">F</span> and the special solution without calculating.</span></summary>
+      <div class="a"><p>The pivot columns are 1 and 2 and the free column is 3, so <span class="m">F</span> is the column (1, 1). Flip the signs for the pivot variables and put 1 in the free position: <span class="m"><b>x</b> = (−1, −1, 1)</span>. This is the lecture's second example.</p></div></details>
+    <details><summary><span class="q">Q5</span><span>A robot has six motors and its matrix has rank 4. How many directions can it truly command, and how many independent ways can it run its motors with no effect?</span></summary>
+      <div class="a"><p>It commands 4 independent directions, the rank. It has <span class="m">n − r = 6 − 4 = 2</span> independent do-nothing patterns. Counting motors would have given the wrong answer to both questions.</p></div></details>
+    <details><summary><span class="q">Q6</span><span>A four-thruster vehicle with full control has the special solution (1, −2, 1, 0). Which thruster must never fail, and why?</span></summary>
+      <div class="a"><p>The fourth. Its entry is zero, which means the special solution is a combination of the first three columns alone that adds to zero. Those three columns are dependent, so without the fourth they cannot give rank 3. Each of the other thrusters has a non-zero entry and can be covered by the remaining three.</p></div></details>
+    <details><summary><span class="q">Q7</span><span><span class="m">A</span> is 3 by 4 with rank 2. How many free variables does <span class="m">A</span> have, and how many does <span class="m">A<sup><span class="u">T</span></sup></span> have?</span></summary>
+      <div class="a"><p><span class="m">A</span> has 4 − 2 = 2. <span class="m">A<sup><span class="u">T</span></sup></span> is 4 by 3 with the same rank 2, so it has 3 − 2 = 1. These are the numbers of the lecture's two examples.</p></div></details>
+  </div>
+
+  <div class="note say">
+    <i data-ic="pen"></i>
+    <span class="note-title">For your article</span>
+    <div class="note-body">
+      <p><strong>One-line summary:</strong> elimination sorts the unknowns into pivot variables and free variables; the pivots count what the matrix can do, and the free variables generate everything it can do to no effect.</p>
+      <p><strong>A robot sentence you can reuse:</strong> rank is the number of directions a machine can really command, n − r is the number of actuators it has to spare, and a special solution is one spare actuator leading while the others cover for it.</p>
+      <p><strong>Good figures to capture:</strong> Lab 7.1 at the "no pivot here" step and at the final R, Lab 7.3 mid self-motion with the grey starting pose behind it, and Lab 7.4 before and after "Least effort".</p>
+      <p>The full notes, worked numbers and references for this lecture are in <a href="article/07-solving-ax-equals-0.md">article/07-solving-ax-equals-0.md</a>, and runnable code is in <a href="code/l07_nullspace_rref.py">code/l07_nullspace_rref.py</a>.</p>
+    </div>
+  </div>
+</section>
+
+</article>
+</div>
+</main>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/la.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/plot.js"></script>
+<script src="assets/js/robots.js"></script>
+<script src="assets/js/lectures/l7.js"></script>
+</body>
+</html>

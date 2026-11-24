@@ -21,6 +21,7 @@
     if (a.length === 1) return String(a[0]);
     return a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
   }
+  function named(cols, word) { return word + (cols.length === 1 ? ' ' : 's ') + list(cols); }
   function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
   function tup(v, f) { return '(' + v.map(function (x) { return (f || num)(x); }).join(', ') + ')'; }
   function par(v, f) { var s = (f || num)(v); return v < 0 ? '(' + s + ')' : s; }
@@ -200,7 +201,7 @@
         case 'rest':
           return 'All ' + plural(m, 'row') + ' now hold' + (m === 1 ? 's' : '') + ' a pivot, and a row can hold only one. So column' + (s.cols.length > 1 ? 's ' : ' ') + list(s.cols) + ' cannot get a pivot: <b>' + (s.cols.length > 1 ? 'they are free columns' : 'it is a free column') + '</b>.';
         case 'echelon':
-          return '<b>This is the echelon form U.</b> The pivots step down to the right like a staircase, with zeros underneath. ' + plural(r, 'pivot') + ', so the <b>rank is ' + r + '</b>. Pivot columns: ' + list(s.pivotCols) + '. Free columns: ' + list(s.free) + '. ' +
+          return '<b>This is the echelon form U.</b> The pivots step down to the right like a staircase, with zeros underneath. ' + plural(r, 'pivot') + ', so the <b>rank is ' + r + '</b>. ' + (r ? 'Pivot ' + named(s.pivotCols, 'column') + '. ' : '') + (s.free.length ? 'Free ' + named(s.free, 'column') + '. ' : 'No free columns. ') +
             (all[idx + 1] && all[idx + 1].kind === 'done' ? 'Nothing above the pivots needs clearing and every pivot is already 1.' : 'Next, tidy up: zeros above the pivots, then make each pivot 1.');
         case 'elimUp':
           return 'Now work upward. <b>New row ' + (s.i + 1) + ' = ' + rowOp(s.i, s.k, s.mult) + '.</b> That puts a zero above the pivot in column ' + c1 + '.';
@@ -242,7 +243,7 @@
         if (!s.after) UI.status(status, '', '<b>Elimination under way.</b> ' + plural(s.pivotCols.length, 'pivot') + ' and ' + plural(s.free.length, 'free column') + ' found so far. The rank is known once the staircase is complete.');
         else if (r === 0) UI.status(status, 'hot', '<b>Rank 0.</b> A matrix of zeros has no pivots. All ' + n + ' variables are free.');
         else if (r === n) UI.status(status, 'ok', '<b>Rank ' + r + ', and no free columns.</b> Every column holds a pivot, so A<b>x</b> = <b>0</b> forces <b>x</b> = <b>0</b>. Nothing can be changed without an effect.');
-        else UI.status(status, 'ok', '<b>Rank ' + r + '.</b> Pivot columns ' + list(rr.pivotCols) + ', free columns ' + list(rr.freeCols) + '. ' + n + ' − ' + r + ' = ' + plural(n - r, 'free variable') + ', so the nullspace is built from ' + plural(n - r, 'special solution') + '.');
+        else UI.status(status, 'ok', '<b>Rank ' + r + '.</b> Pivot ' + named(rr.pivotCols, 'column') + ', free ' + named(rr.freeCols, 'column') + '. ' + n + ' − ' + r + ' = ' + plural(n - r, 'free variable') + ', so the nullspace is built from ' + plural(n - r, 'special solution') + '.');
       }
     });
     function rebuild() {
@@ -267,8 +268,8 @@
 
     slot(root, 'U').innerHTML = UI.eq(cmx(U, { kinds: KIN, heads: HEADS, labels: true, pivots: [[0, 0], [1, 2]], dimRows: { 2: 1 }, cap: 'U · the echelon form' }));
     slot(root, 'npanel').innerHTML =
-      UI.eq(cmx(R, { kinds: KIN, heads: HEADS, pivots: [[0, 0], [1, 2]], dimRows: { 2: 1 }, cap: 'R · identity in red columns, F in blue columns' })) +
-      UI.eq(cmx(LA.fromCols([S1, S2]), { rowHeads: HEADS, rowKinds: KIN, heads: ['<i><b>s</b></i><sub>1</sub>', '<i><b>s</b></i><sub>2</sub>'], cap: 'N · −F in red rows, identity in blue rows' }));
+      UI.eq(cmx(R, { kinds: KIN, heads: HEADS, pivots: [[0, 0], [1, 2]], dimRows: { 2: 1 }, cap: 'R = rref(A)' })) +
+      UI.eq(cmx(LA.fromCols([S1, S2]), { rowHeads: HEADS, rowKinds: KIN, heads: ['<i><b>s</b></i><sub>1</sub>', '<i><b>s</b></i><sub>2</sub>'], cap: 'N · special solutions' }));
 
     function blue(v) { return '<span class="u c2">' + par(v) + '</span>'; }
     function red(v) { return '<b class="u c1">' + num(v) + '</b>'; }
@@ -308,11 +309,11 @@
     var len = [1, 1, 1, 1], POSES = { stair: [90, -90, 90, -90], reach: [110, -50, -50, -50], straight: [35, 0, 0, 0] };
     var LIM = 1.2, STRAIN = 4;               /* joint speed limit (rad/s); how large F may grow before the drive eases off */
     var canvas = root.querySelector('canvas');
-    var plot = new Plot2D(canvas, { cx: 0.75, cy: 1.3, w: 9.6 });
+    var plot = new Plot2D(canvas, { cx: 0.6, cy: 1.3, w: 8.6 });
     var status = slot(root, 'status'), eqJ = slot(root, 'eqJ'), eqQ = slot(root, 'eqQ');
     var out = UI.readouts(slot(root, 'readouts'), [{ k: 'rank of J', id: 'rank', c: 1 }, { k: 'spare joints n − r', id: 'spare', c: 2 }, { k: 'hand has moved', id: 'drift', c: 3 }, { k: 'fastest joint', id: 'fast' }]);
     var degFmt = function (x) { return fix(x, 0) + '°'; };
-    var q = POSES.stair.map(LA.rad), target = null, ghost = null, st = {}, gliding = false, moving = false;
+    var q = POSES.stair.map(LA.rad), target = null, ghost = null, st = {}, gliding = false, moving = false, eased = 1;
     var S = [0, 1, 2, 3].map(function (i) {
       return UI.slider(slot(root, 'angles'), { label: 'Joint ' + (i + 1) + ' angle <span class="nm">θ' + SUB[i] + '</span>', min: -180, max: 180, step: 1, value: POSES.stair[i], fmt: degFmt,
         onInput: function (v) { if (!gliding) seg.set('', false); q[i] = LA.rad(v); posed(); } });
@@ -327,10 +328,15 @@
     UI.button(slot(root, 'buttons'), { label: 'Stop', icon: 'pause', onClick: function () { sc.set(0); sd.set(0); render(); } });
     UI.button(slot(root, 'buttons'), { label: 'Reset', icon: 'reset', onClick: function () { seg.set('stair', true); } });
 
+    /* how hard the pivot joints must work for the free ones: the largest entry of F */
+    function strainOf(ns) {
+      var big = 0;
+      ns.F.forEach(function (row) { row.forEach(function (v) { big = Math.max(big, Math.abs(v)); }); });
+      return big;
+    }
     function compute() {
-      var pts = Robots.fk(len, q), J = Robots.jacobian(len, q), ns = LA.nullspace(J, 1e-7), strain = 0;
-      ns.F.forEach(function (row) { row.forEach(function (v) { strain = Math.max(strain, Math.abs(v)); }); });
-      st = { pts: pts, J: J, ns: ns, tip: pts[4], kinds: kindsOf(4, ns.pivotCols, ns.freeCols), strain: strain };
+      var pts = Robots.fk(len, q), J = Robots.jacobian(len, q), ns = LA.nullspace(J, 1e-7);
+      st = { pts: pts, J: J, ns: ns, tip: pts[4], kinds: kindsOf(4, ns.pivotCols, ns.freeCols), strain: strainOf(ns) };
     }
     /* the user set a pose by hand: wherever the hand is now becomes the marked point */
     function posed() { compute(); target = st.tip.slice(); ghost = null; render(); }
@@ -340,17 +346,16 @@
       if (b.length < 2) return null;
       var raw = [0, 1, 2, 3].map(function (i) { return c * b[0][i] + d * b[1][i]; });
       var big = Math.max.apply(null, raw.map(Math.abs));
-      var ease = st.strain > STRAIN ? Math.pow(STRAIN / st.strain, 2) : 1;
-      var g = (big > LIM ? LIM / big : 1) * ease;
-      return { raw: raw, v: raw.map(function (x) { return x * g; }), g: g, ease: ease, on: Math.abs(c) + Math.abs(d) > 1e-9 };
+      var g = (big > LIM ? LIM / big : 1) * eased;
+      return { raw: raw, v: raw.map(function (x) { return x * g; }), g: g, on: Math.abs(c) + Math.abs(d) > 1e-9 };
     }
     function render() {
       var ns = st.ns, r = ns.rank, kinds = st.kinds, rt = rate(), i;
       S.forEach(function (s, k) { s.el.className = 'slider k' + (kinds[k] === 'p' ? 1 : 2); });
       var heads = [0, 1, 2, 3].map(function (k) { return '<i>q̇</i><sub>' + (k + 1) + '</sub>'; }), dimR = {};
       for (i = r; i < 2; i++) dimR[i] = 1;
-      eqJ.innerHTML = UI.eq({ cls: 'left' },
-        cmx(st.J, { kinds: kinds, heads: heads, labels: true, fmt: f2, cls: 'sm', cap: 'J · one column per joint' }), '→',
+      eqJ.innerHTML = UI.eq({ cls: 'left gap' },
+        cmx(st.J, { kinds: kinds, heads: heads, labels: true, fmt: f2, cls: 'sm', cap: 'J · one column per joint' }),
         cmx(ns.R, { kinds: kinds, heads: heads, pivots: pivotCells(ns.pivotCols), dimRows: dimR, fmt: f2, cls: 'sm', cap: 'R = rref(J)' }));
       var rowTint = {};
       kinds.forEach(function (k, j) { rowTint[j] = k === 'p' ? 'h1' : 'h2'; });
@@ -368,7 +373,7 @@
       out.fast(rt && rt.on && r === 2 ? fix(Math.max.apply(null, rt.v.map(Math.abs)), 2) + ' rad/s' : '0.00 rad/s');
       var pj = list(ns.pivotCols), fj = list(ns.freeCols);
       if (r < 2) UI.status(status, 'bad', '<b>Rank ' + r + ': a singularity.</b> Every joint lies on one line through the hand, so all four columns of J are parallel and the hand can only move sideways. Three joints are free and there are three special solutions. They hold for this instant only: at full stretch the arm has no room to reshape, so the drive is paused.');
-      else if (st.strain > STRAIN) UI.status(status, 'hot', '<b>Rank 2, but the pivot joints are a poor pair.</b> Joints ' + pj + ' are almost in line with the hand, so their columns are nearly parallel. To compensate they would need ' + fix(st.strain, 1) + ' times the speed of a free joint. The drive eases off here. Reverse c or d, or choose another pose.');
+      else if (st.strain > STRAIN) UI.status(status, 'hot', '<b>Rank 2, but the pivot joints are a poor pair here.</b> Joints ' + pj + ' are almost in line with the hand, so their columns are nearly parallel. To cover for a free joint they need up to ' + (st.strain > 99 ? 'hundreds of' : fix(st.strain, 1)) + ' times its speed. A free joint can lead no further this way: the drive eases off. Reverse c or d and the arm runs back.');
       else if (rt && rt.on) UI.status(status, 'ok', '<b>Self-motion.</b> Free joints ' + fj + ' turn as the sliders say, pivot joints ' + pj + ' follow the rule in R, and the hand has moved ' + fix(moved * 1000, 1) + ' mm from the ring.' + (rt.g < 0.999 ? ' Speeds are scaled down to respect a joint speed limit of ' + LIM + ' rad/s.' : ''));
       else UI.status(status, 'ok', '<b>Rank 2, with ' + (4 - r) + ' joints to spare.</b> Elimination made joints ' + pj + ' the pivot joints (red) and left joints ' + fj + ' free (blue). Slide c or d: the arm reshapes and the hand stays on the amber ring.');
       plot.draw();
@@ -386,10 +391,17 @@
       p.point(st.tip, { r: 3, color: C.s3 });
     });
     UI.loop(canvas, function (dt) {
+      eased = 1;
       var rt = st.ns ? rate() : null;
       if (!rt || !rt.on || st.ns.rank < 2) { if (moving) { moving = false; render(); } return; }
       if (!ghost) ghost = st.pts.map(function (pt) { return pt.slice(); });
       moving = true;
+      /* if this step would line the pivot joints up with the hand even more, ease off so the arm settles there;
+         a step that leads away from that line runs at full speed */
+      if (st.strain > STRAIN) {
+        var ahead = LA.nullspace(Robots.jacobian(len, q.map(function (v, i) { return v + rt.v[i] * dt; })), 1e-7);
+        if (ahead.rank < 2 || strainOf(ahead) > st.strain) { eased = Math.pow(STRAIN / st.strain, 2); rt = rate(); }
+      }
       q = q.map(function (v, i) { return v + rt.v[i] * dt; });
       /* numerical drift: pull the hand back onto the ring. Solve (J Jᵀ) λ = error, then add Jᵀ λ to the joints */
       var J = Robots.jacobian(len, q), tip = Robots.fk(len, q)[4], e = LA.vsub(target, tip);
@@ -417,7 +429,7 @@
     var canvas = root.querySelector('canvas');
     var plot = new Plot2D(canvas, { cx: 0, cy: 0, w: 11 });
     var status = slot(root, 'status'), eqB = slot(root, 'eqB'), eqF = slot(root, 'eqF'), meter = slot(root, 'meter'), sl = slot(root, 'sliders');
-    var out = UI.readouts(slot(root, 'readouts'), [{ k: 'working thrusters', id: 'n' }, { k: 'rank', id: 'rank', c: 1 }, { k: 'spare n − r', id: 'spare', c: 2 }]);
+    var out = UI.readouts(slot(root, 'readouts'), [{ k: 'working thrusters', id: 'n' }, { k: 'rank', id: 'rank', c: 1 }, { k: 'spare n − r', id: 'spare', c: 2 }, { k: 'free thruster', id: 'free', c: 2 }]);
     var f1 = function (v) { return fix(v, 1); };
     var sFx = UI.slider(sl, { label: 'Forward push <span class="nm">F<sub>x</sub></span>', min: -2, max: 2, step: 0.1, value: 1, k: 3, fmt: f1, onInput: update });
     var sFy = UI.slider(sl, { label: 'Side push <span class="nm">F<sub>y</sub></span>', min: -2, max: 2, step: 0.1, value: 0, k: 3, fmt: f1, onInput: update });
@@ -480,10 +492,10 @@
       var q = [{ cls: 'left' }];
       if (!solvable) q.push(cmx(['?', '?', '?', '?'], { rowHeads: heads, rowKinds: kinds, cls: 'sm', cap: 'thrusts f · no solution' }));
       else {
-        q.push(cmx(f, { rowHeads: heads, rowKinds: kinds, fmt: f2, cls: 'sm', cap: 'thrusts f (N)' }));
+        q.push(cmx(f, { rowHeads: heads, rowKinds: kinds, fmt: f2, cls: 'sm', cap: 'thrusts f, in N' }));
         q.push('=');
-        q.push(UI.mx(p, { fmt: f2, cls: 'sm', cap: free.length ? 'free thruster at 0' : 'the only solution', dim: function (r) { return kinds[r] === 'x'; } }));
-        if (s) { q.push('+'); q.push('<span class="m u c2">' + par(c, f2) + '</span>'); q.push(UI.mx(s, { cls: 'sm', cap: 'special solution s', dim: function (r) { return kinds[r] === 'x'; } })); }
+        q.push(UI.mx(p, { fmt: f2, cls: 'sm', cap: free.length ? 'free one at 0' : 'only answer', dim: function (r) { return kinds[r] === 'x'; } }));
+        if (s) { q.push('+'); q.push('<span class="m u c2">' + par(c, f2) + '</span>'); q.push(UI.mx(s, { cls: 'sm', cap: 's', dim: function (r) { return kinds[r] === 'x'; } })); }
       }
       eqF.innerHTML = UI.eq.apply(null, q);
 
@@ -493,7 +505,7 @@
         '<div class="meter-bar"><i style="width:' + Math.min(100, E / EMAX * 100) + '%"></i>' + (solvable ? '<em style="left:' + Math.min(100, eBest / EMAX * 100) + '%"></em>' : '') + '</div>' +
         '<div class="meter-foot">' + (solvable ? 'net push ' + fix(push, 2) + ' N, turn ' + fix(want[2], 2) + ' N m · least possible effort ' + fix(eBest, 2) + ' N (white mark)' : 'thrusters held at zero') + '</div>';
 
-      out.n(String(k)); out.rank(String(rank)); out.spare(String(k - rank));
+      out.n(String(k)); out.rank(String(rank)); out.spare(String(k - rank)); out.free(free.length ? NAMES[act[free[0]]] : 'none');
       var dead = [0, 1, 2, 3].filter(function (i) { return failed[i]; }).map(function (i) { return NAMES[i]; });
       var deadTxt = dead.length ? dead.join(' and ') + (dead.length > 1 ? ' have' : ' has') + ' failed. ' : '';
       var freeName = free.length ? NAMES[act[free[0]]] : '', pivNames = piv.map(function (pc) { return NAMES[act[pc]]; }).join(', ');
@@ -547,7 +559,7 @@
       full: [[1, 0, 1, 0], [0, 1, 0, 1], [-0.5, 1, 0.5, -1]]
     };
     var status = slot(root, 'status'), uA = slot(root, 'UA'), uT = slot(root, 'UT'), aT = slot(root, 'AT'), cA = slot(root, 'countA'), cT = slot(root, 'countT');
-    var out = UI.readouts(slot(root, 'readouts'), [{ k: 'pivots of A', id: 'ra', c: 1 }, { k: 'pivots of Aᵀ', id: 'rt', c: 1 }, { k: 'free variables of A', id: 'fa', c: 2 }, { k: 'free variables of Aᵀ', id: 'ft', c: 2 }]);
+    var out = UI.readouts(slot(root, 'readouts'), [{ k: 'pivots of A', id: 'ra', c: 1 }, { k: 'pivots of Aᵀ', id: 'rt', c: 1 }, { k: 'free in A', id: 'fa', c: 2 }, { k: 'free in Aᵀ', id: 'ft', c: 2 }]);
     var quiet = false;
     var ed = UI.mxInput(slot(root, 'A'), PRE.lecture, { id: 'rank-a', name: 'A', onChange: function (M) { if (!quiet) seg.set('', false); update(M); } });
     var seg = UI.seg(slot(root, 'presets'), {

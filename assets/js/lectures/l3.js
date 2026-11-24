@@ -199,9 +199,9 @@
       st = { T: [T1, T12, T123], org: org, pts: Robots.fk(len, [t1, t2]) };
       var name = ['T<sub>1</sub>', 'T<sub>1</sub>T<sub>2</sub>', 'T<sub>1</sub>T<sub>2</sub>T<sub>3</sub>'][upto - 1], what = ['link 1', 'link 2', 'hand'][upto - 1];
       eq.innerHTML = UI.eq(
-        UI.mx(homStr(T1), { cls: 'tight', cap: 'T₁ · world ← link 1' }),
-        UI.mx(homStr(T2), { cls: 'tight', cap: 'T₂ · link 1 ← link 2', dim: upto < 2 ? all : null }),
-        UI.mx(homStr(T3), { cls: 'tight', cap: 'T₃ · link 2 ← hand', dim: upto < 3 ? all : null })) +
+        UI.mx(homStr(T1), { cls: 'tight', cap: 'T₁<br>world ← link 1' }),
+        UI.mx(homStr(T2), { cls: 'tight', cap: 'T₂<br>link 1 ← link 2', dim: upto < 2 ? all : null }),
+        UI.mx(homStr(T3), { cls: 'tight', cap: 'T₃<br>link 2 ← hand', dim: upto < 3 ? all : null })) +
         UI.eq(nm(name), '=', UI.mx(homStr(Pm), { cols: { 0: 'h1', 1: 'h2', 2: 'h3' }, cap: 'world ← ' + what }));
       out.x(f2(org[0]) + ' m'); out.y(f2(org[1]) + ' m'); out.a(fix(ax, 0) + '°');
       if (upto === 3) {
@@ -227,7 +227,7 @@
         var T = st.T[i], on = i < upto;
         Robots.drawFrame(p, T, { len: .8, alpha: on ? 1 : .28, color: on ? C.chalk : C.faint });
         /* name each frame on the side away from both of its axes */
-        p.text(names[i], [T[0][2] - .42 * (T[0][0] + T[0][1]), T[1][2] - .42 * (T[1][0] + T[1][1])], { color: on ? C.chalk : C.faint, align: 'center' });
+        p.text(names[i], [T[0][2] - .46 * (T[0][0] + T[0][1]), T[1][2] - .46 * (T[1][0] + T[1][1])], { color: on ? C.chalk : C.faint, align: 'center' });
       }
       p.point(st.org, { r: 10, fill: 'none', ring: C.s3, width: 2.5 });
       p.text(pair(st.org), st.org, { color: C.s3, dx: 15, dy: -17 });
@@ -238,7 +238,7 @@
   /* ------------------------------------------------------------------ 3.3 */
   UI.lab('lab-order', function (root) {
     var canvas = root.querySelector('canvas');
-    var plot = new Plot2D(canvas, { cx: 0, cy: 0.25, w: 9.6 });
+    var plot = new Plot2D(canvas, { cx: 0, cy: 0, w: 10.4 });
     var status = slot(root, 'status'), eq = slot(root, 'eq'), sl = slot(root, 'sliders');
     var out = UI.readouts(slot(root, 'readouts'), [{ k: 'turn, then drive ends at', id: 'a', c: 1 }, { k: 'drive, then turn ends at', id: 'b', c: 2 }, { k: 'gap between them', id: 'g', c: 3 }]);
     var clock = 2, playing = false;           /* 0..1 first command, 1..2 second command */
@@ -259,10 +259,10 @@
       var gap = Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2)), same = gap < 1e-9;
       st = { phi: phi, d: d, a: a, b: b, gap: gap, same: same };
       eq.innerHTML = UI.eq(
-        UI.mx(homStr(R), { cls: 'tight', cap: 'R · turn ' + degs(sA.get()) }),
-        UI.mx(homStr(D), { cls: 'tight', cap: 'D · drive ' + f2(d) + ' m' })) +
-        UI.eq(UI.mx(homStr(RD), { cls: 'tight', cols: { 2: 'h1' }, cap: 'R D · turn, then drive' }), same ? '=' : '≠',
-          UI.mx(homStr(DR), { cls: 'tight', cols: { 2: 'h2' }, cap: 'D R · drive, then turn' }));
+        UI.mx(homStr(R), { cls: 'tight', cap: 'R<br>turn ' + degs(sA.get()) }), '<span class="eq-gap"></span>',
+        UI.mx(homStr(D), { cls: 'tight', cap: 'D<br>drive ' + f2(d) + ' m' })) +
+        UI.eq(UI.mx(homStr(RD), { cls: 'tight', cols: { 2: 'h1' }, cap: 'R D<br>turn, then drive' }), same ? '=' : '≠',
+          UI.mx(homStr(DR), { cls: 'tight', cols: { 2: 'h2' }, cap: 'D R<br>drive, then turn' }));
       out.a(pair(a)); out.b(pair(b)); out.g(f2(gap) + ' m');
       if (same) UI.status(status, 'ok', '<b>These two commute.</b> ' + (d === 0 ? 'With no distance to drive, both orders are just the turn.' : 'With no turn, both orders are just the drive.') + ' A command that does nothing can go first or last, so here R D = D R.');
       else UI.status(status, 'hot', '<b>Order matters: R D ≠ D R.</b> The same two commands leave the rovers ' + f2(gap) + ' m apart. They face the same way, because the turning blocks of the two products agree. Only the position columns differ.');
@@ -282,7 +282,10 @@
       if (Math.abs(blue.th) > 1e-3) p.arc([blue.x, blue.y], 34, 0, blue.th, { color: C.s2, width: 2 });
       if (clock >= 2 && !st.same) {
         p.line([red.x, red.y], [blue.x, blue.y], { color: C.s3, width: 1.6, dash: [5, 5] });
-        p.text(f2(st.gap) + ' m apart', [(red.x + blue.x) / 2, (red.y + blue.y) / 2], { color: C.s3, align: 'center' });
+        /* label the gap on the side of the dashed line that faces away from the start */
+        var mid = [(red.x + blue.x) / 2, (red.y + blue.y) / 2], nx = -(blue.y - red.y) / st.gap, ny = (blue.x - red.x) / st.gap;
+        if (mid[0] * nx + mid[1] * ny < -1e-9 || (Math.abs(mid[0] * nx + mid[1] * ny) < 1e-9 && ny < 0)) { nx = -nx; ny = -ny; }
+        p.text(f2(st.gap) + ' m apart', mid, { color: C.s3, align: 'center', dx: nx * 48, dy: -ny * 22 });
       }
       Robots.drawRover(p, blue, { L: size.L, W: size.W, color: C.s2 });
       Robots.drawRover(p, red, { L: size.L, W: size.W, color: C.s1, alpha: st.same && clock >= 2 ? .75 : 1 });
@@ -358,7 +361,8 @@
         say = 'The left half is I, so the right half is <b>A⁻¹</b>. The row steps did to I exactly what it takes to undo A.';
       } else if (s.kind === 'check') {
         var inv = res.inv;
-        return UI.eq({ cls: n > 2 ? '' : 'lg' }, UI.mx(A, { cap: 'A' }), UI.mx(inv, { cols: allCols(n, 'h3'), cap: 'A⁻¹' }), '=', UI.mx(LA.cleanM(LA.mul(A, inv)), { cap: 'I' })) +
+        var sz = n > 2 ? 'sm' : '';
+        return UI.eq({ cls: n > 2 ? 'left' : 'lg' }, UI.mx(A, { cls: sz, cap: 'A' }), UI.mx(inv, { cls: sz, cols: allCols(n, 'h3'), cap: 'A⁻¹' }), '=', UI.mx(LA.cleanM(LA.mul(A, inv)), { cls: sz, cap: 'I' })) +
           '<p class="step-text">Multiply to check: <b>A times A⁻¹ is the identity.</b> For a square matrix the other order, A⁻¹ times A, gives the identity too.</p>';
       } else if (s.kind === 'fail') {
         var x = killer(A);
@@ -405,7 +409,7 @@
   UI.lab('lab-frames', function (root) {
     var rover = [3, 1], lm = [1, 4];
     var canvas = root.querySelector('canvas');
-    var plot = new Plot2D(canvas, { cx: 2, cy: 2.2, w: 12 });
+    var plot = new Plot2D(canvas, { cx: 2.25, cy: 2.2, w: 12 });
     var status = slot(root, 'status'), eq = slot(root, 'eq'), pose = slot(root, 'pose');
     var out = UI.readouts(slot(root, 'readouts'), [{ k: 'landmark on the map', id: 'w', c: 4 }, { k: 'seen from the rover', id: 'r' }, { k: 'distance, either way', id: 'd' }]);
     var sH = UI.slider(slot(root, 'sliders'), { label: 'Rover heading <span class="nm">θ</span>', min: -180, max: 180, step: 5, value: 90, k: 3, fmt: degs, onInput: update });
@@ -421,9 +425,9 @@
       var seen = LA.mv(Ti, [lm[0], lm[1], 1]), agrees = LA.equal(Ti, LA.inv(T), 1e-9);
       st = { T: T, seen: seen, ex: [T[0][0], T[1][0]], ey: [T[0][1], T[1][1]] };
       eq.innerHTML = UI.eq(
-        UI.mx(homStr(Ti), { cls: 'tight', rows: { 0: 'h1', 1: 'h2' }, cap: 'T⁻¹ · rover ← world' }),
-        UI.mx([f2(lm[0]), f2(lm[1]), '1'], { cls: 'tight', cols: { 0: 'h4' }, cap: 'on the map' }), '=',
-        UI.mx([f2(seen[0]), f2(seen[1]), '1'], { cls: 'tight', rows: { 0: 'h1', 1: 'h2' }, cap: 'ahead, left' }));
+        UI.mx(homStr(Ti), { cls: 'tight', rows: { 0: 'h1', 1: 'h2' }, cap: 'T⁻¹<br>rover ← world' }),
+        UI.mx([f2(lm[0]), f2(lm[1]), '1'], { cls: 'tight', cols: { 0: 'h4' }, cap: 'landmark<br>on the map' }), '=',
+        UI.mx([f2(seen[0]), f2(seen[1]), '1'], { cls: 'tight', rows: { 0: 'h1', 1: 'h2' }, cap: 'ahead<br>left' }));
       pose.innerHTML = UI.eq({ cls: 'left' }, nm('T'), '=', UI.mx(homStr(T), { cls: 'tight', cols: { 0: 'h1', 1: 'h2', 2: 'h3' }, cap: 'world ← rover' }));
       var dist = Math.sqrt(seen[0] * seen[0] + seen[1] * seen[1]);
       out.w(pair(lm)); out.r(pair(seen)); out.d(f2(dist) + ' m');
@@ -500,7 +504,7 @@
         UI.status(status, 'bad', '<b>Flat: no inverse.</b> Both columns lie on one line, so every output lies on it too. P and Q land on the same point, and x = (3, −1) is sent to zero. ' +
           (undo ? 'Undo has nothing to work with: every input on the amber line gives the same output as P.' : 'The output can no longer say which input made it.'));
       } else if (big >= 4) {
-        UI.status(status, 'hot', '<b>Nearly flat.</b> An inverse still exists, but it has to stretch a sliver back into a full shape, so its entries are large (up to ' + num(big, 1) + '). A small error in the output would come back ' + num(big, 0) + ' times bigger.');
+        UI.status(status, 'hot', '<b>Nearly flat.</b> An inverse still exists, but it has to stretch a sliver back into a full shape, so its entries are large (up to ' + num(big, 1) + '). A small error in the output would come back magnified by about that much.');
       } else {
         UI.status(status, 'ok', '<b>Invertible.</b> The columns point in different directions, so different inputs stay different. ' +
           (undo ? 'A⁻¹ sends every output point back to exactly where it started: the amber outline sits on the original.' : 'Tick Undo to send the output back through A⁻¹.'));

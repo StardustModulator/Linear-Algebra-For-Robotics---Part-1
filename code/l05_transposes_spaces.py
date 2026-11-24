@@ -74,14 +74,15 @@ def sig(x, digits=3):
     return float(d.quantize(q, rounding=ROUND_HALF_UP))
 
 
-def solve_3_digits(a, b, c, d, e, f):
-    """Solve [a b; c d] (x, y) = (e, f) by elimination, pivot a, rounding every result to 3 digits."""
-    l = sig(c / a)                                   # the multiplier
-    d2 = sig(d - sig(l * b))                         # new entry of row 2
-    f2 = sig(f - sig(l * e))                         # new right-hand side of row 2
-    y = sig(f2 / d2)
-    x = sig(sig(e - sig(b * y)) / a)
-    return x, y, dict(l=l, d2_exact=d - sig(l * b), d2=d2, f2_exact=f - sig(l * e), f2=f2)
+def solve_3_digits(a, b, c, d, e, f, digits=3):
+    """Solve [a b; c d] (x, y) = (e, f) by elimination, pivot a, rounding every result to `digits` digits."""
+    r = lambda v: sig(v, digits)
+    l = r(c / a)                                     # the multiplier
+    d2 = r(d - r(l * b))                             # new entry of row 2
+    f2 = r(f - r(l * e))                             # new right-hand side of row 2
+    y = r(f2 / d2)
+    x = r(r(e - r(b * y)) / a)
+    return x, y, dict(l=l, d2_exact=d - r(l * b), d2=d2, f2_exact=f - r(l * e), f2=f2)
 
 
 def tiny_pivot():
@@ -296,6 +297,62 @@ def rover_velocity_space():
     print("   and (0, 0), standing still, gives vx = 0.0, so the zero vector is not in that set.\n")
 
 
+# ---------------------------------------------------------------- 11. practice
+def practice():
+    heading("11. Practice problems (answers to P1-P10 on the page)")
+    P = permutation_matrix((2, 0, 1))                 # rows in the order 3, 1, 2
+    print("P1   P =", P, "  P^-1 = P^T =", transpose(P))
+    print("     P^T P = I:", matmul(transpose(P), P) == identity(3),
+          "  P sends (1, 2, 3) to", matvec(P, [1, 2, 3]), "  5! =", math.factorial(5))
+
+    A = frac([[1, 1, 1], [2, 2, 5], [4, 6, 8]])
+    Pm, L, U, perm = lu(A)
+    f = lambda M: [[fmt(v) for v in row] for row in M]
+    print("P2   P =", f(Pm), " L =", f(L), " U =", f(U))
+    print("     P A == L U:", matmul(Pm, A) == matmul(L, U),
+          "  with the 5 changed to 2:", "singular" if lu(frac([[1, 1, 1], [2, 2, 2], [4, 6, 8]])) is None else "factors")
+
+    R = [[1, 2, 0], [0, 1, 1]]
+    print("P3   R^T R =", matmul(transpose(R), R), "  R R^T =", matmul(R, transpose(R)))
+
+    print("P4   (a) y = 3x: subspace   (d) x + y + z = 0: subspace")
+    print("     (b) y = 3x + 1: (0, 0) gives 0 = 1, zero vector missing")
+    print("     (c) xy = 0: (1, 0) + (0, 1) = (1, 1) and 1 x 1 =", 1 * 1, "not 0, adding fails")
+    print("     (e) x + y + z = 1: (1, 0, 0) + (0, 1, 0) has components adding to", sum([1, 1, 0]))
+
+    A = frac([[1, 0], [2, 1], [3, 1]])
+    print("P5   (2, 5, 7) in C(A):", in_column_space(A, frac([2, 5, 7])),
+          " as", [fmt(v) for v in solve([A[0], A[1]], frac([2, 5]))], "of the columns;",
+          " (1, 1, 1) in C(A):", in_column_space(A, frac([1, 1, 1])))
+    print("     with second column (2, 4, 6) the rank is", rank(frac([[1, 2], [2, 4], [3, 6]])))
+
+    x1, y1, _ = solve_3_digits(0.001, 1, 1, 1, 1, 2, digits=2)
+    x2, y2, _ = solve_3_digits(1, 1, 0.001, 1, 2, 1, digits=2)
+    print(f"P6   two digits, no exchange: ({x1:g}, {y1:g})   rows exchanged: ({x2:g}, {y2:g})"
+          f"   true: ({1 / 0.999:.3f}, {0.998 / 0.999:.3f})")
+
+    P = permutation_matrix((1, 2, 0))                 # the computer sees encoders 2, 3, 1
+    print("P7   scrambling P =", P, "  true readings = P^T (5, 7, 2) =", matvec(transpose(P), [5, 7, 2]))
+
+    J = arm_jacobian([1, 1], [0, math.pi / 2])
+    Jr = [[round(v) for v in row] for row in J]
+    print("P8   J =", Jr, "  torques for F = (0, -6):", matvec(transpose(Jr), [0, -6]),
+          "  for F = (4, 0):", matvec(transpose(Jr), [4, 0]))
+    Js = [[round(v) for v in row] for row in arm_jacobian([1, 1], [0, 0])]
+    print("     straight arm J =", Js, "  torques for F = (9, 0):", matvec(transpose(Js), [9, 0]))
+
+    r, W = Fraction(1, 5), Fraction(2, 5)
+    A = [[r / 2, r / 2], [Fraction(0), Fraction(0)], [-r / W, r / W]]
+    w = solve([A[0], A[2]], [Fraction(1), Fraction(1)])
+    print("P9   A =", [[fmt(v) for v in row] for row in A], "  wheel speeds (wL, wR) =", [fmt(v) for v in w],
+          "  (0, 0.5, 0) achievable:", in_column_space(A, [Fraction(0), Fraction(1, 2), Fraction(0)]))
+
+    thrusters = [[1, 0], [0, 1], [-1, -1]]
+    print("P10  thrusts (0, 3, 2) give the force", combine(thrusters, [0, 3, 2]),
+          "  and no thrust is negative")
+    print()
+
+
 if __name__ == "__main__":
     permutation_matrices()
     pa_equals_lu()
@@ -307,3 +364,4 @@ if __name__ == "__main__":
     subspace_tests()
     column_space()
     rover_velocity_space()
+    practice()

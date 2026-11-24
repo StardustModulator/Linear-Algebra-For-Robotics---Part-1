@@ -398,6 +398,66 @@ def flattening_family():
     print()
 
 
+def practice():
+    heading("24. Practice problems (answers to P1-P10 on the page)")
+    shapes = {"A": (2, 3), "B": (3, 4), "C": (4, 2)}
+    out = []
+    for name in ("AB", "BA", "BC", "CA"):
+        s = product_shape(shapes[name[0]], shapes[name[1]])
+        out.append(f"{name} " + (f"{s[0]} by {s[1]}" if s else "does not exist"))
+    abc = product_shape(product_shape(shapes["A"], shapes["B"]), shapes["C"])
+    print("P1    ", ",  ".join(out) + f",  ABC {abc[0]} by {abc[1]}")
+
+    M, N = [[1, 2], [3, 4]], [[2, 0], [1, 3]]
+    MN = matmul(M, N)
+    print("P2     AB =", MN, "  BA =", matmul(N, M))
+    print("       column 2 by columns:", combine([column(M, 0), column(M, 1)], column(N, 1)),
+          "  row 2 by rows:", [M[1][0] * a + M[1][1] * b for a, b in zip(N[0], N[1])])
+
+    S = outer([2, 3], [2, 1])
+    print("P3     (2, 3) times [2 1] =", S, "  times (1, -2) =", matvec(S, [1, -2]),
+          "  inverse:", inverse(frac(S)))
+
+    G = frac([[1, 2], [3, 7]])
+    print("P4     inverse of [1 2; 3 7] =", [[fmt(v) for v in row] for row in inverse(G)],
+          "  check:", matmul(G, inverse(G)) == identity(2))
+    G6 = frac([[1, 2], [3, 6]])
+    print("       with 6 in place of 7: inverse =", inverse(G6), "  times (2, -1) =", [fmt(v) for v in matvec(G6, [2, -1])])
+
+    U = frac([[1, 1, 0], [0, 1, 1], [0, 0, 1]])
+    print("P5     inverse of [1 1 0; 0 1 1; 0 0 1] =", [[fmt(v) for v in row] for row in inverse(U)])
+
+    T = hom2(math.radians(90), 2, 1)
+    print("P6     pose =", r2(T), "  cone at world", r2(matvec(T, [3, 1, 1])[:2]))
+
+    D, R = hom2(0, 3, 0), hom2(math.radians(90), 0, 0)
+
+    def pose(X):
+        return f"({X[0][2]:.2f}, {X[1][2]:.2f}) facing {math.degrees(math.atan2(X[1][0], X[0][0])):.0f} deg"
+
+    drive_turn, turn_drive = matmul(matmul(T, D), R), matmul(matmul(T, R), D)
+    print("P7     drive then turn:", pose(drive_turn), "   turn then drive:", pose(turn_drive),
+          f"   apart: {math.dist(column(drive_turn, 2)[:2], column(turn_drive, 2)[:2]):.2f} m")
+
+    T1, T2, T3 = hom2(math.radians(90), 0, 0), hom2(math.radians(-90), 1, 0), hom2(0, 1, 0)
+    print("P8     T1 T2 =", r2(matmul(T1, T2)), "  T1 T2 T3 =", r2(matmul(matmul(T1, T2), T3)))
+
+    Tr = hom2(math.radians(180), 4, 2)
+    Rt = transpose([row[:2] for row in Tr[:2]])
+    q = matvec(Rt, [4, 2])
+    Ti = [Rt[0] + [-q[0]], Rt[1] + [-q[1]], [0, 0, 1]]
+    print("P9     T^-1 =", r2(Ti), "  dock seen from the rover:", r2(matvec(Ti, [1, 3, 1])[:2]),
+          "  agrees with Gauss-Jordan:", close(Ti, inverse(Tr)))
+
+    bad, good = frac([[1, 1], [1, 1]]), frac([[1, -1], [1, 1]])
+    gi = inverse(good)
+    print("P10    broken mixer [1 1; 1 1]: inverse =", inverse(bad), "  times (1, -1) =", [fmt(v) for v in matvec(bad, [1, -1])])
+    print("       repaired [1 -1; 1 1]: inverse =", [[fmt(v) for v in row] for row in gi],
+          "  stick for wheels (1, 0):", [fmt(v) for v in column(gi, 0)],
+          "  check:", [fmt(v) for v in matvec(good, column(gi, 0))])
+    print()
+
+
 if __name__ == "__main__":
     way_1_entries()
     size_rule()
@@ -419,3 +479,4 @@ if __name__ == "__main__":
     lost_information()
     unit_commands()
     flattening_family()
+    practice()

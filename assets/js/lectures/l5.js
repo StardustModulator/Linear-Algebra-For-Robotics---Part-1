@@ -138,7 +138,7 @@
       } else {
         var z = LA.lu(A, { pivoting: 'zero' });
         UI.status(status, 'ok', '<b>PA = LU with ' + plural(f.exchanges, 'row exchange') + ', chosen by size.</b> Partial pivoting put the largest entry of each column in the pivot position, so every multiplier in L is at most 1 in size. ' +
-          (z.ok ? 'The lecture\'s rule would have made ' + (z.exchanges === 0 ? 'none' : z.exchanges) + '. Both factorizations are correct.' : ''));
+          (z.ok ? 'The lecture\'s rule would have made ' + (z.exchanges === 0 ? 'none' : plural(z.exchanges, 'exchange')) + '. Both factorizations are correct.' : ''));
       }
     }
     function rebuild() { stepper.setSteps(buildSteps()); summary(); }
@@ -345,6 +345,7 @@
       set: function (x, y) {
         var t = st.pts[2], g = [(x - t[0]) / FS, (y - t[1]) / FS], n = LA.norm(g);
         if (n > FMAX) g = LA.vscale(g, FMAX / n);
+        if (n < 0.6) g = [0, 0];
         F = [Math.round(g[0] * 10) / 10, Math.round(g[1] * 10) / 10];
         seg.set('', false); update();
       }, color: C.s3, label: 'F', math: true
@@ -424,14 +425,14 @@
     var set = 'line0', v = SETS.line0.v.slice(), w = SETS.line0.w.slice(), res = {};
     var plot = new Plot2D(root.querySelector('canvas'), { cx: 0, cy: 0, w: 10.6 });
     var status = slot(root, 'status');
-    var out = UI.readouts(slot(root, 'readouts'), [{ k: 'v + w', id: 'sum', c: 3 }, { k: 'is it in the set?', id: 'sumIn', c: 3 }, { k: 'c times v', id: 'cv', c: 4 }, { k: 'is it in the set?', id: 'cvIn', c: 4 }, { k: 'is the zero vector?', id: 'zero' }]);
+    var out = UI.readouts(slot(root, 'readouts'), [{ k: 'v + w', id: 'sum', c: 3 }, { k: 'is it in the set?', id: 'sumIn', c: 3 }, { k: 'c times v', id: 'cv', c: 4 }, { k: 'is it in the set?', id: 'cvIn', c: 4 }, { k: 'zero vector in the set?', id: 'zero' }]);
     UI.seg(slot(root, 'sets'), {
       label: 'Sets to test', value: 'line0',
       options: [{ v: 'line0', label: 'Line through origin' }, { v: 'lineoff', label: 'Line missing the origin' }, { v: 'quad', label: 'First quadrant' },
         { v: 'plane', label: 'Whole plane' }, { v: 'zero', label: 'Only the zero vector' }, { v: 'disc', label: 'Disc (speed limit)' }],
       onChange: function (k) { set = k; v = SETS[k].v.slice(); w = SETS[k].w.slice(); update(); }
     });
-    var sc = UI.slider(slot(root, 'slider'), { label: '<span class="nm">c</span> &nbsp;the number that multiplies <span class="nm"><b>v</b></span>', min: -2, max: 2, step: 0.25, value: -1.5, k: 4, onInput: update });
+    var sc = UI.slider(slot(root, 'slider'), { label: '<span class="nm">c</span> &nbsp;the number that multiplies <span class="nm" style="font-weight:600">v</span>', min: -2, max: 2, step: 0.25, value: -1.5, k: 4, onInput: update });
 
     function update() {
       var S = SETS[set], c = sc.get(), sum = LA.vadd(v, w), cv = LA.vscale(v, c);
@@ -459,9 +460,9 @@
       plot.draw();
     }
     function fit(p) { return SETS[set].fit(p); }
-    plot.handle({ get: function () { return v; }, set: function (x, y) { v = fit([x, y]); update(); }, color: C.s1, label: 'v', math: true });
-    plot.handle({ get: function () { return w; }, set: function (x, y) { w = fit([x, y]); update(); }, color: C.s2, label: 'w', math: true });
-    function mark(p, pt, inside, color, name) {
+    plot.handle({ get: function () { return v; }, set: function (x, y) { v = fit([x, y]); update(); }, color: C.s1, label: function () { return set === 'zero' ? '' : 'v'; }, math: true });
+    plot.handle({ get: function () { return w; }, set: function (x, y) { w = fit([x, y]); update(); }, color: C.s2, label: function () { return set === 'zero' ? 'v = w = 0' : 'w'; }, math: true });
+    function mark(p, pt, inside, color, name, dy) {
       var ctx = p.ctx, q = p.px(pt);
       if (inside) p.point(pt, { r: 6, color: color, ring: C.board, width: 2 });
       else {
@@ -469,7 +470,7 @@
         ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath();
         ctx.moveTo(q[0] - 3.5, q[1] - 3.5); ctx.lineTo(q[0] + 3.5, q[1] + 3.5); ctx.moveTo(q[0] + 3.5, q[1] - 3.5); ctx.lineTo(q[0] - 3.5, q[1] + 3.5); ctx.stroke(); ctx.restore();
       }
-      p.text(name + (inside ? ' inside' : ' outside'), pt, { color: color, dx: 0, dy: 20, align: 'center' });
+      if (set !== 'zero') p.text(name + (inside ? '' : ' is outside'), pt, { color: color, dx: 0, dy: dy, align: 'center' });
     }
     plot.onDraw(function (p) {
       var b = p.bounds(), wash = 'rgba(244,242,238,.10)', edge = 'rgba(244,242,238,.6)';
@@ -491,8 +492,8 @@
       p.arrow([0, 0], res.sum, { color: C.s3, width: 2 });
       p.arrow([0, 0], v, { color: C.s1, width: 3 });
       p.arrow([0, 0], w, { color: C.s2, width: 3 });
-      mark(p, res.cv, res.inC, C.s4, 'c·v');
-      mark(p, res.sum, res.inS, C.s3, 'v + w');
+      mark(p, res.cv, res.inC, C.s4, 'c·v', 22);
+      mark(p, res.sum, res.inS, C.s3, 'v + w', -22);
     });
     update();
   });
@@ -506,21 +507,21 @@
     var mode = 'rover', vel = [0, 0, 0], comb = [0, 0, 0];
     var pose = { x: 0, y: 0, th: 0.5 }, trail = [];
     var canvases = root.querySelectorAll('canvas');
-    var p3 = new Plot3D(canvases[0], { span: 3.9, yaw: -1.02, pitch: 0.33 });
+    var p3 = new Plot3D(canvases[0], { span: 4.5, yaw: -1.02, pitch: 0.33 });
     var top = new Plot2D(canvases[1], { cx: 0, cy: 0, w: 8 });
     var status = slot(root, 'status'), eq = slot(root, 'eq'), keys = slot(root, 'keys');
     var gWheels = slot(root, 'wheels'), gLect = slot(root, 'lect'), gDrive = slot(root, 'drive');
     var cl = [C.s1, C.s2, C.s4];
     var rs = function (x) { return fix(x, 1) + ' rad/s'; };
-    var sL = UI.slider(gWheels, { label: 'Left wheel speed <span class="nm">ω<sub>L</sub></span>', min: -10, max: 10, step: 0.5, value: 6, k: 1, fmt: rs, onInput: update });
-    var sR = UI.slider(gWheels, { label: 'Right wheel speed <span class="nm">ω<sub>R</sub></span>', min: -10, max: 10, step: 0.5, value: 9, k: 2, fmt: rs, onInput: update });
-    var sS = UI.slider(gWheels, { label: 'Sideways wheel speed <span class="nm">ω<sub>S</sub></span>', min: -10, max: 10, step: 0.5, value: 5, k: 4, fmt: rs, onInput: update });
+    var sL = UI.slider(gWheels, { label: 'Left wheel speed <span class="nm">ω<sub>L</sub></span>', min: -12, max: 12, step: 0.5, value: 6, k: 1, fmt: rs, onInput: update });
+    var sR = UI.slider(gWheels, { label: 'Right wheel speed <span class="nm">ω<sub>R</sub></span>', min: -12, max: 12, step: 0.5, value: 9, k: 2, fmt: rs, onInput: update });
+    var sS = UI.slider(gWheels, { label: 'Sideways wheel speed <span class="nm">ω<sub>S</sub></span>', min: -12, max: 12, step: 0.5, value: 5, k: 4, fmt: rs, onInput: update });
     var x1 = UI.slider(gLect, { label: '<span class="nm">x₁</span> &nbsp;of column (1, 2, 4)', min: -1, max: 1, step: 0.25, value: 1, k: 1, onInput: update });
     var x2 = UI.slider(gLect, { label: '<span class="nm">x₂</span> &nbsp;of column (3, 3, 1)', min: -1, max: 1, step: 0.25, value: 0.5, k: 2, onInput: update });
     UI.seg(slot(root, 'mode'), {
       label: 'Which matrix', value: 'rover',
       options: [{ v: 'rover', label: 'Two-wheel rover' }, { v: 'omni', label: 'Omni robot' }, { v: 'lecture', label: 'Lecture\'s matrix' }],
-      onChange: function (v) { mode = v; layout(); update(); }
+      onChange: function (v) { mode = v; if (v === 'omni' && sS.get() === 0) sS.set(5); layout(); update(); }
     });
     UI.button(slot(root, 'buttons'), { label: 'Stop the wheels', icon: 'pause', onClick: function () { sL.set(0); sR.set(0); sS.set(0); update(); } });
     UI.button(slot(root, 'buttons'), { label: 'Recentre', icon: 'reset', onClick: function () { pose = { x: 0, y: 0, th: 0.5 }; trail = []; top.draw(); } });
@@ -529,7 +530,7 @@
       var lec = mode === 'lecture';
       gWheels.hidden = lec; gLect.hidden = !lec; gDrive.hidden = lec;
       sS.el.hidden = mode !== 'omni';
-      p3.span = lec ? 17 : 3.9;
+      p3.span = lec ? 19.5 : 4.5;
       keys.innerHTML = lec
         ? '<span class="key k1">x₁ × column 1</span><span class="key k2">x₂ × column 2</span><span class="key k3">their sum</span><span>drag to turn the picture</span>'
         : '<span class="key k1">left wheel\'s share</span><span class="key k2">right wheel\'s share</span>' + (mode === 'omni' ? '<span class="key k4">sideways wheel\'s share</span>' : '') + '<span class="key k3">body velocity</span><span>drag to turn the picture</span>';
@@ -567,8 +568,14 @@
       var pos = [0, 0, 0], nx, i;
       if (mode === 'lecture') {
         var x = [x1.get(), x2.get()];
-        p.plane(L1, L2, 6.4, { fill: 'rgba(244,242,238,.06)', color: 'rgba(244,242,238,.3)' });
-        p.axes(6.8);
+        /* the patch holds every combination with both multipliers between -1.1 and 1.1 */
+        var e = 1.1, cmb = function (a, b) { return LA.vadd(LA.vscale(L1, a), LA.vscale(L2, b)); }, k;
+        p.poly([cmb(-e, -e), cmb(e, -e), cmb(e, e), cmb(-e, e)], { fill: 'rgba(244,242,238,.06)', color: 'rgba(244,242,238,.3)' });
+        for (k = -2; k <= 2; k++) {
+          p.line(cmb(k / 2, -e), cmb(k / 2, e), { color: 'rgba(255,255,255,.1)', width: 1 });
+          p.line(cmb(-e, k / 2), cmb(e, k / 2), { color: 'rgba(255,255,255,.1)', width: 1 });
+        }
+        p.axes(6.5);
         p.arrow([0, 0, 0], L1, { color: C.s1, width: 1.3, alpha: .5 });
         p.arrow([0, 0, 0], L2, { color: C.s2, width: 1.3, alpha: .5 });
         [L1, L2].forEach(function (col, k) { nx = LA.vadd(pos, LA.vscale(col, x[k])); p.arrow(pos, nx, { color: cl[k], width: 3 }); pos = nx; });
@@ -578,8 +585,8 @@
         return;
       }
       var omni = mode === 'omni', Am = omni ? A3 : A2, wv = omni ? [sL.get(), sR.get(), sS.get()] : [sL.get(), sR.get()];
-      p.plane([1, 0, 0], [0, 0, 1], 1.3, { fill: 'rgba(244,242,238,.06)', color: 'rgba(244,242,238,.3)' });
-      p.axes(1.6, ['vx', 'vy', 'ω']);
+      p.plane([1, 0, 0], [0, 0, 1], 1.5, { fill: 'rgba(244,242,238,.06)', color: 'rgba(244,242,238,.3)' });
+      p.axes(1.85, ['vx', 'vy', 'ω']);
       for (i = 0; i < wv.length; i++) p.arrow([0, 0, 0], dsp(LA.vscale(LA.col(Am, i), 10)), { color: cl[i], width: 1.3, alpha: .5 });
       for (i = 0; i < wv.length; i++) {
         nx = LA.vadd(pos, dsp(LA.vscale(LA.col(Am, i), wv[i])));
