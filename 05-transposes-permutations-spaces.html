@@ -690,6 +690,7 @@
         <span data-mx="ωL; ωR" data-rows="0:h1,1:h2"></span>
       </div>
       <p>Wheel speeds of 8 and 12 rad/s give <span class="m">(1.0, 0, 0.8)</span>: one metre per second forward while turning left. Every body velocity the rover can produce is a combination of the two columns, so the set of achievable velocities is <span class="m">C(A)</span>. The middle row of <span class="m">A</span> is all zeros, so that column space is the plane <span class="m">v<sub>y</sub> = 0</span>: a subspace of <span class="m"><b class="u">R</b><sup>3</sup></span>, and a picture of the fact that the rover cannot slide sideways. The model assumes ideal wheels that never slip.</p>
+      <p>To escape the plane a robot needs a column that points out of it. Fit omni wheels, which also roll freely sideways, and add a third wheel across the centre that pushes sideways. Its column is <span class="m">(0, 0.1, 0)</span>. Three independent columns reach every body velocity, and the lab lets you switch that wheel on.</p>
     </div>
   </div>
 
@@ -734,12 +735,12 @@
       <thead><tr><th>Lecture idea</th><th>In plain words</th><th>What it is in a robot</th></tr></thead>
       <tbody>
         <tr><td>Permutation matrix P</td><td>The identity with its rows re-ordered; it re-orders the rows of whatever it multiplies</td><td>Choosing which sensor's equation comes first; re-labelling motors or encoder ports</td></tr>
-        <tr><td>P⁻¹ = Pᵀ</td><td>Undo a re-ordering by transposing</td><td>Putting scrambled channels back in order with no inverse to compute</td></tr>
+        <tr><td>P<sup>−1</sup> = P<sup>T</sup></td><td>Undo a re-ordering by transposing</td><td>Putting scrambled channels back in order with no inverse to compute</td></tr>
         <tr><td>PA = LU</td><td>Order the rows well, then factor; works for every invertible A</td><td>A solver that never stalls on a zero in the wrong place</td></tr>
         <tr><td>Partial pivoting</td><td>Use the largest entry in the column as the pivot</td><td>Do not divide by the weakest measurement</td></tr>
-        <tr><td>Transpose</td><td>Rows become columns</td><td>Hand force to joint torques, τ = JᵀF; undoing a rotation</td></tr>
+        <tr><td>Transpose</td><td>Rows become columns</td><td>Hand force to joint torques, τ = J<sup>T</sup>F; undoing a rotation</td></tr>
         <tr><td>Symmetric matrix</td><td>Unchanged by transposing; mirrored across the diagonal</td><td>Inertia matrices, covariance of sensor noise</td></tr>
-        <tr><td>RᵀR</td><td>Any matrix times its own transpose is symmetric</td><td>JᵀJ and JJᵀ in arm control; a quick bug check</td></tr>
+        <tr><td>R<sup>T</sup>R</td><td>Any matrix times its own transpose is symmetric</td><td>J<sup>T</sup>J and JJ<sup>T</sup> in arm control; a quick bug check</td></tr>
         <tr><td>Vector space</td><td>A set you can add and scale inside without leaving</td><td>All body velocities (vx, vy, ω): the space R³</td></tr>
         <tr><td>Zero vector</td><td>In every vector space and every subspace</td><td>Standing still is always an option</td></tr>
         <tr><td>Subspace</td><td>A vector space inside a bigger one</td><td>The motions one particular mechanism can make</td></tr>

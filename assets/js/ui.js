@@ -320,7 +320,7 @@
   /* join pieces into one centred equation row; plain strings become operators */
   UI.eq = function () {
     var parts = Array.prototype.slice.call(arguments), cls = 'eq';
-    if (parts.length && typeof parts[0] === 'object' && !Array.isArray(parts[0]) && parts[0].cls) cls += ' ' + parts.shift().cls;
+    if (parts.length && parts[0] && typeof parts[0] === 'object' && !Array.isArray(parts[0])) { var opt = parts.shift(); if (opt.cls) cls += ' ' + opt.cls; }
     return '<div class="' + cls + '">' + parts.map(function (p) {
       return /^</.test(p) ? p : '<span class="op">' + p + '</span>';
     }).join('') + '</div>';
@@ -359,7 +359,7 @@
     var w = el('label', 'slider' + (c.k ? ' k' + c.k : ''));
     w.setAttribute('for', id);
     w.innerHTML = '<span class="slider-top"><span>' + c.label + '</span><b></b></span><input type="range" id="' + id + '" min="' + c.min + '" max="' + c.max + '" step="' + (c.step || 'any') + '" value="' + c.value + '">';
-    var input = w.querySelector('input'), out = w.querySelector('b');
+    var input = w.querySelector('input'), out = w.querySelector('.slider-top > b');
     function show() { out.innerHTML = fmt(parseFloat(input.value)); }
     input.addEventListener('input', function () { show(); if (c.onInput) c.onInput(parseFloat(input.value)); });
     show();
