@@ -30,7 +30,9 @@
 .costbar .e2 { background: var(--s2); }
 .costrow-sub { font-family: var(--font-mono); font-size: 11.5px; line-height: 1.4; color: var(--chalk-3); }
 .cost-tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--chalk-3); min-width: 8.4em; }
-#lab-cost .lab-math .eq { padding: .35em 0; }
+.costeq { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: baseline; padding: .5em 0; font-size: .95em; }
+.costeq .m { white-space: normal; }
+.costeq b { font-weight: 400; }
 
 /* Lab 4.4 */
 .dotrow { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 10px; }
@@ -43,8 +45,9 @@
 .dotmx i.on { background: var(--chalk); }
 .dotmx i.pv { background: var(--s1); }
 .dotmx i.mu { background: var(--s3); }
-.pivline { display: grid; grid-template-columns: 7.4em minmax(0, 1fr); gap: 8px; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--chalk-3); }
-.pivline b { font-weight: 500; color: var(--chalk-2); white-space: pre-wrap; font-variant-numeric: tabular-nums; }
+.pivline { display: grid; gap: 1px; margin-top: 8px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.5; color: var(--chalk-3); }
+.pivline b { font-weight: 500; font-size: 12px; white-space: pre-wrap; font-variant-numeric: tabular-nums; }
+#lab-spline .lab-math .mx { font-size: .8em; }
 
 /* Lab 4.5 */
 #lab-perms .lab-stage { gap: 12px; }
@@ -54,7 +57,7 @@
 .permcard { border: 1px solid var(--board-rule); background: var(--board-2); padding: 12px 6px 8px; display: grid; gap: 6px; justify-items: center; align-content: start; min-width: 0; transition: border-color .2s; }
 .permcard.hit { border-color: var(--s3); }
 .pname { font-size: 17px; color: var(--chalk); }
-.psay { font-family: var(--font-mono); font-size: 10.5px; line-height: 1.35; color: var(--chalk-3); text-align: center; min-height: 2.7em; }
+.psay { font-family: var(--font-mono); font-size: 10.5px; line-height: 1.35; color: var(--chalk-3); text-align: center; }
 .ppick { display: inline-flex; border: 1px solid var(--board-rule); }
 .ppick button { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .04em; padding: 8px 9px; background: var(--board); color: var(--chalk-2); border: 0; cursor: pointer; line-height: 1; }
 .ppick button + button { border-left: 1px solid var(--board-rule); }
@@ -66,6 +69,7 @@
 .permpanel { border: 1px solid var(--board-rule); padding: 10px 12px; display: grid; gap: 6px; min-width: 0; align-content: start; }
 .permpanel > .label { color: var(--chalk-3); }
 .permpanel .eq { justify-content: flex-start; padding: .3em 0; }
+.permpanel .mx { font-size: .8em; }
 .permnote { font-size: 14px; color: var(--chalk-2); }
 .wire { display: block; width: 100%; max-width: 360px; height: auto; }
 .wire text { font-family: var(--font-mono); font-size: 9.5px; fill: var(--chalk-3); }

@@ -397,7 +397,7 @@
     var sK = UI.slider(sl, { label: 'Right-hand sides <span class="nm">k</span>', min: 0, max: KS.length - 1, step: 1, value: KS.indexOf(1000), k: 2, fmt: function (v) { return commas(KS[v]); }, onInput: update });
     var btn = UI.button(slot(root, 'buttons'), { label: 'Time both on this device', icon: 'stopwatch', cls: 'primary', onClick: measure });
 
-    bars.innerHTML = ['Eliminate from scratch for every right-hand side', 'Factor once, then substitute'].map(function (name) {
+    bars.innerHTML = ['From scratch for every right-hand side', 'Factor once, then substitute'].map(function (name) {
       return '<div class="costrow"><div class="costrow-top"><span>' + name + '</span><b></b></div><div class="costbar"><i class="e1"></i><i class="e2"></i></div><div class="costrow-sub"></div></div>';
     }).join('');
     var rowsEl = UI.$$('.costrow', bars);
@@ -415,9 +415,11 @@
       var n = NS[sN.get()], k = KS[sK.get()], c = counts(n, k), ratio = c.scratch / c.once, r1 = RATE / (c.f + c.s), r2 = RATE / c.s;
       setRow(rowsEl[0], k * c.f, k * c.s, c.scratch);
       setRow(rowsEl[1], c.f, k * c.s, c.scratch);
-      eq.innerHTML =
-        UI.eq({ cls: 'left' }, '<span class="cost-tag">from scratch</span>', mm('k × ((n³ − n)/3 + n²)'), '=', mm(commas(k) + ' × (' + commas(c.f) + ' + ' + commas(c.s) + ')', 'u'), '=', mm(commas(c.scratch), 'u c1')) +
-        UI.eq({ cls: 'left' }, '<span class="cost-tag">factor once</span>', mm('(n³ − n)/3 + k × n²'), '=', mm(commas(c.f) + ' + ' + commas(k) + ' × ' + commas(c.s), 'u'), '=', mm(commas(c.once), 'u c2'));
+      eq.innerHTML = '<div class="costeq">' +
+        '<span class="cost-tag">from scratch</span>' + mm('k × ((n³ − n)/3 + n²)') +
+        '<span></span>' + mm('= ' + commas(k) + ' × (' + commas(c.f) + ' + ' + commas(c.s) + ') = <b class="c1">' + commas(c.scratch) + '</b>', 'u') +
+        '<span class="cost-tag">factor once</span>' + mm('(n³ − n)/3 + k × n²') +
+        '<span></span>' + mm('= ' + commas(c.f) + ' + ' + commas(k) + ' × ' + commas(c.s) + ' = <b class="c2">' + commas(c.once) + '</b>', 'u') + '</div>';
       out.sp(k === 1 ? 'none' : fix(ratio, ratio < 10 ? 2 : 1) + ' ×');
       out.sv(fix(100 * (1 - c.once / c.scratch), 1) + ' %');
       out.r1(rate(r1)); out.r2(rate(r2));
@@ -507,9 +509,8 @@
       var m = P.length - 2;
       F = factor(m); nFactor++;
       dotsEl.innerHTML = '<div class="dotrow">' + capped(dots('T', m), 'T') + '<span class="op">=</span>' + capped(dots('L', m), 'L') + capped(dots('U', m), 'U') + '</div>';
-      pivEl.innerHTML = '<div class="pivline"><span>pivots</span><b class="c1">' + F.d.map(function (v) { return fix(v, 4); }).join('  ') + '</b></div>' +
-        '<div class="pivline"><span>multipliers</span><b class="c3">' + F.l.slice(1).map(function (v) { return fix(v, 4); }).join('  ') + '</b></div>' +
-        '<div class="pivline"><span>heading for</span><b>2 + √3 = ' + fix(2 + Math.sqrt(3), 4) + '   and   2 − √3 = ' + fix(2 - Math.sqrt(3), 4) + '</b></div>';
+      pivEl.innerHTML = '<div class="pivline"><span>pivots of U, heading for 2 + √3 = ' + fix(2 + Math.sqrt(3), 4) + '</span><b class="c1">' + F.d.map(function (v) { return fix(v, 4); }).join('  ') + '</b></div>' +
+        '<div class="pivline"><span>multipliers in L, heading for 2 − √3 = ' + fix(2 - Math.sqrt(3), 4) + '</span><b class="c3">' + F.l.slice(1).map(function (v) { return fix(v, 4); }).join('  ') + '</b></div>';
     }
     function resolve() {
       rx = rhs(P, 0); ry = rhs(P, 1);
@@ -584,12 +585,12 @@
   UI.lab('lab-perms', function (root) {
     /* p[i] = which old row becomes new row i (rows numbered from 0) */
     var PERMS = [
-      { p: [0, 1, 2], html: 'I', say: 'identity: change nothing' },
-      { p: [1, 0, 2], html: 'P<sub>12</sub>', say: 'exchange rows 1 and 2' },
-      { p: [2, 1, 0], html: 'P<sub>13</sub>', say: 'exchange rows 1 and 3' },
-      { p: [0, 2, 1], html: 'P<sub>23</sub>', say: 'exchange rows 2 and 3' },
-      { p: [1, 2, 0], html: 'C', say: 'cycle: rows 2, 3, 1' },
-      { p: [2, 0, 1], html: 'C<sup>2</sup>', say: 'cycle twice: rows 3, 1, 2' }
+      { p: [0, 1, 2], html: 'I', say: 'identity' },
+      { p: [1, 0, 2], html: 'P<sub>12</sub>', say: 'exchange 1, 2' },
+      { p: [2, 1, 0], html: 'P<sub>13</sub>', say: 'exchange 1, 3' },
+      { p: [0, 2, 1], html: 'P<sub>23</sub>', say: 'exchange 2, 3' },
+      { p: [1, 2, 0], html: 'C', say: 'cycle: 2, 3, 1' },
+      { p: [2, 0, 1], html: 'C<sup>2</sup>', say: 'cycle twice: 3, 1, 2' }
     ];
     var SIG = ['h1', 'h2', 'h4'];
     var a = 1, b = 4;                       /* P and Q: start with a pair that does not commute */
@@ -615,7 +616,7 @@
       var Y = [38, 78, 118], xL = 28, xM = 146, xR = 244, h, i, src, sig, got = [];
       for (i = 0; i < 3; i++) got.push(first[second[i]] + 1);
       h = '<svg class="wire" viewBox="0 0 300 140" role="img" aria-label="Wiring: motors 1, 2, 3 receive signals ' + got.join(', ') + '">';
-      h += '<text x="' + xL + '" y="13" text-anchor="middle">signals</text><text x="' + xM + '" y="13" text-anchor="middle">after ' + n1 + '</text><text x="' + (xR + 18) + '" y="13" text-anchor="middle">after ' + n2 + ': motors</text>';
+      h += '<text x="' + xL + '" y="13" text-anchor="middle">signals</text><text x="' + xM + '" y="13" text-anchor="middle">after ' + n1 + '</text><text x="298" y="13" text-anchor="end">after ' + n2 + ': motors</text>';
       for (i = 0; i < 3; i++) { src = first[i]; h += curve(xL + 10, Y[src], xM - 5, Y[i], src); }
       for (i = 0; i < 3; i++) { src = second[i]; h += curve(xM + 5, Y[src], xR - 7, Y[i], first[src]); }
       for (i = 0; i < 3; i++) {
