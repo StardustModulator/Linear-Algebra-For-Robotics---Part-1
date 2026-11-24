@@ -614,6 +614,697 @@ P7     J = [[-1.0, -1.0], [1.0, 0.0]]  joint speeds for (0, 1): [1.0, -1.0]
 P8     thrusts for (2, 1, 1)          -&gt; ['1/2', '3/2', '1']  det B = -2
 P9     second right-hand side 2.01   -&gt; ['1', '1']
 P9     second right-hand side 2.02   -&gt; ['0', '2']</code></pre></details>
+<h2 id="l02_elimination">code/l02_elimination.py</h2>
+<p>Lecture 2 - Elimination with Matrices, on a robot.</p>
+<details><summary>Source</summary><pre><code>"""
+Lecture 2 - Elimination with Matrices, on a robot.
+
+    python3 code/l02_elimination.py
+
+Covers: elimination with pivots and multipliers, the augmented matrix and
+back-substitution, temporary and permanent failure, reading a product by rows
+and by columns, elimination matrices E21 and E32, the associative law and the
+order test, permutation matrices on the left and on the right, and a first inverse.
+Robots: a two-wheeled robot, and three-wheel omni odometry in four wheel layouts.
+"""
+import math
+from linalg import (frac, show, fmt, heading, eliminate, back_substitute, solve, matmul, matvec, combine,
+                    column, identity, inverse, det, close)
+
+A_LECTURE = [[1, 2, 1], [3, 8, 1], [0, 4, 1]]
+B_LECTURE = [2, 12, 2]
+
+
+# ----------------------------------------------------------------- helpers
+def elim_matrix(n, i, j, l):
+    """E_ij: the identity with -l in row i, column j (1-based). It subtracts l * row j from row i."""
+    E = identity(n)
+    E[i - 1][j - 1] = -l
+    return E
+
+
+def exchange_matrix(n, i, j):
+    """P_ij: the identity with rows i and j exchanged (1-based)."""
+    P = identity(n)
+    P[i - 1], P[j - 1] = P[j - 1], P[i - 1]
+    return P
+
+
+def augmented(A, b):
+    return [list(row) + [bi] for row, bi in zip(A, b)]
+
+
+def walk(A, b, digits=3):
+    """
+    Lecture-style elimination on [A | b], printing every step.
+    Rows are exchanged only when a pivot position holds zero.
+    Returns (U, c, pivots, multipliers, exchanges) or None if elimination fails.
+    """
+    M = augmented(A, b)
+    n = len(A)
+    pivots, multipliers, exchanges = [], [], 0
+    show(M, "[A|b]", aug=1, digits=digits)
+    for k in range(n):
+        if abs(M[k][k]) &lt; 1e-10:
+            below = [r for r in range(k + 1, n) if abs(M[r][k]) &gt; 1e-10]
+            if not below:
+                print(f"  zero in pivot position {k + 1} and nothing below to exchange in: PERMANENT FAILURE (singular)")
+                print(f"  pivots found: {[fmt(p, digits) for p in pivots]}\n")
+                return None
+            r = below[0]
+            M[k], M[r] = M[r], M[k]
+            exchanges += 1
+            print(f"  zero in pivot position {k + 1}: exchange rows {k + 1} and {r + 1}")
+            show(M, aug=1, digits=digits)
+        pivots.append(M[k][k])
+        for i in range(k + 1, n):
+            l = M[i][k] / M[k][k]
+            multipliers.append(l)
+            if abs(l) &lt; 1e-10:
+                print(f"  step ({i + 1},{k + 1}): entry is already 0, multiplier 0, nothing to do")
+                continue
+            M[i] = [a - l * p for a, p in zip(M[i], M[k])]
+            M[i][k] = M[i][k] * 0
+            print(f"  step ({i + 1},{k + 1}): pivot {fmt(M[k][k], digits)}, multiplier {fmt(l, digits)}:  "
+                  f"row {i + 1} &lt;- row {i + 1} - ({fmt(l, digits)}) * row {k + 1}")
+            show(M, aug=1, digits=digits)
+    U = [row[:n] for row in M]
+    c = [row[n] for row in M]
+    return U, c, pivots, multipliers, exchanges
+
+
+def back_sub_verbose(U, c, names):
+    n = len(U)
+    x = [0] * n
+    for i in range(n - 1, -1, -1):
+        known = sum(U[i][j] * x[j] for j in range(i + 1, n))
+        x[i] = (c[i] - known) / U[i][i]
+        print(f"  row {i + 1}: {names[i]} = ({fmt(c[i])} - ({fmt(known)})) / {fmt(U[i][i])} = {fmt(x[i])}")
+    return x
+
+
+def r2(v):
+    """Round a vector for printing."""
+    return [round(float(x), 3) + 0.0 for x in v]
+
+
+# ----------------------------------------------------------------- the lecture
+def lecture_elimination():
+    heading("1. Elimination on the lecture's system (pivots 1, 2, 5)")
+    A, b = frac(A_LECTURE), frac(B_LECTURE)
+    U, c, pivots, multipliers, _ = walk(A, b)
+    print("U:")
+    show(U)
+    print("pivots     :", [fmt(p) for p in pivots])
+    print("multipliers:", [fmt(l) for l in multipliers], " (steps (2,1), (3,1), (3,2))")
+    print("c          :", [fmt(v) for v in c])
+    print("product of the pivots (the determinant, a later topic):", fmt(pivots[0] * pivots[1] * pivots[2]), "\n")
+    return U, c
+
+
+def lecture_back_substitution(U, c):
+    heading("2. Back-substitution: solve U x = c from the bottom up")
+    x = back_sub_verbose(U, c, "xyz")
+    print("solution (x, y, z) =", tuple(fmt(v) for v in x))
+    print("check A x =", [fmt(v) for v in matvec(frac(A_LECTURE), x)], " which is b\n")
+    return x
+
+
+def failures():
+    heading("3. When elimination fails")
+    print("Temporary: change the 8 to a 6. A zero lands in pivot position 2, with a 4 below it.\n")
+    out = walk(frac([[1, 2, 1], [3, 6, 1], [0, 4, 1]]), frac(B_LECTURE))
+    U, c, pivots, _, exchanges = out
+    print("pivots:", [fmt(p) for p in pivots], " row exchanges:", exchanges,
+          " solution:", [fmt(v) for v in back_substitute(U, c)], "\n")
+    print("Permanent (the lecture's example): change the bottom-right 1 to -4.\n")
+    walk(frac([[1, 2, 1], [3, 8, 1], [0, 4, -4]]), frac(B_LECTURE))
+    print("With b = (2, 12, 2) the last row reads 0 = -10: no solution.")
+    print("With b = (2, 12, 12) the last row would read 0 = 0: infinitely many solutions.\n")
+
+
+def two_readings_of_a_product():
+    heading("4. Matrix times column, row times matrix")
+    A = A_LECTURE
+    x = [2, 1, -2]
+    cols = [column(A, j) for j in range(3)]
+    print("A times (2, 1, -2) = 2*col1 + 1*col2 - 2*col3 =", combine(cols, x), "  (a combination of the columns)")
+    r = [-3, 1, 0]
+    by_rows = combine(A, r)                    # -3*row1 + 1*row2 + 0*row3
+    print("(-3, 1, 0) times A = -3*row1 + 1*row2 + 0*row3 =", by_rows, "  (a combination of the rows)")
+    print("That is the new row 2 after the first elimination step.\n")
+
+
+def elimination_matrices():
+    heading("5. Elimination matrices, the associative law, and the order test")
+    A = A_LECTURE
+    E21, E32 = elim_matrix(3, 2, 1, 3), elim_matrix(3, 3, 2, 2)
+    show(E21, "E21")
+    show(E32, "E32")
+    step1 = matmul(E21, A)
+    U = matmul(E32, step1)
+    show(step1, "E21 A")
+    show(U, "E32 (E21 A)")
+    E = matmul(E32, E21)
+    show(E, "E = E32 E21")
+    print("associative law: (E32 E21) A equals E32 (E21 A):", matmul(E, A) == U)
+    print("row 3 of E says: 6*row1 - 2*row2 + 1*row3 of A =", combine(A, E[2]))
+    wrong = matmul(E21, E32)
+    show(wrong, "E21 E32")
+    print("not commutative: E32 E21 equals E21 E32?", E == wrong, "  (corner entries", E[2][0], "and", wrong[2][0], ")")
+    show(matmul(wrong, A), "(E21 E32) A")
+    print("E applied to b gives c: E b =", matvec(E, B_LECTURE), "\n")
+
+
+def permutations():
+    heading("6. Permutation matrices: rows on the left, columns on the right")
+    P = exchange_matrix(2, 1, 2)
+    show(P, "P")
+    M = [["a", "b"], ["c", "d"]]
+    PA = [M[1], M[0]]                                          # row 1 of P picks row 2, row 2 picks row 1
+    AP = [[row[1], row[0]] for row in M]                       # column 1 of P picks column 2
+    print("P [a b; c d] =", PA, "  rows exchanged")
+    print("[a b; c d] P =", AP, "  columns exchanged")
+    N = [[1, 2], [3, 4]]
+    print("with numbers: P N =", matmul(P, N), "   N P =", matmul(N, P))
+    stuck = [[1, 2, 1], [0, 0, -2], [0, 4, 1]]
+    P23 = exchange_matrix(3, 2, 3)
+    print("\nThe stuck matrix of section 3, rescued by P23 on the left:")
+    show(matmul(P23, stuck), "P23 M")
+    print("P23 on the right exchanges columns 2 and 3 instead:")
+    show(matmul(stuck, P23), "M P23")
+
+
+def first_inverse():
+    heading("7. Undoing a step: the first inverse")
+    E21 = elim_matrix(3, 2, 1, 3)
+    E21_inv = elim_matrix(3, 2, 1, -3)
+    show(E21_inv, "E21 inverse")
+    print("E21 inverse times E21 is the identity:", matmul(E21_inv, E21) == identity(3))
+    print("Gauss-Jordan (lecture 3) agrees:", inverse(frac(E21)) == frac(E21_inv))
+    P = exchange_matrix(3, 2, 3)
+    print("a row exchange is its own inverse: P P = I:", matmul(P, P) == identity(3), "\n")
+
+
+# ----------------------------------------------------------------- robots
+def two_wheel_robot():
+    heading("8. Robot: two wheels, two encoders (a pivot is the wheel spacing)")
+    # left wheel at y = +W/2, right wheel at y = -W/2, both rolling along x:
+    #     s_left = v - (W/2) w        s_right = v + (W/2) w
+    for W in (0.4, 0.1):
+        A = [[1, -W / 2], [1, W / 2]]
+        s = [0.5, 0.7]
+        r = eliminate(A, s)
+        v, w = back_substitute(r["U"], r["c"])
+        noisy = eliminate(A, [0.5, 0.71])
+        v2, w2 = back_substitute(noisy["U"], noisy["c"])
+        print(f"W = {W} m: pivots {r2(r['pivots'])}, readings {s} m/s -&gt; v = {v:.3f} m/s, w = {w:.3f} rad/s;"
+              f"  a 0.01 m/s error on the right wheel changes w by {w2 - w:.3f} rad/s")
+    print("The second pivot is W. A quarter of the spacing, four times the error.\n")
+
+
+R = 0.2                                        # wheel circle radius, metres
+D = math.pi / 180
+
+
+def omni_row(alpha):
+    """Tangent wheel at angle alpha on a circle of radius R:  s = -sin(a) vx + cos(a) vy + R w."""
+    return [-math.sin(alpha), math.cos(alpha), R]
+
+
+def wheel_row(x, y, beta):
+    """Any wheel at (x, y) rolling along the unit direction (cos beta, sin beta)."""
+    dx, dy = math.cos(beta), math.sin(beta)
+    return [dx, dy, x * dy - y * dx]
+
+
+def clean(A):
+    return [[0.0 if abs(v) &lt; 1e-12 else v for v in row] for row in A]
+
+
+def omni_derivation_check():
+    heading("9. Robot: the omni wheel equation, checked from first principles")
+    twist = (0.37, -0.21, 0.9)                 # an arbitrary body velocity (vx, vy, w)
+    vx, vy, w = twist
+    worst = 0.0
+    for deg in (90, 210, 330, 0, 120, 240, 17):
+        a = deg * D
+        px, py = R * math.cos(a), R * math.sin(a)          # where the wheel touches the floor
+        point_velocity = (vx - w * py, vy + w * px)         # velocity of that point of a rigid body
+        rolling = (-math.sin(a), math.cos(a))               # the wheel's rolling direction (the tangent)
+        direct = rolling[0] * point_velocity[0] + rolling[1] * point_velocity[1]
+        formula = sum(c * t for c, t in zip(omni_row(a), twist))
+        worst = max(worst, abs(direct - formula))
+    print("largest difference between the formula and the direct computation, over 7 wheel angles:", f"{worst:.1e}")
+    print("general wheel row agrees with the tangent formula:",
+          close([wheel_row(R * math.cos(a), R * math.sin(a), a + math.pi / 2) for a in (0.3, 2.0)],
+                [omni_row(a) for a in (0.3, 2.0)]), "\n")
+
+
+def omni_good_layout():
+    heading("10. Robot: omni odometry, wheels at 90, 210, 330 degrees (R = 0.2 m)")
+    A = clean([omni_row(d * D) for d in (90, 210, 330)])
+    twist = [0.3, 0.0, 0.5]
+    s = matvec(A, twist)
+    print("a body velocity of (vx, vy, w) =", twist, "gives encoder readings", r2(s), "m/s")
+    print("\nNow the robot's problem: from the readings back to the body velocity.\n")
+    s = [-0.20, 0.25, 0.25]
+    U, c, pivots, multipliers, exchanges = walk(A, s, digits=3)
+    print("pivots:", r2(pivots), " multipliers:", r2(multipliers), " row exchanges:", exchanges)
+    print(f"last row: {U[2][2]:.2f} w = {c[2]:.2f}, and s1 + s2 + s3 = {sum(s):.2f}  (3R = {3 * R:.2f})")
+    x = back_sub_verbose(U, c, ["vx", "vy", "w "])
+    print("body velocity (vx, vy, w) =", r2(x), " -&gt; a circle of radius vx / w =", round(x[0] / x[2], 3), "m\n")
+    return A
+
+
+def omni_zero_pivot():
+    heading("11. Robot: wheels at 0, 120, 240 degrees (a zero pivot, cured by a row exchange)")
+    A = clean([omni_row(d * D) for d in (0, 120, 240)])
+    s = [-0.20, 0.25, 0.25]
+    U, c, pivots, _, exchanges = walk(A, s, digits=3)
+    x = back_substitute(U, c)
+    print("pivots:", r2(pivots), " row exchanges:", exchanges, " body velocity:", r2(x))
+    print("Wheel 1 rolls along y, so its row starts with 0: it says nothing about vx.\n")
+
+
+def omni_fragile_and_singular(A_good):
+    heading("12. Robot: nearly parallel wheels (small pivot) and parallel wheels (no pivot)")
+    pos = [(R * math.cos(d * D), R * math.sin(d * D)) for d in (90, 210, 330)]
+
+    fragile = clean([wheel_row(x, y, b * D) for (x, y), b in zip(pos, (0, 8, -8))])
+    show(fragile, "A fragile", digits=3)
+    r = eliminate(fragile)
+    print("pivots:", r2(r["pivots"]), " (the second one is sin 8 degrees =", round(math.sin(8 * D), 3), ")")
+    s = [0.30, 0.30, 0.30]
+    base, bumped = solve(fragile, s), solve(fragile, [0.30, 0.31, 0.30])
+    print("readings", s, "-&gt;", r2(base), ";  with +0.01 m/s on encoder 2 -&gt;", r2(bumped))
+    print(f"  fragile layout: 1 cm/s of encoder error becomes {abs(bumped[1] - base[1]) * 100:.1f} cm/s of error in vy")
+    g0, g1 = solve(A_good, s), solve(A_good, [0.30, 0.31, 0.30])
+    print(f"  good layout:    1 cm/s of encoder error becomes {abs(g1[1] - g0[1]) * 100:.1f} cm/s of error in vy\n")
+
+    parallel = clean([wheel_row(x, y, 0.0) for (x, y) in pos])
+    show(parallel, "A parallel", digits=3)
+    print("elimination on [A | s] with readings (-0.20, 0.25, 0.25):\n")
+    walk(parallel, [-0.20, 0.25, 0.25], digits=3)
+    print("the vy column is all zeros; sliding sideways at 0.3 m/s gives readings", r2(matvec(parallel, [0, 0.3, 0])))
+    print("determinant:", round(det(parallel), 12), "\n")
+
+
+def odometry():
+    heading("13. Robot: odometry = solve every tick and add up the motion")
+    A = clean([omni_row(d * D) for d in (90, 210, 330)])
+    s = [-0.20, 0.25, 0.25]                    # constant readings
+    x = y = th = 0.0
+    dt, t = 0.01, 0.0
+    period = 2 * math.pi / 0.5                 # time for one full turn at 0.5 rad/s
+    marks = [period / 4, period / 2, period]
+    for _ in range(int(round(period / dt))):
+        vx, vy, w = solve(A, s)                # elimination and back-substitution, every tick
+        x += (math.cos(th) * vx - math.sin(th) * vy) * dt      # body velocity turned into the world frame
+        y += (math.sin(th) * vx + math.cos(th) * vy) * dt
+        th += w * dt
+        t += dt
+        if marks and t &gt;= marks[0] - 1e-9:
+            print(f"  t = {t:5.2f} s   x = {x:6.3f} m   y = {y:6.3f} m   heading = {math.degrees(th):6.1f} deg")
+            marks.pop(0)
+    print("The robot drives a circle of radius 0.6 m and returns (nearly) to its start.\n")
+
+
+# ----------------------------------------------------------------- practice
+def practice():
+    heading("14. Practice problems (answers to P1-P10 on the page)")
+    # P1
+    r = eliminate(frac([[1, 2], [3, 8]]), frac([5, 17]))
+    print("P1   x + 2y = 5, 3x + 8y = 17: multiplier", fmt(r["L"][1][0]), " pivots", [fmt(p) for p in r["pivots"]],
+          " (x, y) =", [fmt(v) for v in back_substitute(r["U"], r["c"])])
+    # P2
+    A2, b2 = frac([[1, 1, 1], [2, 4, 3], [3, 7, 8]]), frac([6, 19, 41])
+    r = eliminate(A2, b2)
+    print("P2   multipliers", [fmt(r["L"][1][0]), fmt(r["L"][2][0]), fmt(r["L"][2][1])], " pivots", [fmt(p) for p in r["pivots"]],
+          " U =", [[fmt(v) for v in row] for row in r["U"]], " c =", [fmt(v) for v in r["c"]],
+          " x =", [fmt(v) for v in back_substitute(r["U"], r["c"])])
+    # P3
+    ra = eliminate(frac([[1, 2, 1], [2, 4, 5], [0, 3, 1]]))
+    rb = eliminate(frac([[1, 2, 1], [2, 4, 5], [3, 6, 4]]))
+    print("P3   (a) row exchanges", ra["exchanges"], " pivots", [fmt(p) for p in ra["pivots"]],
+          "  (b) singular:", rb["singular"], " pivots found", [fmt(p) for p in rb["pivots"]])
+    # P4
+    E21, E31, E32 = elim_matrix(3, 2, 1, 2), elim_matrix(3, 3, 1, 3), elim_matrix(3, 3, 2, 2)
+    E = matmul(E32, matmul(E31, E21))
+    print("P4   E = E32 E31 E21 =", E, "  E A = U:", matmul(E, [[1, 1, 1], [2, 4, 3], [3, 7, 8]]),
+          "  E b =", matvec(E, [6, 19, 41]))
+    # P5
+    P12, N = exchange_matrix(3, 1, 2), [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    print("P5   P A =", matmul(P12, N), "  A P =", matmul(N, P12), "  P P = I:", matmul(P12, P12) == identity(3))
+    # P6
+    F21, F32 = elim_matrix(3, 2, 1, -3), elim_matrix(3, 3, 2, -2)       # the two inverses
+    back = matmul(F21, F32)
+    U = [[1, 2, 1], [0, 2, -2], [0, 0, 5]]
+    print("P6   E21^-1 E32^-1 =", back, "  times U gives A:", matmul(back, U) == A_LECTURE,
+          "  wrong order E32^-1 E21^-1 =", matmul(F32, F21))
+    # P7: wheels 2 m apart, left reads 1, right reads 3
+    r = eliminate(frac([[1, -1], [1, 1]]), frac([1, 3]))
+    v, w = back_substitute(r["U"], r["c"])
+    w_err = solve([[1, -1], [1, 1]], [1, 3.1])[1] - float(w)
+    w_err_narrow = solve([[1, -0.1], [1, 0.1]], [1, 3.1])[1] - solve([[1, -0.1], [1, 0.1]], [1, 3])[1]
+    print("P7   pivots", [fmt(p) for p in r["pivots"]], " v =", fmt(v), "m/s  w =", fmt(w), "rad/s;",
+          f" a 0.1 m/s error changes w by {w_err:.2f} rad/s (W = 2 m) or {w_err_narrow:.2f} rad/s (W = 0.2 m)")
+    # P8: tangent wheels at 0, 90, 180 degrees on a circle of radius 1
+    A8 = frac([[0, 1, 1], [-1, 0, 1], [0, -1, 1]])
+    r = eliminate(A8, frac([5, 2, 1]))
+    print("P8   row exchanges", r["exchanges"], " pivots", [fmt(p) for p in r["pivots"]],
+          " (vx, vy, w) =", [fmt(v) for v in back_substitute(r["U"], r["c"])])
+    # P9: cables of wheels 1 and 2 swapped
+    seen = frac([2, 5, 1])
+    wrong = solve(A8, seen)
+    right = solve(matmul(exchange_matrix(3, 1, 2), A8), seen)
+    print("P9   readings in swapped order with the old matrix -&gt;", [fmt(v) for v in wrong],
+          "  with P A (rows 1 and 2 exchanged) -&gt;", [fmt(v) for v in right])
+    # P10: three wheels rolling along x at heights y = 1, 0, -1
+    A10 = frac([[1, 0, -1], [1, 0, 0], [1, 0, 1]])
+    print("P10  singular:", eliminate(A10)["singular"], " det =", fmt(det(A10)),
+          "  sideways (0, 1, 0) reads", [fmt(v) for v in matvec(A10, frac([0, 1, 0]))])
+    for s in ([1, 2, 3], [1, 2, 4]):
+        # rows 2 - 1 and 3 - 1 give  w = s2 - s1  and  2w = s3 - s1
+        w_a, w_b = s[1] - s[0], (s[2] - s[0]) / 2
+        if w_a == w_b:
+            print(f"     readings {s}: consistent, w = {w_a}, vx = {s[1]}, vy unknown")
+        else:
+            print(f"     readings {s}: rows 2 and 3 demand w = {w_a} and w = {fmt(w_b)}: contradiction, no rigid motion fits")
+    fixed = frac([[1, 0, -1], [0, 1, 0], [1, 0, 1]])
+    r = eliminate(fixed, frac([1, 2, 3]))
+    print("     middle wheel turned to roll along y: pivots", [fmt(p) for p in r["pivots"]],
+          " and readings (1, 2, 3) give", [fmt(v) for v in back_substitute(r["U"], r["c"])])
+    print()
+
+
+if __name__ == "__main__":
+    U, c = lecture_elimination()
+    lecture_back_substitution(U, c)
+    failures()
+    two_readings_of_a_product()
+    elimination_matrices()
+    permutations()
+    first_inverse()
+    two_wheel_robot()
+    omni_derivation_check()
+    A_good = omni_good_layout()
+    omni_zero_pivot()
+    omni_fragile_and_singular(A_good)
+    odometry()
+    practice()
+</code></pre></details>
+<details open><summary>Output</summary><pre><code>
+1. Elimination on the lecture's system (pivots 1, 2, 5)
+-------------------------------------------------------
+        [  1  2  1 |  2 ]
+[A|b] = [  3  8  1 | 12 ]
+        [  0  4  1 |  2 ]
+
+  step (2,1): pivot 1, multiplier 3:  row 2 &lt;- row 2 - (3) * row 1
+[  1  2  1 |  2 ]
+[  0  2 -2 |  6 ]
+[  0  4  1 |  2 ]
+
+  step (3,1): entry is already 0, multiplier 0, nothing to do
+  step (3,2): pivot 2, multiplier 2:  row 3 &lt;- row 3 - (2) * row 2
+[   1   2   1 |   2 ]
+[   0   2  -2 |   6 ]
+[   0   0   5 | -10 ]
+
+U:
+[  1  2  1 ]
+[  0  2 -2 ]
+[  0  0  5 ]
+
+pivots     : ['1', '2', '5']
+multipliers: ['3', '0', '2']  (steps (2,1), (3,1), (3,2))
+c          : ['2', '6', '-10']
+product of the pivots (the determinant, a later topic): 10 
+
+
+2. Back-substitution: solve U x = c from the bottom up
+------------------------------------------------------
+  row 3: z = (-10 - (0)) / 5 = -2
+  row 2: y = (6 - (4)) / 2 = 1
+  row 1: x = (2 - (0)) / 1 = 2
+solution (x, y, z) = ('2', '1', '-2')
+check A x = ['2', '12', '2']  which is b
+
+
+3. When elimination fails
+-------------------------
+Temporary: change the 8 to a 6. A zero lands in pivot position 2, with a 4 below it.
+
+        [  1  2  1 |  2 ]
+[A|b] = [  3  6  1 | 12 ]
+        [  0  4  1 |  2 ]
+
+  step (2,1): pivot 1, multiplier 3:  row 2 &lt;- row 2 - (3) * row 1
+[  1  2  1 |  2 ]
+[  0  0 -2 |  6 ]
+[  0  4  1 |  2 ]
+
+  step (3,1): entry is already 0, multiplier 0, nothing to do
+  zero in pivot position 2: exchange rows 2 and 3
+[  1  2  1 |  2 ]
+[  0  4  1 |  2 ]
+[  0  0 -2 |  6 ]
+
+  step (3,2): entry is already 0, multiplier 0, nothing to do
+pivots: ['1', '4', '-2']  row exchanges: 1  solution: ['5/2', '5/4', '-3'] 
+
+Permanent (the lecture's example): change the bottom-right 1 to -4.
+
+        [  1  2  1 |  2 ]
+[A|b] = [  3  8  1 | 12 ]
+        [  0  4 -4 |  2 ]
+
+  step (2,1): pivot 1, multiplier 3:  row 2 &lt;- row 2 - (3) * row 1
+[  1  2  1 |  2 ]
+[  0  2 -2 |  6 ]
+[  0  4 -4 |  2 ]
+
+  step (3,1): entry is already 0, multiplier 0, nothing to do
+  step (3,2): pivot 2, multiplier 2:  row 3 &lt;- row 3 - (2) * row 2
+[   1   2   1 |   2 ]
+[   0   2  -2 |   6 ]
+[   0   0   0 | -10 ]
+
+  zero in pivot position 3 and nothing below to exchange in: PERMANENT FAILURE (singular)
+  pivots found: ['1', '2']
+
+With b = (2, 12, 2) the last row reads 0 = -10: no solution.
+With b = (2, 12, 12) the last row would read 0 = 0: infinitely many solutions.
+
+
+4. Matrix times column, row times matrix
+----------------------------------------
+A times (2, 1, -2) = 2*col1 + 1*col2 - 2*col3 = [2, 12, 2]   (a combination of the columns)
+(-3, 1, 0) times A = -3*row1 + 1*row2 + 0*row3 = [0, 2, -2]   (a combination of the rows)
+That is the new row 2 after the first elimination step.
+
+
+5. Elimination matrices, the associative law, and the order test
+----------------------------------------------------------------
+      [  1  0  0 ]
+E21 = [ -3  1  0 ]
+      [  0  0  1 ]
+
+      [  1  0  0 ]
+E32 = [  0  1  0 ]
+      [  0 -2  1 ]
+
+        [  1  2  1 ]
+E21 A = [  0  2 -2 ]
+        [  0  4  1 ]
+
+              [  1  2  1 ]
+E32 (E21 A) = [  0  2 -2 ]
+              [  0  0  5 ]
+
+              [  1  0  0 ]
+E = E32 E21 = [ -3  1  0 ]
+              [  6 -2  1 ]
+
+associative law: (E32 E21) A equals E32 (E21 A): True
+row 3 of E says: 6*row1 - 2*row2 + 1*row3 of A = [0, 0, 5]
+          [  1  0  0 ]
+E21 E32 = [ -3  1  0 ]
+          [  0 -2  1 ]
+
+not commutative: E32 E21 equals E21 E32? False   (corner entries 6 and 0 )
+              [   1   2   1 ]
+(E21 E32) A = [   0   2  -2 ]
+              [  -6 -12  -1 ]
+
+E applied to b gives c: E b = [2, 6, -10] 
+
+
+6. Permutation matrices: rows on the left, columns on the right
+---------------------------------------------------------------
+    [ 0 1 ]
+P = [ 1 0 ]
+
+P [a b; c d] = [['c', 'd'], ['a', 'b']]   rows exchanged
+[a b; c d] P = [['b', 'a'], ['d', 'c']]   columns exchanged
+with numbers: P N = [[3, 4], [1, 2]]    N P = [[2, 1], [4, 3]]
+
+The stuck matrix of section 3, rescued by P23 on the left:
+        [  1  2  1 ]
+P23 M = [  0  4  1 ]
+        [  0  0 -2 ]
+
+P23 on the right exchanges columns 2 and 3 instead:
+        [  1  1  2 ]
+M P23 = [  0 -2  0 ]
+        [  0  1  4 ]
+
+
+7. Undoing a step: the first inverse
+------------------------------------
+              [ 1 0 0 ]
+E21 inverse = [ 3 1 0 ]
+              [ 0 0 1 ]
+
+E21 inverse times E21 is the identity: True
+Gauss-Jordan (lecture 3) agrees: True
+a row exchange is its own inverse: P P = I: True 
+
+
+8. Robot: two wheels, two encoders (a pivot is the wheel spacing)
+-----------------------------------------------------------------
+W = 0.4 m: pivots [1.0, 0.4], readings [0.5, 0.7] m/s -&gt; v = 0.600 m/s, w = 0.500 rad/s;  a 0.01 m/s error on the right wheel changes w by 0.025 rad/s
+W = 0.1 m: pivots [1.0, 0.1], readings [0.5, 0.7] m/s -&gt; v = 0.600 m/s, w = 2.000 rad/s;  a 0.01 m/s error on the right wheel changes w by 0.100 rad/s
+The second pivot is W. A quarter of the spacing, four times the error.
+
+
+9. Robot: the omni wheel equation, checked from first principles
+----------------------------------------------------------------
+largest difference between the formula and the direct computation, over 7 wheel angles: 1.1e-16
+general wheel row agrees with the tangent formula: True 
+
+
+10. Robot: omni odometry, wheels at 90, 210, 330 degrees (R = 0.2 m)
+--------------------------------------------------------------------
+a body velocity of (vx, vy, w) = [0.3, 0.0, 0.5] gives encoder readings [-0.2, 0.25, 0.25] m/s
+
+Now the robot's problem: from the readings back to the body velocity.
+
+        [     -1      0    0.2 |   -0.2 ]
+[A|b] = [    0.5 -0.866    0.2 |   0.25 ]
+        [    0.5  0.866    0.2 |   0.25 ]
+
+  step (2,1): pivot -1, multiplier -0.5:  row 2 &lt;- row 2 - (-0.5) * row 1
+[     -1      0    0.2 |   -0.2 ]
+[      0 -0.866    0.3 |   0.15 ]
+[    0.5  0.866    0.2 |   0.25 ]
+
+  step (3,1): pivot -1, multiplier -0.5:  row 3 &lt;- row 3 - (-0.5) * row 1
+[     -1      0    0.2 |   -0.2 ]
+[      0 -0.866    0.3 |   0.15 ]
+[      0  0.866    0.3 |   0.15 ]
+
+  step (3,2): pivot -0.866, multiplier -1:  row 3 &lt;- row 3 - (-1) * row 2
+[     -1      0    0.2 |   -0.2 ]
+[      0 -0.866    0.3 |   0.15 ]
+[      0      0    0.6 |    0.3 ]
+
+pivots: [-1.0, -0.866, 0.6]  multipliers: [-0.5, -0.5, -1.0]  row exchanges: 0
+last row: 0.60 w = 0.30, and s1 + s2 + s3 = 0.30  (3R = 0.60)
+  row 3: w  = (0.3 - (0)) / 0.6 = 0.5
+  row 2: vy = (0.15 - (0.15)) / -0.866 = 0
+  row 1: vx = (-0.2 - (0.1)) / -1 = 0.3
+body velocity (vx, vy, w) = [0.3, 0.0, 0.5]  -&gt; a circle of radius vx / w = 0.6 m
+
+
+11. Robot: wheels at 0, 120, 240 degrees (a zero pivot, cured by a row exchange)
+--------------------------------------------------------------------------------
+        [      0      1    0.2 |   -0.2 ]
+[A|b] = [ -0.866   -0.5    0.2 |   0.25 ]
+        [  0.866   -0.5    0.2 |   0.25 ]
+
+  zero in pivot position 1: exchange rows 1 and 2
+[ -0.866   -0.5    0.2 |   0.25 ]
+[      0      1    0.2 |   -0.2 ]
+[  0.866   -0.5    0.2 |   0.25 ]
+
+  step (2,1): entry is already 0, multiplier 0, nothing to do
+  step (3,1): pivot -0.866, multiplier -1:  row 3 &lt;- row 3 - (-1) * row 1
+[ -0.866   -0.5    0.2 |   0.25 ]
+[      0      1    0.2 |   -0.2 ]
+[      0     -1    0.4 |    0.5 ]
+
+  step (3,2): pivot 1, multiplier -1:  row 3 &lt;- row 3 - (-1) * row 2
+[ -0.866   -0.5    0.2 |   0.25 ]
+[      0      1    0.2 |   -0.2 ]
+[      0      0    0.6 |    0.3 ]
+
+pivots: [-0.866, 1.0, 0.6]  row exchanges: 1  body velocity: [0.0, -0.3, 0.5]
+Wheel 1 rolls along y, so its row starts with 0: it says nothing about vx.
+
+
+12. Robot: nearly parallel wheels (small pivot) and parallel wheels (no pivot)
+------------------------------------------------------------------------------
+            [      1      0   -0.2 ]
+A fragile = [   0.99  0.139  0.075 ]
+            [   0.99 -0.139  0.075 ]
+
+pivots: [1.0, 0.139, 0.546]  (the second one is sin 8 degrees = 0.139 )
+readings [0.3, 0.3, 0.3] -&gt; [0.302, 0.0, 0.011] ;  with +0.01 m/s on encoder 2 -&gt; [0.306, 0.036, 0.029]
+  fragile layout: 1 cm/s of encoder error becomes 3.6 cm/s of error in vy
+  good layout:    1 cm/s of encoder error becomes 0.6 cm/s of error in vy
+
+             [    1    0 -0.2 ]
+A parallel = [    1    0  0.1 ]
+             [    1    0  0.1 ]
+
+elimination on [A | s] with readings (-0.20, 0.25, 0.25):
+
+        [    1    0 -0.2 | -0.2 ]
+[A|b] = [    1    0  0.1 | 0.25 ]
+        [    1    0  0.1 | 0.25 ]
+
+  step (2,1): pivot 1, multiplier 1:  row 2 &lt;- row 2 - (1) * row 1
+[    1    0 -0.2 | -0.2 ]
+[    0    0  0.3 | 0.45 ]
+[    1    0  0.1 | 0.25 ]
+
+  step (3,1): pivot 1, multiplier 1:  row 3 &lt;- row 3 - (1) * row 1
+[    1    0 -0.2 | -0.2 ]
+[    0    0  0.3 | 0.45 ]
+[    0    0  0.3 | 0.45 ]
+
+  zero in pivot position 2 and nothing below to exchange in: PERMANENT FAILURE (singular)
+  pivots found: ['1']
+
+the vy column is all zeros; sliding sideways at 0.3 m/s gives readings [0.0, 0.0, 0.0]
+determinant: 0 
+
+
+13. Robot: odometry = solve every tick and add up the motion
+------------------------------------------------------------
+  t =  3.15 s   x =  0.601 m   y =  0.601 m   heading =   90.2 deg
+  t =  6.29 s   x =  0.001 m   y =  1.200 m   heading =  180.2 deg
+  t = 12.57 s   x =  0.001 m   y = -0.000 m   heading =  360.1 deg
+The robot drives a circle of radius 0.6 m and returns (nearly) to its start.
+
+
+14. Practice problems (answers to P1-P10 on the page)
+-----------------------------------------------------
+P1   x + 2y = 5, 3x + 8y = 17: multiplier 3  pivots ['1', '2']  (x, y) = ['3', '1']
+P2   multipliers ['2', '3', '2']  pivots ['1', '2', '3']  U = [['1', '1', '1'], ['0', '2', '1'], ['0', '0', '3']]  c = ['6', '7', '9']  x = ['1', '2', '3']
+P3   (a) row exchanges 1  pivots ['1', '3', '3']   (b) singular: True  pivots found ['1']
+P4   E = E32 E31 E21 = [[1, 0, 0], [-2, 1, 0], [1, -2, 1]]   E A = U: [[1, 1, 1], [0, 2, 1], [0, 0, 3]]   E b = [6, 7, 9]
+P5   P A = [[4, 5, 6], [1, 2, 3], [7, 8, 9]]   A P = [[2, 1, 3], [5, 4, 6], [8, 7, 9]]   P P = I: True
+P6   E21^-1 E32^-1 = [[1, 0, 0], [3, 1, 0], [0, 2, 1]]   times U gives A: True   wrong order E32^-1 E21^-1 = [[1, 0, 0], [3, 1, 0], [6, 2, 1]]
+P7   pivots ['1', '2']  v = 2 m/s  w = 1 rad/s;  a 0.1 m/s error changes w by 0.05 rad/s (W = 2 m) or 0.50 rad/s (W = 0.2 m)
+P8   row exchanges 1  pivots ['-1', '1', '2']  (vx, vy, w) = ['1', '2', '3']
+P9   readings in swapped order with the old matrix -&gt; ['-7/2', '1/2', '3/2']   with P A (rows 1 and 2 exchanged) -&gt; ['1', '2', '3']
+P10  singular: True  det = 0   sideways (0, 1, 0) reads ['0', '0', '0']
+     readings [1, 2, 3]: consistent, w = 1, vx = 2, vy unknown
+     readings [1, 2, 4]: rows 2 and 3 demand w = 1 and w = 1.5: contradiction, no rigid motion fits
+     middle wheel turned to roll along y: pivots ['1', '1', '2']  and readings (1, 2, 3) give ['2', '2', '1']</code></pre></details>
 <h2 id="l03_multiplication_inverses">code/l03_multiplication_inverses.py</h2>
 <p>Lecture 3 - Multiplication and Inverse Matrices, on a robot.</p>
 <details><summary>Source</summary><pre><code>"""
@@ -983,14 +1674,14 @@ def lost_information():
     J = arm_jacobian(lengths, q)
     show(J, "J (straight arm)", digits=2)
     still = [lengths[1], -(lengths[0] + lengths[1])]         # joint speeds that cancel at the hand
-    print("  inverse(J) =", inverse(J), "  joint speeds", still, "rad/s give hand velocity",
+    print("  inverse(J) =", inverse(J), "  joint speeds", r2(still), "rad/s give hand velocity",
           r2(matvec(J, still)), "\n")
 
 
 def unit_commands():
     heading("22. Robot: Gauss-Jordan solves for every unit command at once")
-    b = frac([0.5])[0]                           # wheel separation, 1/2 m
-    F = [[frac([0.5])[0], frac([0.5])[0]], [-1 / b, 1 / b]]  # body velocity (v, w) from wheel speeds (vl, vr)
+    b = 0.5                                      # distance between the wheels, in metres
+    F = frac([[0.5, 0.5], [-1 / b, 1 / b]])      # body velocity (v, w) from wheel speeds (left, right)
     show(F, "F (wheels -&gt; body)")
     Finv, _ = gauss_jordan(F)
     show(Finv, "F^-1 (body -&gt; wheels)")
@@ -1383,7 +2074,7 @@ undo a chain in reverse order, (R D)^-1 = D^-1 R^-1: True
                    [ -3.31 -1.44 ]
 J (straight arm) = [  2.07   0.9 ]
 
-  inverse(J) = None   joint speeds [1.7, -3.9000000000000004] rad/s give hand velocity [0.0, 0.0] 
+  inverse(J) = None   joint speeds [1.7, -3.9] rad/s give hand velocity [0.0, 0.0] 
 
 
 22. Robot: Gauss-Jordan solves for every unit command at once
@@ -1451,6 +2142,11 @@ from linalg import (frac, show, fmt, heading, matmul, matvec, transpose, identit
 def row(v, digits=3):
     """One vector on one line."""
     return "(" + ", ".join(fmt(x, digits) for x in v) + ")"
+
+
+def mat(A):
+    """A small matrix on one line, rows separated by semicolons: [1 2; 3 7]."""
+    return "[" + "; ".join(" ".join(fmt(x) for x in r) for r in A) + "]"
 
 
 # ------------------------------------------------------------------ the lecture
@@ -1638,7 +2334,9 @@ def control_loop():
 
 # ------------------------------------------------------------------ robots
 def pose_of(T):
-    return T[0][2], T[1][2], math.degrees(math.atan2(T[1][0], T[0][0]))
+    """(x, y, heading in degrees) of a planar transform, with tiny round-off cleaned to zero."""
+    tidy = lambda v: 0.0 if abs(v) &lt; 5e-10 else v
+    return tidy(T[0][2]), tidy(T[1][2]), tidy(math.degrees(math.atan2(T[1][0], T[0][0])))
 
 
 def socks_and_shoes_rover():
@@ -1799,13 +2497,63 @@ def six_permutations():
     print("inverse = transpose for all six:",
           ", ".join(f"{names[p]}^-1 = {names[key[tuple(map(tuple, transpose(mats[p])))]]}" for p in order))
     print("how many: 3 by 3 -&gt;", len(list(permutations(range(3)))), "  4 by 4 -&gt;", len(list(permutations(range(4)))),
-          "  n by n -&gt; n!  (5! =", math.factorial(5), ", 6! =", math.factorial(6), ")")
+          f"  n by n -&gt; n!  (5! = {math.factorial(5)}, 6! = {math.factorial(6)})")
 
     commands = [10, 20, 30]                         # what the controller sends on outputs 1, 2, 3
     C = mats[(1, 2, 0)]
     got = matvec(C, commands)
     print("\nmotors wired through C receive", got, "instead of", commands)
-    print("sending C^T times the commands first repairs it:", matvec(C, matvec(transpose(C), commands)), "\n")
+    fix = matvec(transpose(C), commands)
+    print("sending C^T times the commands,", fix, ", repairs it: the motors receive", matvec(C, fix), "\n")
+
+
+def practice():
+    heading("12. Practice problems (answers to P1-P10 on the page)")
+    Ai, Bi = frac([[1, 2], [0, 1]]), frac([[1, 0], [3, 1]])             # the two inverses that are given
+    print("P1   (AB)^-1 = B^-1 A^-1 =", mat(matmul(Bi, Ai)), "  wrong order A^-1 B^-1 =", mat(matmul(Ai, Bi)),
+          "  (A^T)^-1 =", mat(transpose(Ai)))
+    A2 = frac([[3, 1], [6, 5]])
+    L, D, U1 = ldu(A2)
+    print("P2   [3 1; 6 5]:  L =", mat(L), " U =", mat(lu(A2)[2]), " D =", mat(D), " U with unit diagonal =", mat(U1))
+    A3 = frac([[1, 1, 1], [2, 4, 5], [1, 5, 10]])
+    P, L3, U3, perm = lu(A3)
+    E = matmul(frac([[1, 0, 0], [0, 1, 0], [0, -2, 1]]), matmul(frac([[1, 0, 0], [0, 1, 0], [-1, 0, 1]]), frac([[1, 0, 0], [-2, 1, 0], [0, 0, 1]])))
+    print("P3   L =", mat(L3), " U =", mat(U3))
+    print("     E = E32 E31 E21 =", mat(E), "  so E(3,1) =", fmt(E[2][0]), "while L(3,1) =", fmt(L3[2][0]))
+    for b in ([3, 11, 16], [1, 2, 1]):
+        y = forward_substitute(L3, frac(b))
+        print(f"P4   b = {row(b)}:  y = {row(y)}  x = {row(back_substitute(U3, y))}")
+    n, k = 30, 100
+    f, s = factor_ops(n), n * n
+    print(f"P5   n = {n}: factor {f:,}, one right-hand side {s:,}; {k} of them from scratch {k * (f + s):,}, "
+          f"factor once {f + k * s:,}, ratio {k * (f + s) / (f + k * s):.2f}, ceiling {(f + s) / s:.2f}; n = 60 costs {factor_ops(60):,} and {60 * 60:,}")
+    C = permutation_matrix([1, 2, 0])
+    C2 = matmul(C, C)
+    print("P6   P^2 =", mat(C2), "  P^3 = I:", matmul(C2, C) == identity(3), "  P^T == P^2:", transpose(C) == C2,
+          "  5 by 5 permutations:", math.factorial(5))
+    A = hom2(0.0, 2.0, 0.0)                         # drive 2 m
+    B = hom2(math.pi / 2, 0.0, 1.0)                 # turn 90 degrees left, then drive 1 m
+    AB = matmul(A, B)
+    right = matmul(AB, matmul(inverse(B), inverse(A)))
+    wrong = matmul(AB, matmul(inverse(A), inverse(B)))
+    print("P7   after A then B: (%.0f, %.0f) heading %.0f;  undo B then A: (%.0f, %.0f);  undo A then B: (%.0f, %.0f), %.2f m from home"
+          % (pose_of(AB) + pose_of(right)[:2] + pose_of(wrong)[:2] + (math.hypot(*pose_of(wrong)[:2]),)))
+    budget = 20000
+    n = 60
+    print(f"P8   n = {n}: from scratch {factor_ops(n) + n * n:,} per tick, with L and U {n * n:,}; budget {budget:,}.",
+          "Largest n from scratch:", max(m for m in range(1, 500) if factor_ops(m) + m * m &lt;= budget),
+          " with L and U:", max(m for m in range(1, 500) if m * m &lt;= budget),
+          f" (from scratch n = 38 costs {factor_ops(38) + 38 * 38:,}, n = 39 costs {factor_ops(39) + 39 * 39:,})")
+    T = frac([[4, 1], [1, 4]])
+    fT = lu(T)
+    for heights in ([0, 5, 5, 0], [0, 5, 10, 0]):
+        r = frac(spline_rhs(heights))
+        print(f"P9   heights {heights}: right-hand side {row(r)}, accelerations M = {row(lu_solve(fT, r))}   (L = {mat(fT[1])}, U = {mat(fT[2])})")
+    Pw = permutation_matrix([2, 0, 1])              # motor 1 gets output 3, motor 2 gets output 1, motor 3 gets output 2
+    c = [5, 7, 9]
+    send = matvec(transpose(Pw), c)
+    print("P10  P =", mat(Pw), " motors receive", matvec(Pw, c), " send instead", send, " motors then receive", matvec(Pw, send))
+    print()
 
 
 if __name__ == "__main__":
@@ -1820,6 +2568,7 @@ if __name__ == "__main__":
     one_factorization_for_J_and_JT()
     spline_path()
     six_permutations()
+    practice()
 </code></pre></details>
 <details open><summary>Output</summary><pre><code>
 1. Inverse of a product: (AB)^-1 = B^-1 A^-1
@@ -1993,7 +2742,7 @@ A B = [  0.94  0.34  2.35 ]
       [     0     0     1 ]
 
 pose after A then B:      x = 3.855  y = 2.349  heading = 70 deg
-undo B first, then A:     x = 0.000  y = -0.000  heading = 0 deg   (home)
+undo B first, then A:     x = 0.000  y = 0.000  heading = 0 deg   (home)
 undo A first, then B:     x = 1.974  y = -2.819  heading = 0 deg
 miss distance: 3.441 m   (formula 2 a sin(turn/2) = 3.441 m)
 with no turn in B the two moves commute and either order works: x = 0.000  y = 0.000
@@ -2069,10 +2818,27 @@ product table (row label times column label):
 Every product is one of the six.
 P12 C = P13   but  C P12 = P23   (order matters)
 inverse = transpose for all six: I^-1 = I, P12^-1 = P12, P13^-1 = P13, P23^-1 = P23, C^-1 = C2, C2^-1 = C
-how many: 3 by 3 -&gt; 6   4 by 4 -&gt; 24   n by n -&gt; n!  (5! = 120 , 6! = 720 )
+how many: 3 by 3 -&gt; 6   4 by 4 -&gt; 24   n by n -&gt; n!  (5! = 120, 6! = 720)
 
 motors wired through C receive [20, 30, 10] instead of [10, 20, 30]
-sending C^T times the commands first repairs it: [10, 20, 30]</code></pre></details>
+sending C^T times the commands, [30, 10, 20] , repairs it: the motors receive [10, 20, 30] 
+
+
+12. Practice problems (answers to P1-P10 on the page)
+-----------------------------------------------------
+P1   (AB)^-1 = B^-1 A^-1 = [1 2; 3 7]   wrong order A^-1 B^-1 = [7 2; 3 1]   (A^T)^-1 = [1 0; 2 1]
+P2   [3 1; 6 5]:  L = [1 0; 2 1]  U = [3 1; 0 3]  D = [3 0; 0 3]  U with unit diagonal = [1 1/3; 0 1]
+P3   L = [1 0 0; 2 1 0; 1 2 1]  U = [1 1 1; 0 2 3; 0 0 3]
+     E = E32 E31 E21 = [1 0 0; -2 1 0; 3 -2 1]   so E(3,1) = 3 while L(3,1) = 1
+P4   b = (3, 11, 16):  y = (3, 5, 3)  x = (1, 1, 1)
+P4   b = (1, 2, 1):  y = (1, 0, 0)  x = (1, 0, 0)
+P5   n = 30: factor 8,990, one right-hand side 900; 100 of them from scratch 989,000, factor once 98,990, ratio 9.99, ceiling 10.99; n = 60 costs 71,980 and 3,600
+P6   P^2 = [0 0 1; 1 0 0; 0 1 0]   P^3 = I: True   P^T == P^2: True   5 by 5 permutations: 120
+P7   after A then B: (2, 1) heading 90;  undo B then A: (0, 0);  undo A then B: (2, -2), 2.83 m from home
+P8   n = 60: from scratch 75,580 per tick, with L and U 3,600; budget 20,000. Largest n from scratch: 38  with L and U: 141  (from scratch n = 38 costs 19,722, n = 39 costs 21,281)
+P9   heights [0, 5, 5, 0]: right-hand side (-30, -30), accelerations M = (-6, -6)   (L = [1 0; 1/4 1], U = [4 1; 0 15/4])
+P9   heights [0, 5, 10, 0]: right-hand side (0, -90), accelerations M = (6, -24)   (L = [1 0; 1/4 1], U = [4 1; 0 15/4])
+P10  P = [0 0 1; 1 0 0; 0 1 0]  motors receive [9, 5, 7]  send instead [7, 9, 5]  motors then receive [5, 7, 9]</code></pre></details>
 <h2 id="l05_transposes_spaces">code/l05_transposes_spaces.py</h2>
 <p>Lecture 5 - Transposes, Permutations, Spaces R^n, on a robot.</p>
 <details><summary>Source</summary><pre><code>"""
@@ -3015,6 +3781,67 @@ def rover_two_ways():
     print()
 
 
+# ----------------------------------------------------------------- 14
+def practice():
+    heading("14. Practice problems (answers to P1-P10 on the page)")
+    # P1: three sets in R^2
+    print("P1  (a) multiples of (1, 2): 3*(1, 2) + (-4)*(2, 4) =", tup(vadd(vscale([1, 2], 3), vscale([2, 4], -4))), " still a multiple -&gt; subspace")
+    s = vadd([1, 0], [0, 1])
+    print(f"    (b) x + y = 1: (1, 0) + (0, 1) = {tup(s)}, x + y = {s[0] + s[1]}; zero vector gives 0 -&gt; not a subspace")
+    print(f"    (c) x &gt;= 0: (-1)*(1, 0) = {tup(vscale([1, 0], -1))}, x &lt; 0 -&gt; not a subspace")
+    # P2: two planes in R^3
+    S, T = [frac([0, 1, 0]), frac([0, 0, 1])], [frac([1, 0, 0]), frac([0, 0, 1])]
+    print("P2  S n T = all multiples of", ", ".join(tup(x) for x in intersection(S, T)),
+          "  and (0, 1, 0) + (1, 0, 0) =", tup(vadd([0, 1, 0], [1, 0, 0])), "has x and y both non-zero: in neither")
+    # P3: a 3 by 2 matrix with parallel columns
+    A3 = frac([[1, 2], [2, 4], [3, 6]])
+    print("P3  independent columns:", rank(A3), " C(A) = multiples of", tup(column(A3, 0)),
+          "  (2, 4, 6) in C(A)?", in_column_space(A3, frac([2, 4, 6])), "  (1, 2, 4) in C(A)?", in_column_space(A3, frac([1, 2, 4])))
+    # P4: solvability condition
+    A4 = frac([[1, 0], [0, 1], [1, 1]])
+    y = nullspace(transpose(A4))[0]
+    print("P4  condition:", tup(y), ". b = 0, that is b3 = b1 + b2.   b = (2, 3, 5): x =", tup(one_solution(A4, frac([2, 3, 5]))),
+          "  b = (2, 3, 6) solvable?", in_column_space(A4, frac([2, 3, 6])))
+    # P5: a nullspace that is a plane
+    B = frac([[1, 2, 3], [2, 4, 6]])
+    ns = nullspace(B)
+    print("P5  N(B) is spanned by", " and ".join(tup(x) for x in ns), "  B times each:", ", ".join(tup(matvec(B, x)) for x in ns),
+          "  dimension", len(ns))
+    # P6: all solutions for b = column 3 of the lecture's matrix
+    b = frac([2, 3, 4, 5])
+    x1, x2 = frac([0, 0, 1]), frac([1, 1, 0])
+    print("P6  A (0, 0, 1) =", tup(matvec(A, x1)), "  A (1, 1, 0) =", tup(matvec(A, x2)),
+          "  difference", tup(vadd(x2, vscale(x1, -1))), "  A (sum) =", tup(matvec(A, vadd(x1, x2))), "= 2b")
+    # P7: unit three-link arm at 0, 90, 90 degrees
+    q = [0.0, math.pi / 2, math.pi / 2]
+    J = [[round(v) for v in row] for row in arm_jacobian([1, 1, 1], q)]
+    print("P7  hand at", tup([round(v, 6) for v in arm_points([1, 1, 1], q)[3]]), "  J =", J, "  rank", rank(J))
+    n = [1, -1, 1]
+    print("    J (1, -1, 1) =", tup(matvec(J, n)), "  special solution from elimination:", tup(nullspace(frac(J))[0]))
+    # P8: the same arm stretched straight
+    Js = [[round(v) for v in row] for row in arm_jacobian([1, 1, 1], [0.0, 0.0, 0.0])]
+    print("P8  J =", Js, "  rank", rank(Js), "  (1, 0) in C(J)?", in_column_space(Js, [1, 0]), "  (0, 1) in C(J)?", in_column_space(Js, [0, 1]))
+    print("    N(J) is spanned by", " and ".join(tup(x) for x in nullspace(frac(Js))), "  dim C(J) + dim N(J) =", rank(Js), "+", 3 - rank(Js))
+    # P9: all joint speeds for one hand velocity, arm of P7
+    v = frac([1, 0])
+    Jf = frac(J)
+    locked = one_solution(Jf, v)
+    still = vadd(locked, n)
+    short = matvec(transpose(Jf), solve(matmul(Jf, transpose(Jf)), v))
+    print("P9  wrist still:", tup(locked), "  shoulder still:", tup(still), "  shortest:", tup(short),
+          " length", fmt(norm([float(c) for c in short])))
+    print("    J times each:", tup(matvec(Jf, locked)), tup(matvec(Jf, still)), tup(matvec(Jf, short)))
+    # P10: rail cart with three sensors
+    S10 = frac([[1, 1], [-1, 1], [1, 0]])
+    y = nullspace(transpose(S10))[0]
+    for r in ([5, 7, 4], [5, 7, 5]):
+        b = frac([r[0], r[1] - 10, r[2]])
+        x = one_solution(S10, b)
+        print(f"P10 readings {tup(r)}: b = {tup(b)}  check {tup(y)} . b = {fmt(dot(y, b))}  -&gt;",
+              "(x, d) = " + tup(x) if x else "no exact solution, the readings disagree")
+    print()
+
+
 if __name__ == "__main__":
     subspace_test()
     union_and_intersection()
@@ -3029,6 +3856,7 @@ if __name__ == "__main__":
     range_sensors()
     two_machines()
     rover_two_ways()
+    practice()
 </code></pre></details>
 <details open><summary>Output</summary><pre><code>
 1. What makes a subspace: every combination c v + d w stays inside
@@ -3226,7 +4054,27 @@ Cut down:   N([0 1 0]), all velocities with vy = 0.            dim = 2
 [0 1 0] times each wheel column: 0, 0   both columns satisfy the constraint
 Same dimension and one inside the other, so they are the same plane.
    wanted (0.3, 0, 0.4):  in C(G)? True   vy = 0? True   wheel speeds (2, 4) rad/s
-   wanted (0.3, 0.1, 0):  in C(G)? False   vy = 0? False   no wheel speeds produce it</code></pre></details>
+   wanted (0.3, 0.1, 0):  in C(G)? False   vy = 0? False   no wheel speeds produce it
+
+
+14. Practice problems (answers to P1-P10 on the page)
+-----------------------------------------------------
+P1  (a) multiples of (1, 2): 3*(1, 2) + (-4)*(2, 4) = (-5, -10)  still a multiple -&gt; subspace
+    (b) x + y = 1: (1, 0) + (0, 1) = (1, 1), x + y = 2; zero vector gives 0 -&gt; not a subspace
+    (c) x &gt;= 0: (-1)*(1, 0) = (-1, 0), x &lt; 0 -&gt; not a subspace
+P2  S n T = all multiples of (0, 0, 1)   and (0, 1, 0) + (1, 0, 0) = (1, 1, 0) has x and y both non-zero: in neither
+P3  independent columns: 1  C(A) = multiples of (1, 2, 3)   (2, 4, 6) in C(A)? True   (1, 2, 4) in C(A)? False
+P4  condition: (-1, -1, 1) . b = 0, that is b3 = b1 + b2.   b = (2, 3, 5): x = (2, 3)   b = (2, 3, 6) solvable? False
+P5  N(B) is spanned by (-2, 1, 0) and (-3, 0, 1)   B times each: (0, 0), (0, 0)   dimension 2
+P6  A (0, 0, 1) = (2, 3, 4, 5)   A (1, 1, 0) = (2, 3, 4, 5)   difference (1, 1, -1)   A (sum) = (4, 6, 8, 10) = 2b
+P7  hand at (0, 1)   J = [[-1, -1, 0], [0, -1, -1]]   rank 2
+    J (1, -1, 1) = (0, 0)   special solution from elimination: (1, -1, 1)
+P8  J = [[0, 0, 0], [3, 2, 1]]   rank 1   (1, 0) in C(J)? False   (0, 1) in C(J)? True
+    N(J) is spanned by (-2/3, 1, 0) and (-1/3, 0, 1)   dim C(J) + dim N(J) = 1 + 2
+P9  wrist still: (-1, 0, 0)   shoulder still: (0, -1, 1)   shortest: (-2/3, -1/3, 1/3)  length 0.816
+    J times each: (1, 0) (1, 0) (1, 0)
+P10 readings (5, 7, 4): b = (5, -3, 4)  check (-1/2, 1/2, 1) . b = 0  -&gt; (x, d) = (4, 1)
+P10 readings (5, 7, 5): b = (5, -3, 5)  check (-1/2, 1/2, 1) . b = 1  -&gt; no exact solution, the readings disagree</code></pre></details>
 <h2 id="l07_nullspace_rref">code/l07_nullspace_rref.py</h2>
 <p>Lecture 7 - Solving Ax = 0: pivot variables, special solutions, on a robot.</p>
 <details><summary>Source</summary><pre><code>"""

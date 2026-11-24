@@ -118,6 +118,7 @@
       });
       UI.$$('[data-ocw]').forEach(function (a) { a.href = links[a.getAttribute('data-ocw')] || links.session; a.target = '_blank'; a.rel = 'noopener'; });
       buildToc();
+      buildProgress(cur);
       buildPager(cur);
       if (!document.title) document.title = 'Lecture ' + cur + ' · ' + L.title;
     } else {
@@ -190,6 +191,58 @@
   function collapseOnPhones(node) {
     var d = node.querySelector('details');
     if (d && window.matchMedia && window.matchMedia('(max-width: 980px)').matches) d.open = false;
+  }
+
+  /* ---------- progress: a "Got it" mark per section, kept in this browser only ---------- */
+  var PKEY = 'la-progress-v1';
+  UI.progress = {
+    load: function () { try { return JSON.parse(localStorage.getItem(PKEY) || '{}') || {}; } catch (e) { return {}; } },
+    save: function (p) { try { localStorage.setItem(PKEY, JSON.stringify(p)); } catch (e) { /* storage may be blocked */ } },
+    /* { done, total } for one lecture, or null if never opened */
+    summary: function (n) {
+      var p = UI.progress.load(), total = p[n + ':total'];
+      if (!total) return null;
+      var done = 0;
+      Object.keys(p).forEach(function (k) { if (k.indexOf(n + ':') === 0 && k !== n + ':total' && p[k] === true) done++; });
+      return { done: Math.min(done, total), total: total };
+    }
+  };
+  function buildProgress(n) {
+    var secs = UI.$$('.concept[id]');
+    if (!secs.length) return;
+    var p = UI.progress.load();
+    p[n + ':total'] = secs.length;
+    UI.progress.save(p);
+    function paint() {
+      var q = UI.progress.load(), done = 0;
+      secs.forEach(function (sec) {
+        var on = q[n + ':' + sec.id] === true;
+        if (on) done++;
+        var b = sec.querySelector('.got-it');
+        if (b) { b.setAttribute('aria-pressed', String(on)); b.innerHTML = icon(on ? 'check' : 'plus') + '<span>' + (on ? 'Understood' : 'Mark as understood') + '</span>'; }
+        var link = document.querySelector('.toc a[href="#' + sec.id + '"]');
+        if (link) link.classList.toggle('done', on);
+      });
+      var meter = document.querySelector('.toc .toc-meter');
+      if (meter) meter.innerHTML = '<b>' + done + ' of ' + secs.length + ' sections understood</b><span class="bar"><span style="width:' + Math.round(100 * done / secs.length) + '%"></span></span>';
+    }
+    secs.forEach(function (sec) {
+      var head = sec.querySelector('.concept-head');
+      if (!head) return;
+      var b = el('button', 'got-it');
+      b.type = 'button';
+      b.title = 'Saved in this browser only';
+      b.addEventListener('click', function () {
+        var q = UI.progress.load(), k = n + ':' + sec.id;
+        q[k] = !(q[k] === true);
+        UI.progress.save(q);
+        paint();
+      });
+      head.appendChild(b);
+    });
+    var tocList = document.querySelector('.toc details');
+    if (tocList) tocList.appendChild(el('div', 'toc-meter'));
+    paint();
   }
 
   function buildToc() {

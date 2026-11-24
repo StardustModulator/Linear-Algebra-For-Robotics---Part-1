@@ -6,6 +6,13 @@
   'use strict';
   var C = window.PlotColors;
 
+  function progressBadge(n) {
+    var p = UI.progress && UI.progress.summary(n);
+    if (!p) return '<span class="prog"></span>';
+    var full = p.done === p.total;
+    return '<span class="prog' + (full ? ' full' : '') + '" title="Sections marked as understood in this browser">' + (full ? icon('check') : '') + p.done + '/' + p.total + '</span>';
+  }
+
   /* ---------- lecture list ---------- */
   UI.ready(function () {
     var list = document.getElementById('lec-list');
@@ -15,7 +22,7 @@
           '<span class="n">' + UI.pad(L.n) + '</span>' +
           '<span><h3>' + L.title + '</h3><div class="ideas">' + L.ideas + '</div></span>' +
           '<span class="robot">' + icon(L.robotIcon) + '<span><b>' + L.robot + '</b><span>' + L.robotNote + '</span></span></span>' +
-          icon('arrow-right', 'go') + '</a>';
+          progressBadge(L.n) + icon('arrow-right', 'go') + '</a>';
       }).join('');
     }
     var notes = document.getElementById('notes-list');

@@ -34,3 +34,22 @@ Every picture shows the lab exactly as the page draws it, so the colours keep th
 
 ![All thrusters aimed through the centre: the columns lie in one plane (no torque), and a request to turn has no solution.](figures/l1-thrusters-singular.png)
 
+
+## Capstone: one robot, seven lectures
+
+![Lens 01, the column picture: each joint owns one column of J, and the wanted hand velocity (amber) is a combination of the three.](figures/cap-01-columns.png)
+
+![Lens 02, elimination: J | v reduces to two pivots. The joint without a pivot is free, so many joint speeds do the same job.](figures/cap-02-elimination.png)
+
+![Lens 03, multiplication: the hand pose is the product of the link transforms, and its third column is the hand position.](figures/cap-03-products.png)
+
+![Lens 04, LU: JJᵀ is factored once and reused for every wanted velocity, giving joint speeds with one multiplication.](figures/cap-04-lu.png)
+
+![Lens 05, the transpose: a force on the hand becomes joint torques through Jᵀ.](figures/cap-05-transpose.png)
+
+![Lens 06, column space and nullspace: during self-motion the elbow swings (dashed path) while the hand does not move.](figures/cap-06-subspaces.png)
+
+![Lens 07, rank: two pivot joints (red), one free joint (blue), one special solution.](figures/cap-07-rank.png)
+
+![The straight arm through lens 07: the rank drops from 2 to 1 and a second special solution appears. Every lens reports the same event in its own words.](figures/cap-07-rank-straight.png)
+

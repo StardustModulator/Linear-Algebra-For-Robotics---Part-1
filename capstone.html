@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>One Robot, Seven Lectures</title>
+<meta name="description" content="A single three-joint robot arm seen through every idea of MIT 18.06 lectures 1 to 7: columns, elimination, products, LU, transposes, column space, nullspace and rank.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
+<link rel="stylesheet" href="assets/css/mit.css">
+<style>
+  .cap-lenses { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--board-rule); }
+  .cap-lenses button { background: var(--board-2); color: var(--chalk-2); border: 0; border-right: 1px solid var(--board-rule); padding: 9px 4px 8px; cursor: pointer; display: grid; gap: 2px; justify-items: center; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .04em; line-height: 1.15; min-width: 0; }
+  .cap-lenses button:last-child { border-right: 0; }
+  .cap-lenses button b { font-family: var(--font-display); font-weight: 900; font-stretch: 125%; font-size: 20px; letter-spacing: -.03em; color: var(--chalk); }
+  .cap-lenses button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  .cap-lenses button:hover { color: #fff; background: var(--board-3); }
+  .cap-lenses button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  .cap-lenses button[aria-pressed="true"] b { color: #fff; }
+  @media (max-width: 560px) { .cap-lenses button span { display: none; } .cap-lenses button b { font-size: 17px; } }
+  .cap-lens-title { font-family: var(--font-display); font-size: 21px; font-weight: 800; letter-spacing: -.01em; color: var(--chalk); }
+  .cap-lens-kicker { color: var(--s3); }
+  .cap-lens-text { color: var(--chalk-2); font-size: 15px; display: grid; gap: 8px; }
+  .cap-lens-text b { color: var(--chalk); font-weight: 600; }
+  .cap-lens-text a { color: var(--s2); }
+  .cap-body { padding-block: 34px 60px; display: grid; gap: 56px; }
+  .cap-body > * { min-width: 0; }
+  #cap-lab .lab-main { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+  @media (max-width: 900px) { #cap-lab .lab-main { grid-template-columns: minmax(0, 1fr); } #cap-lab .lab-side { border-left: 0; border-top: 1px solid var(--board-rule); } }
+  .cap-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 22px; }
+</style>
+</head>
+<body>
+<main data-page="capstone">
+
+<section class="lec-hero">
+  <div class="wrap">
+    <div class="lec-num">07<i>×</i></div>
+    <div class="lec-kicker label"><span class="bars"></span><span>Capstone · lectures 1 to 7 together</span></div>
+    <h1>One robot, seven lectures</h1>
+    <p class="lec-lede">Every idea in the first seven lectures describes <strong>the same machine</strong>. Here is one arm with three joints doing a job that needs only two. Switch between the seven lenses and watch the same robot, in the same pose, become a column picture, an elimination, a product of matrices, an LU solve, a transpose, a column space with a nullspace, and finally a rank.</p>
+    <div class="lec-meta">
+      <a class="btn primary" href="#cap-lab"><i data-ic="play"></i><span>Open the robot</span></a>
+      <a class="btn" href="#lenses"><i data-ic="list"></i><span>The seven lenses</span></a>
+      <a class="btn" href="index.html#lectures"><i data-ic="book"></i><span>Back to the lectures</span></a>
+    </div>
+  </div>
+</section>
+
+<div class="wrap cap-body">
+
+<section class="concept" id="how">
+  <header class="concept-head">
+    <span class="concept-no">00</span>
+    <h2>The machine</h2>
+    <p class="concept-sub">A planar arm with three joints that moves its hand in a plane.</p>
+  </header>
+  <div class="prose">
+    <p>The arm has links of length 1.6, 1.3 and 1.0 and three joints. Its hand moves in a flat plane, so the job has <strong>two</strong> numbers (the hand's velocity across and up) while the arm has <strong>three</strong> joint speeds to choose. One joint more than the job needs: the arm is <span class="term">redundant</span>.</p>
+    <p>Everything below comes from one matrix, the <span class="term">Jacobian</span> <span class="m">J</span>. It has 2 rows (the job) and 3 columns (the joints), and it turns joint speeds into hand velocity: <span class="m">J q̇ = v</span>. Each lens reads that one matrix with the idea of one lecture.</p>
+  </div>
+</section>
+
+<div class="lab board" id="cap-lab">
+  <div class="lab-head"><span class="lab-tag">CAPSTONE</span><h3>One arm, seven ways of seeing it</h3><i data-ic="arm"></i></div>
+  <p class="lab-intro">Pick a lens. Drag the <b>amber handle</b> at the hand to change the wanted velocity (or, in lens 05, the force on the hand). Pose the arm with the sliders, or press <b>Trace a path</b> and let it move on its own while every lens stays live.</p>
+  <div class="lab-main">
+    <div class="lab-stage">
+      <canvas class="wide" aria-label="A three-joint planar robot arm with overlays for the selected lens"></canvas>
+      <div class="lab-caption" data-slot="keys"></div>
+      <div class="cap-controls" data-slot="sliders"></div>
+      <div class="lab-row" data-slot="buttons"></div>
+    </div>
+    <div class="lab-side">
+      <div class="cap-lenses" role="group" aria-label="Lens" data-slot="lenses"></div>
+      <div class="label cap-lens-kicker" data-slot="kicker"></div>
+      <div class="cap-lens-title" data-slot="title"></div>
+      <div class="cap-lens-text" data-slot="text"></div>
+      <div class="lab-math" data-slot="math"></div>
+      <div data-slot="status"></div>
+      <div data-slot="readouts"></div>
+    </div>
+  </div>
+  <div class="lab-foot">
+    <span class="label"><i data-ic="flask"></i>Try this</span>
+    <ol>
+      <li>Stay on lens <b>06</b> and press <b>Self-motion</b>. The elbow swings while the hand does not move: that is the nullspace. Then switch to lens <b>07</b>, still moving, and see the same motion appear as the special solution.</li>
+      <li>Drag the second and third sliders to 0° so the arm is straight. Visit every lens: the columns line up (01), a pivot disappears (02, 07), the column space collapses to a line (06), and the rank drops from 2 to 1 (07). One event, seven descriptions.</li>
+      <li>On lens <b>05</b>, point the force straight along the stretched arm. The joint torques fall to almost nothing, because the links carry the load.</li>
+    </ol>
+  </div>
+</div>
+
+<section class="concept" id="lenses">
+  <header class="concept-head">
+    <span class="concept-no">01–07</span>
+    <h2>The seven lenses</h2>
+    <p class="concept-sub">What each lecture says about this one robot.</p>
+  </header>
+  <div class="tablewrap">
+    <table class="t">
+      <thead><tr><th>Lens</th><th>The idea</th><th>What it says about the arm</th><th>Lecture</th></tr></thead>
+      <tbody>
+        <tr><td>01 Columns</td><td>A x is a combination of the columns of A</td><td>Each joint owns one column: the hand velocity it causes. The wanted velocity is a mix of the three</td><td><a href="01-geometry-of-linear-equations.html#column-picture">Lecture 1</a></td></tr>
+        <tr><td>02 Elimination</td><td>Pivots, multipliers, echelon form</td><td>Eliminating J q̇ = v leaves two pivots; the third joint has no pivot of its own, so many joint speeds do the same job</td><td><a href="02-elimination-with-matrices.html">Lecture 2</a></td></tr>
+        <tr><td>03 Products</td><td>Multiplying matrices composes transformations</td><td>The hand's pose is the product of three link transforms, T₁T₂T₃</td><td><a href="03-multiplication-and-inverse-matrices.html">Lecture 3</a></td></tr>
+        <tr><td>04 LU</td><td>Factor once, solve many right-hand sides</td><td>JJᵀ is factored once per tick; two cheap solves give a matrix that turns any wanted velocity into joint speeds</td><td><a href="04-factorization-into-a-lu.html">Lecture 4</a></td></tr>
+        <tr><td>05 Transpose</td><td>Rows and columns trade places</td><td>A force on the hand becomes joint torques through the transpose: τ = JᵀF</td><td><a href="05-transposes-permutations-spaces.html">Lecture 5</a></td></tr>
+        <tr><td>06 Two subspaces</td><td>Column space and nullspace</td><td>C(J): every hand velocity available now. N(J): joint motion the hand cannot feel</td><td><a href="06-column-space-and-nullspace.html">Lecture 6</a></td></tr>
+        <tr><td>07 Rank</td><td>Pivot and free variables, special solutions</td><td>Rank 2 of 3 joints: one free joint, one special solution, which is the self-motion</td><td><a href="07-solving-ax-equals-0.html">Lecture 7</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note idea">
+    <i data-ic="idea"></i>
+    <span class="note-title">Key idea</span>
+    <div class="note-body"><p>The seven lectures are not seven topics. They are seven questions asked of one matrix: what does it combine, how do we solve it, how does it compose, how do we solve it fast, what does it do to forces, what can it reach and miss, and how many directions does it really have?</p></div>
+  </div>
+  <div class="note warn">
+    <i data-ic="warn"></i>
+    <span class="note-title">Honest about the model</span>
+    <div class="note-body"><p>The arm is planar, rigid and ideal: no gravity, no friction, no joint limits. When it traces a path it uses the smallest joint speeds that do the job, with a very small amount of damping so that it stays calm near a straight pose. Real arm controllers add limits and dynamics on top of exactly this linear algebra.</p></div>
+  </div>
+  <div class="note say">
+    <i data-ic="pen"></i>
+    <span class="note-title">For your article</span>
+    <div class="note-body">
+      <p>This page is a ready-made closing section: "one robot, seven lectures". Its figures are in the <a href="kit/figures.html">figure pack</a>, one per lens, taken in the same pose so they can sit side by side.</p>
+      <p><strong>A sentence you can reuse:</strong> the same 2 by 3 matrix is a mix of joint effects, a system to eliminate, a product of link transforms, a system worth factoring, the path forces take back to the motors, a map with a reach and a blind spot, and a count of two directions out of three joints.</p>
+    </div>
+  </div>
+</section>
+
+</div>
+</main>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/la.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/plot.js"></script>
+<script src="assets/js/robots.js"></script>
+<script src="assets/js/capstone.js"></script>
+</body>
+</html>
