@@ -614,3 +614,6 @@ a.card:hover p { color: #b9b6b3; }
 .quiz .tag.robot { border-color: var(--accent-ink); color: var(--accent-ink); }
 .quiz .a .eq { justify-content: flex-start; padding: .3em 0; flex-wrap: wrap; row-gap: .6em; }
 .quiz .a ol, .quiz .a ul { display: grid; gap: 6px; }
+
+/* a lab picture keeps its own height instead of stretching to the side panel */
+.lab-main > .lab-stage { align-self: start; }
