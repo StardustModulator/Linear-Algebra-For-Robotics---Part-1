@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lecture 1 · The Geometry of Linear Equations</title>
+<meta name="description" content="Row picture, column picture and Ax = b, taught from scratch with a triangulating robot, a two-link arm and a three-thruster vehicle.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
+<link rel="stylesheet" href="assets/css/mit.css">
+</head>
+<body>
+<main data-lecture="1">
+
+<section class="lec-hero">
+  <div class="wrap">
+    <div class="lec-num">01<i>.</i></div>
+    <div class="lec-kicker label"><span class="bars"></span><span>MIT 18.06 · Lecture 1</span><span><i data-ic="clock"></i> 39:49</span></div>
+    <h1>The Geometry of Linear Equations</h1>
+    <p class="lec-lede">One set of equations, seen three ways. As <strong>rows</strong> it is lines that cross. As <strong>columns</strong> it is arrows that add up. As a <strong>matrix</strong> it is one short sentence, <span class="m">A<b>x</b> = <b>b</b></span>. A robot leans on all three: rows are what its sensors tell it, columns are what its motors can do.</p>
+    <div class="lec-meta">
+      <a class="btn primary" data-ocw="video" href="#"><i data-ic="video"></i><span>Watch the lecture on OCW</span></a>
+      <a class="btn" data-ocw="summary" href="#"><i data-ic="book"></i><span>Lecture summary</span></a>
+      <a class="btn" href="article/01-geometry-of-linear-equations.md"><i data-ic="pen"></i><span>Article notes</span></a>
+    </div>
+  </div>
+</section>
+
+<div class="wrap lec-layout">
+<nav class="toc"></nav>
+<article class="lec-body">
+
+<!-- ============================================================ 1.0 -->
+<section class="concept" id="start" data-toc="Start here: a linear equation">
+  <header class="concept-head">
+    <span class="concept-no">1.0</span>
+    <h2>Start here: what is a linear equation?</h2>
+    <p class="concept-sub">Nothing assumed. If you can add and multiply, you can follow this page.</p>
+  </header>
+  <div class="prose">
+    <p class="big">An <span class="term">equation</span> is a fact about numbers you do not know yet. The unknown numbers are called <span class="term">unknowns</span>, and we name them <span class="m">x</span>, <span class="m">y</span>, <span class="m">z</span>.</p>
+    <p>An equation is <span class="term">linear</span> when each unknown is only multiplied by a plain number and the results are added. So <span class="m">2x − y = 0</span> is linear. An equation with <span class="m">x²</span>, <span class="m">xy</span> or <span class="m"><span class="u">sin</span> x</span> in it is not. Linear equations are the ones we can always solve, quickly and exactly, which is why engineers bend almost every problem into this shape.</p>
+    <p>The numbers that multiply the unknowns are the <span class="term">coefficients</span>. The number on the other side of the equals sign is the <span class="term">right-hand side</span>. The whole lecture uses one small example with two equations and two unknowns:</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's example</span>
+    <div class="eq">
+      <span class="m">2x − y = 0</span><span class="op">&nbsp;&nbsp;and&nbsp;&nbsp;</span><span class="m">−x + 2y = 3</span>
+    </div>
+    <p>Two facts, two unknowns. A <span class="term">solution</span> is a pair <span class="m">(x, y)</span> that makes both facts true at once. Here it is <span class="m">x = 1</span>, <span class="m">y = 2</span>. Check it: <span class="m">2·1 − 2 = 0</span> and <span class="m">−1 + 2·2 = 3</span>.</p>
+  </div>
+  <div class="prose">
+    <p>Professor Strang's point in this first lecture is that there is more than one way to <em>see</em> such a system, and the less obvious way turns out to be the important one.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="robot"></i>Robotics link<em>why a robot cares</em></div>
+    <div class="robolink-body">
+      <h3>A robot is a machine that solves linear equations all day</h3>
+      <p>Every sensor reading is a fact about where the robot is, so each reading is an equation. Every motor is a number the robot gets to choose, so each motor is an unknown. Finding a position from sensor readings, or motor commands from a desired motion, means solving a system like the one above. A typical arm controller does it a thousand times each second.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 1.1 -->
+<section class="concept" id="row-picture" data-toc="Row picture">
+  <header class="concept-head">
+    <span class="concept-no">1.1</span>
+    <h2>The row picture: every equation is a line</h2>
+    <p class="concept-sub">Look at one equation at a time.</p>
+  </header>
+  <div class="prose">
+    <p>Take the first equation alone, <span class="m c1">2x − y = 0</span>. Many pairs satisfy it: <span class="m">(0, 0)</span>, <span class="m">(1, 2)</span>, <span class="m">(2, 4)</span>. Plot them and they fall on a straight line. That is true of every linear equation in two unknowns: <strong>one equation, one line</strong>.</p>
+    <p>The second equation, <span class="m c2">−x + 2y = 3</span>, draws a second line. A point that satisfies both equations must sit on both lines, so the solution is <strong>the point where the lines cross</strong>. This is the <span class="term">row picture</span>, named because each row of the system gives one line.</p>
+    <p>Two lines can do three things, and each one tells you something about the equations:</p>
+    <ul>
+      <li><strong>Cross once.</strong> Exactly one solution. This is the normal, healthy case.</li>
+      <li><strong>Run parallel.</strong> They never meet, so there is no solution. The two facts contradict each other.</li>
+      <li><strong>Lie on top of each other.</strong> Every point of the line is a solution. The second fact repeats the first, so you really have only one equation.</li>
+    </ul>
+    <p>The last two are the <span class="term">singular</span> cases. Remember that word. It comes back in every lecture.</p>
+  </div>
+
+  <div class="lab board" id="lab-rows">
+    <div class="lab-head"><span class="lab-tag">LAB 1.1</span><h3>Two equations, two lines</h3><i data-ic="rows"></i></div>
+    <p class="lab-intro">Type any numbers into the two equations. Each row draws its own line, and the solution is wherever they cross. The three buttons load the three cases.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="sq" aria-label="Plot of the two lines"></canvas>
+        <div class="lab-caption"><span class="key k1">row 1</span><span class="key k2">row 2</span><span class="key k3">solution</span></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Load a case</span><div data-slot="presets"></div></div>
+        <div class="lab-group"><span class="label">The system, one row per equation</span><div class="lab-math" data-slot="system"></div></div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Load <b>Lecture example</b> and confirm the lines cross at (1, 2).</li>
+        <li>Change only the right-hand side of row 2. The blue line slides without turning. Why? The coefficients set the <b>direction</b> of a line and the right-hand side sets its <b>position</b>.</li>
+        <li>Load <b>Parallel</b>, then change one right-hand side until the lines merge. You have moved from no solution to infinitely many.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="beacon"></i>Robotics link<em>localization</em></div>
+    <div class="robolink-body">
+      <h3>Each sensor reading is a line the robot must be standing on</h3>
+      <p>A robot in a warehouse sees a beacon and measures the compass direction to it. That one number does not tell the robot where it is. It tells the robot it is <em>somewhere on a line</em> that passes through the beacon in that direction. A second beacon gives a second line. The robot is at the crossing. Sailors call this taking a fix. Robots call it <strong>triangulation</strong>, and it is the row picture and nothing more.</p>
+      <p>If the bearing to a beacon at <span class="m">(p, q)</span> is the angle <span class="m">φ</span>, the line is <span class="m">(<span class="u">sin</span> φ) x − (<span class="u">cos</span> φ) y = (<span class="u">sin</span> φ) p − (<span class="u">cos</span> φ) q</span>. It looks busy, but <span class="m">φ</span>, <span class="m">p</span> and <span class="m">q</span> are all known numbers, so this is a linear equation in <span class="m">x</span> and <span class="m">y</span>, just like <span class="m">2x − y = 0</span>.</p>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-beacons">
+    <div class="lab-head"><span class="lab-tag">LAB 1.2</span><h3>Where is the robot? Triangulating from two beacons</h3><i data-ic="beacon"></i></div>
+    <p class="lab-intro">Drag the <b>robot</b> or either <b>beacon</b>. The robot only knows the two bearings. From them it builds two equations and solves for its own position, shown as the amber ring.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="wide" aria-label="Robot and two beacons with bearing lines"></canvas>
+        <div class="lab-caption"><span class="key k1">line from beacon 1</span><span class="key k2">line from beacon 2</span><span class="key k3">computed position</span><span><i data-ic="drag"></i> drag the handles</span></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">What the robot builds from its two bearings</span><div class="lab-math" data-slot="system"></div></div>
+        <div data-slot="noise"></div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Drag the robot onto the straight line that joins the two beacons. The two bearing lines become the same line and the fix is lost. That is the <b>singular</b> case, met in the field.</li>
+        <li>Turn sensor error up to 2°. Now drag the robot so the lines cross at a wide angle, then at a thin angle. A thin crossing turns a small sensor error into a large position error.</li>
+        <li>That is the practical reason robots prefer beacons that are spread out: it keeps the two rows far from parallel.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <i data-ic="warn"></i>
+    <span class="note-title">Watch out</span>
+    <div class="note-body"><p>Nearly parallel lines still cross at one point, so on paper the system has a perfectly good solution. In a real robot it is a bad solution, because the crossing point moves a long way when a measurement changes a little. Engineers call such a system <strong>ill-conditioned</strong>. Singular is the limit of ill-conditioned.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 1.2 -->
+<section class="concept" id="column-picture" data-toc="Column picture">
+  <header class="concept-head">
+    <span class="concept-no">1.2</span>
+    <h2>The column picture: arrows that add up</h2>
+    <p class="concept-sub">Same equations, read downward instead of across. This is the view that matters most.</p>
+  </header>
+  <div class="prose">
+    <p>Write the same two equations again, but this time collect everything that multiplies <span class="m">x</span> into one stack and everything that multiplies <span class="m">y</span> into another:</p>
+  </div>
+  <div class="work">
+    <span class="label">The same system, by columns</span>
+    <div class="eq">
+      <span class="m">x</span><span data-mx="2; -1" data-cols="0:h1"></span><span class="op">+</span><span class="m">y</span><span data-mx="-1; 2" data-cols="0:h2"></span><span class="op">=</span><span data-mx="0; 3" data-cols="0:h3"></span>
+    </div>
+    <p>Read the top entries and you get <span class="m">2x − y = 0</span>. Read the bottom entries and you get <span class="m">−x + 2y = 3</span>. Nothing has changed except the point of view.</p>
+  </div>
+  <div class="prose">
+    <p>Each stack of numbers is a <span class="term">vector</span>: an arrow from the origin. The <span class="hl1">red</span> column is the arrow to (2, −1). The <span class="hl2">blue</span> column is the arrow to (−1, 2). The right-hand side is the arrow to (0, 3).</p>
+    <p>Multiplying a vector by a number stretches it. Adding two vectors means walking along one and then the other. Doing both, <span class="m">x</span> times one vector plus <span class="m">y</span> times another, is called a <span class="term">linear combination</span>. It is the single most important operation in the whole subject.</p>
+    <p>So the column picture asks a different question from the row picture: <strong>how much of the red arrow and how much of the blue arrow do I need to land exactly on the target?</strong> The answer is again <span class="m">x = 1</span>, <span class="m">y = 2</span>: one red arrow, then two blue arrows, and you arrive at (0, 3).</p>
+  </div>
+
+  <div class="lab board" id="lab-cols">
+    <div class="lab-head"><span class="lab-tag">LAB 1.3</span><h3>Mix two columns to hit the target</h3><i data-ic="columns"></i></div>
+    <p class="lab-intro">Slide <b>x</b> and <b>y</b>. You walk <b>x</b> red arrows and then <b>y</b> blue arrows. The grey dots mark every place a whole-number mix can reach.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="sq" aria-label="Linear combination of two column vectors"></canvas>
+        <div class="lab-caption"><span class="key k1">x × column 1</span><span class="key k2">y × column 2</span><span class="key k3">target b</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Columns</span><div data-slot="presets"></div></div>
+        <div class="lab-group" data-slot="sliders"></div>
+        <div data-slot="status"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Find the mix that lands on the target without pressing <b>Show the answer</b>.</li>
+        <li>Notice the grey dots cover the whole plane. With these two columns <b>every</b> target is reachable.</li>
+        <li>Switch to <b>Parallel columns</b>. Now the dots lie on one line. A target off that line cannot be reached by any mix. Same singular case as before, seen from the column side.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="arm"></i>Robotics link<em>actuation</em></div>
+    <div class="robolink-body">
+      <h3>Every motor owns one column</h3>
+      <p>Picture a robot arm with two joints. Turn only the shoulder a little, and the hand sweeps in some direction. Turn only the elbow, and the hand moves in a different direction. Those two hand-velocity arrows are the two <strong>columns</strong> of a matrix that roboticists call the <span class="term">Jacobian</span>, written <span class="m">J</span>.</p>
+      <p>To push the hand in a direction you choose, the controller has to decide how fast to turn each joint. That is the column picture exactly: <em>how much of column 1 and how much of column 2 add up to the velocity I want?</em> The joint speeds are the unknowns <span class="m">x</span> and <span class="m">y</span>.</p>
+      <div class="eq left"><span class="m">q̇<sub>1</sub></span><span data-mx="column_1" data-cols="0:h1" data-cls="sm"></span><span class="op">+</span><span class="m">q̇<sub>2</sub></span><span data-mx="column_2" data-cols="0:h2" data-cls="sm"></span><span class="op">=</span><span data-mx="hand_velocity" data-cols="0:h3" data-cls="sm"></span></div>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-arm">
+    <div class="lab-head"><span class="lab-tag">LAB 1.4</span><h3>The two-link arm: joint speeds are a column mix</h3><i data-ic="arm"></i></div>
+    <p class="lab-intro">Drag the amber handle to choose the hand velocity you want. The lab solves for the two joint speeds and draws them as a red step plus a blue step. Pose the arm with the sliders, then press <b>Move the hand</b>.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="wide" aria-label="Two-link robot arm with Jacobian columns"></canvas>
+        <div class="lab-caption"><span class="key k1">shoulder's share</span><span class="key k2">elbow's share</span><span class="key k3">wanted hand velocity</span><span class="key kd">column directions</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group" data-slot="sliders"></div>
+        <div data-slot="readouts"></div>
+        <div data-slot="status"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Move the shoulder slider only. The red dashed line stays at right angles to the line from shoulder to hand. A joint can only swing the hand <b>sideways</b> around itself.</li>
+        <li>Slide the elbow toward 0° so the arm straightens. The two dashed lines swing together until they are parallel. Ask for a velocity along the arm and watch the joint speeds explode.</li>
+        <li>A straight arm cannot move its hand outward. Robot people call that pose a <b>singularity</b>. It is the parallel-columns case from Lab 1.3.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="note idea">
+    <i data-ic="idea"></i>
+    <span class="note-title">Key idea</span>
+    <div class="note-body"><p>Rows are constraints. Columns are capabilities. The row picture asks "where do all my facts agree?" The column picture asks "can my building blocks produce what I want?"</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 1.3 -->
+<section class="concept" id="matrix-form" data-toc="Matrix form Ax = b">
+  <header class="concept-head">
+    <span class="concept-no">1.3</span>
+    <h2>The matrix form: A<b>x</b> = <b>b</b></h2>
+    <p class="concept-sub">One short sentence that holds the whole system.</p>
+  </header>
+  <div class="prose">
+    <p>Writing out every equation gets tiring fast, so we pack the numbers into three boxes. The coefficients go into a rectangle called a <span class="term">matrix</span>, named <span class="m">A</span>. The unknowns go into a vector <span class="m"><b>x</b></span>. The right-hand sides go into a vector <span class="m"><b>b</b></span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's example as A x = b</span>
+    <div class="eq">
+      <span data-mx="2 -1; -1 2" data-cap="A · coefficients"></span>
+      <span data-mx="x; y" data-cap="x · unknowns"></span>
+      <span class="op">=</span>
+      <span data-mx="0; 3" data-cap="b · right side"></span>
+    </div>
+    <p>The <strong>rows</strong> of <span class="m">A</span> are the two equations. The <strong>columns</strong> of <span class="m">A</span> are the two arrows. One matrix carries both pictures.</p>
+  </div>
+  <div class="prose">
+    <h3>How to multiply a matrix by a vector</h3>
+    <p>There are two ways, and they always give the same answer. Strang recommends the first.</p>
+    <ul>
+      <li><strong>By columns.</strong> <span class="m">A<b>x</b></span> is a combination of the columns of <span class="m">A</span>. The entries of <span class="m"><b>x</b></span> say how much of each column to take.</li>
+      <li><strong>By rows.</strong> Each entry of the answer is one row of <span class="m">A</span> multiplied into <span class="m"><b>x</b></span>, entry by entry, and summed. This is called a <span class="term">dot product</span>.</li>
+    </ul>
+  </div>
+
+  <div class="lab board" id="lab-mv">
+    <div class="lab-head"><span class="lab-tag">LAB 1.5</span><h3>A times x, two ways</h3><i data-ic="matrix"></i></div>
+    <p class="lab-intro">This is the product worked in the lecture. Change the two entries of <b>x</b> and switch between the two ways of thinking. The answer never depends on which way you choose.</p>
+    <div class="lab-main stack">
+      <div class="lab-stage">
+        <div class="lab-row"><div data-slot="mode"></div></div>
+        <div class="lab-math" data-slot="eq"></div>
+        <div data-slot="status"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group" data-slot="sliders" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); display: grid; gap: 14px 26px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="chip"></i>Robotics link<em>how robot code is written</em></div>
+    <div class="robolink-body">
+      <h3>In robot software, the matrix is the robot</h3>
+      <p>The matrix <span class="m">A</span> stores the machine's geometry: where the wheels are, how long the links are, which way the thrusters point. The vector <span class="m"><b>x</b></span> is what the motors do right now. The product <span class="m">A<b>x</b></span> is the motion that results. Predicting motion from motor commands is a multiplication. Finding motor commands for a wanted motion is solving <span class="m">A<b>x</b> = <b>b</b></span>. Robotics names these two directions <strong>forward</strong> and <strong>inverse</strong> problems.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 1.4 -->
+<section class="concept" id="three-d" data-toc="Three equations, three unknowns">
+  <header class="concept-head">
+    <span class="concept-no">1.4</span>
+    <h2>Three equations, three unknowns</h2>
+    <p class="concept-sub">The same two pictures, one dimension up.</p>
+  </header>
+  <div class="prose">
+    <p>The lecture then moves to three unknowns:</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's 3 by 3 example</span>
+    <div class="eq wrapok">
+      <span class="m">2x − y = 0</span><span class="op">&nbsp;&nbsp;</span><span class="m">−x + 2y − z = −1</span><span class="op">&nbsp;&nbsp;</span><span class="m">−3y + 4z = 4</span>
+    </div>
+    <div class="eq">
+      <span data-mx="2 -1 0; -1 2 -1; 0 -3 4" data-cols="0:h1,1:h2,2:h4" data-cap="A"></span>
+      <span data-mx="x; y; z" data-cap="x"></span>
+      <span class="op">=</span>
+      <span data-mx="0; -1; 4" data-cols="0:h3" data-cap="b"></span>
+    </div>
+  </div>
+  <div class="prose">
+    <p><strong>Row picture.</strong> With three unknowns, one equation no longer gives a line. It gives a flat sheet, a <span class="term">plane</span>, in three-dimensional space. Two planes meet along a line. A third plane cuts that line at a single point. That point is the solution. Strang admits on camera that this is hard to draw, and with more unknowns it becomes impossible to picture at all.</p>
+    <p><strong>Column picture.</strong> This view survives. The three columns of <span class="m">A</span> are three arrows in space, and we look for the mix that reaches <span class="m"><b>b</b></span>:</p>
+  </div>
+  <div class="work">
+    <div class="eq">
+      <span class="m">x</span><span data-mx="2; -1; 0" data-cols="0:h1"></span><span class="op">+</span>
+      <span class="m">y</span><span data-mx="-1; 2; -3" data-cols="0:h2"></span><span class="op">+</span>
+      <span class="m">z</span><span data-mx="0; -1; 4" data-cols="0:h4"></span><span class="op">=</span>
+      <span data-mx="0; -1; 4" data-cols="0:h3"></span>
+    </div>
+    <p>Look closely: the target <span class="m"><b>b</b></span> is the third column. So take none of the first, none of the second and one of the third. The solution is <span class="m">x = 0, y = 0, z = 1</span>, found by looking, with no algebra. Change the target to (1, 1, −3) and the answer becomes (1, 1, 0), because that target is column 1 plus column 2.</p>
+  </div>
+
+  <div class="lab board" id="lab-3d">
+    <div class="lab-head"><span class="lab-tag">LAB 1.6</span><h3>Three columns in space</h3><i data-ic="axes"></i></div>
+    <p class="lab-intro">Drag the picture to turn it. Slide <b>x</b>, <b>y</b> and <b>z</b> to walk along the three columns in turn and reach the amber target.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="sq" aria-label="Three column vectors in three dimensions"></canvas>
+        <div class="lab-caption"><span class="key k1">x × column 1</span><span class="key k2">y × column 2</span><span class="key k4">z × column 3</span><span class="key k3">target b</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Target</span><div data-slot="presets"></div></div>
+        <div class="lab-group" data-slot="sliders"></div>
+        <div data-slot="status"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="thruster"></i>Robotics link<em>thrust allocation</em></div>
+    <div class="robolink-body">
+      <h3>Three thrusters, three things to control</h3>
+      <p>A small underwater vehicle seen from above can do three things: push forward, push sideways and turn. Call the wanted push and turn <span class="m"><b>b</b> = (F<sub>x</sub>, F<sub>y</sub>, τ)</span>. It has three thrusters, and firing one of them at full unit strength gives some fixed mix of forward push, side push and turning effort. That mix is the thruster's <strong>column</strong>.</p>
+      <p>The pilot moves a joystick to ask for <span class="m"><b>b</b></span>. The computer has to work out how hard to fire each thruster. That is <span class="m">A<b>x</b> = <b>b</b></span> with three equations and three unknowns, and the job has a name in marine robotics: <strong>thrust allocation</strong>.</p>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-thrust">
+    <div class="lab-head"><span class="lab-tag">LAB 1.7</span><h3>Drive a three-thruster vehicle</h3><i data-ic="thruster"></i></div>
+    <p class="lab-intro">Use the three sliders as a joystick. The lab solves for the three thrusts and the vehicle responds. The small picture on the right shows the three thruster columns in (F<sub>x</sub>, F<sub>y</sub>, τ) space.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="wide" aria-label="Top view of a vehicle with three thrusters"></canvas>
+        <div class="lab-caption"><span class="key k1">thruster 1</span><span class="key k2">thruster 2</span><span class="key k4">thruster 3</span><span>the grid scrolls as the vehicle moves</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Thruster layout</span><div data-slot="presets"></div></div>
+        <div class="lab-group" data-slot="sliders"></div>
+        <canvas class="pano" data-slot="cols3d" aria-label="Thruster columns in force and torque space"></canvas>
+        <div data-slot="status"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>With the <b>Good layout</b>, ask for forward push only. Two thrusters share the work. Now add turning: the same two thrusters split unevenly to twist the hull.</li>
+        <li>Switch to <b>All aimed at the centre</b>. Every thruster now pushes straight through the middle of the vehicle, so none of them can turn it. In the small picture the three columns lie flat in one plane.</li>
+        <li>Ask for any turn with that layout. There is no solution. The target <b>b</b> sticks out of the plane that the columns can reach.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 1.5 -->
+<section class="concept" id="every-b" data-toc="Can we solve for every b?">
+  <header class="concept-head">
+    <span class="concept-no">1.5</span>
+    <h2>The big question: can we solve A<b>x</b> = <b>b</b> for every <b>b</b>?</h2>
+    <p class="concept-sub">The question the lecture ends on, and the one the rest of the course answers.</p>
+  </header>
+  <div class="prose">
+    <p>Strang closes with a question in two forms that mean the same thing:</p>
+    <ul>
+      <li><strong>Algebra:</strong> can I solve <span class="m">A<b>x</b> = <b>b</b></span> for every right-hand side <span class="m"><b>b</b></span>?</li>
+      <li><strong>Geometry:</strong> do the linear combinations of the columns fill the whole space?</li>
+    </ul>
+    <p>For the lecture's matrix the answer is yes. Its three columns point in three truly different directions, so their mixes reach every point of three-dimensional space. Such a matrix is called <span class="term">non-singular</span> or <span class="term">invertible</span>.</p>
+    <p>The answer is no when the columns are short of directions. If the third column happens to lie in the same plane as the first two, it adds nothing new. All the mixes stay in that plane, and any <span class="m"><b>b</b></span> outside the plane has no solution. That is a <span class="term">singular</span> matrix. You saw it in Lab 1.7 the moment all three thrusters aimed at the centre.</p>
+    <p>The idea scales. Nine equations in nine unknowns means nine columns, each an arrow in nine-dimensional space. Nobody can draw that, but the question is unchanged: do the nine columns give nine independent directions?</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="target"></i>Robotics link<em>design rule</em></div>
+    <div class="robolink-body">
+      <h3>"Solvable for every b" means "the robot can do everything we ask"</h3>
+      <p>A robot designer reads the lecture's last question like this: <em>do my actuators, between them, cover every motion I need?</em> If the columns of the matrix fill the space, the machine has full authority and any commanded motion can be produced. If they do not, some motion is simply unavailable, whatever the software does. No controller can fix a singular design. Only moving a motor can.</p>
+      <p>The same question, asked of sensors instead of motors, is whether the robot can work out its full state from what it measures. Lab 1.2 failed in exactly that way when the two bearing lines became one.</p>
+    </div>
+  </div>
+
+  <div class="tablewrap">
+    <table class="t">
+      <thead><tr><th>Lecture idea</th><th>In plain words</th><th>What it is in a robot</th></tr></thead>
+      <tbody>
+        <tr><td>Linear equation</td><td>A fact that mixes unknowns using only multiply-by-a-number and add</td><td>One sensor reading, or one balance of forces</td></tr>
+        <tr><td>Row picture</td><td>Each equation is a line or a plane; the solution is where they all meet</td><td>Triangulation: each measurement narrows down where the robot can be</td></tr>
+        <tr><td>Column picture</td><td>Mix the columns to reach the right-hand side</td><td>Each motor contributes one column; choose how hard to drive each</td></tr>
+        <tr><td>Linear combination</td><td>Stretch some vectors and add them</td><td>The combined effect of several actuators running at once</td></tr>
+        <tr><td>Matrix A</td><td>The table of coefficients</td><td>The robot's geometry: link lengths, wheel and thruster placement</td></tr>
+        <tr><td>A x (multiply)</td><td>The combination of columns that x asks for</td><td>Forward problem: motor commands in, motion out</td></tr>
+        <tr><td>Solve A x = b</td><td>Find the mix that produces b</td><td>Inverse problem: wanted motion in, motor commands out</td></tr>
+        <tr><td>Singular</td><td>Columns do not fill the space; rows are parallel or repeated</td><td>A singularity: a motion the robot cannot make, or a position it cannot sense</td></tr>
+        <tr><td>Nearly singular</td><td>Lines cross at a thin angle</td><td>Ill-conditioning: small sensor noise becomes large error, joint speeds spike</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ check -->
+<section class="concept" id="check" data-toc="Check yourself">
+  <header class="concept-head">
+    <span class="concept-no">1.6</span>
+    <h2>Check yourself</h2>
+    <p class="concept-sub">Answer in your head first, then open each one.</p>
+  </header>
+  <div class="quiz">
+    <details><summary><span class="q">Q1</span><span>In the row picture, what does one equation in two unknowns look like, and what is the solution of two of them?</span></summary>
+      <div class="a"><p>Each equation is a straight line. The solution is the point where the two lines cross, because only that point satisfies both equations.</p></div></details>
+    <details><summary><span class="q">Q2</span><span>Write <span class="m">2x − y = 0</span>, <span class="m">−x + 2y = 3</span> in the column picture.</span></summary>
+      <div class="a"><p><span class="m">x</span> times the column (2, −1) plus <span class="m">y</span> times the column (−1, 2) equals the column (0, 3). The solution <span class="m">x = 1, y = 2</span> says: one of the first column plus two of the second.</p></div></details>
+    <details><summary><span class="q">Q3</span><span>Without solving anything, find <span class="m"><b>x</b></span> if <span class="m"><b>b</b></span> is exactly the second column of <span class="m">A</span>.</span></summary>
+      <div class="a"><p>Take one of the second column and none of the others, so <span class="m"><b>x</b></span> has a 1 in the second position and zeros elsewhere. This is the trick Strang uses when <span class="m"><b>b</b></span> equals column 3.</p></div></details>
+    <details><summary><span class="q">Q4</span><span>A two-link arm is stretched out perfectly straight. Why can it not move its hand directly away from the shoulder?</span></summary>
+      <div class="a"><p>Each joint can only swing the hand at right angles to the line from that joint to the hand. With the arm straight, both of those directions are the same sideways direction. The two columns of the Jacobian are parallel, so every mix of them is sideways too. Outward is not a combination of the columns. The matrix is singular.</p></div></details>
+    <details><summary><span class="q">Q5</span><span>A vehicle has three thrusters and all three push through its centre of mass. Which motion is lost, and how does it show in the matrix?</span></summary>
+      <div class="a"><p>Turning is lost. A force through the centre makes no torque, so the torque entry of every column is zero. The whole bottom row of the matrix is zero, the three columns lie in one plane, and any <span class="m"><b>b</b></span> with a non-zero torque has no solution.</p></div></details>
+    <details><summary><span class="q">Q6</span><span>Two bearing lines cross at a very thin angle. The system is solvable. Why would a robot still distrust the answer?</span></summary>
+      <div class="a"><p>A tiny error in either bearing moves the crossing point a long way along the lines. The equations are nearly singular, so the solution is very sensitive to noise. The fix is better geometry: use beacons whose bearing lines cross closer to a right angle.</p></div></details>
+  </div>
+
+  <div class="note say">
+    <i data-ic="pen"></i>
+    <span class="note-title">For your article</span>
+    <div class="note-body">
+      <p><strong>One-line summary:</strong> a linear system can be read across as constraints that must all agree, or down as building blocks that must add up to a goal.</p>
+      <p><strong>A robot sentence you can reuse:</strong> sensors write the rows, motors own the columns, and a singular matrix is a robot that has run out of directions.</p>
+      <p><strong>Good figures to capture:</strong> Lab 1.2 with a wide crossing next to a thin crossing, and Lab 1.4 with the arm bent next to the arm straight.</p>
+      <p>The full notes, worked numbers and references for this lecture are in <a href="article/01-geometry-of-linear-equations.md">article/01-geometry-of-linear-equations.md</a>, and runnable code is in <a href="code/l01_geometry.py">code/l01_geometry.py</a>.</p>
+    </div>
+  </div>
+</section>
+
+</article>
+</div>
+</main>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/la.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/plot.js"></script>
+<script src="assets/js/robots.js"></script>
+<script src="assets/js/lectures/l1.js"></script>
+</body>
+</html>
