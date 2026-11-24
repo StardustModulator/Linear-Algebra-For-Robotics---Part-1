@@ -109,6 +109,41 @@ Every picture shows the lab exactly as the page draws it, so the colours keep th
 ![Singular: A is now the lecture’s 1 3; 2 6. The shape is flattened onto a line, P and Q land on the same point, x = (3, −1) goes to zero, and a whole line of inputs (amber) gives the same output.](figures/l3-flatten-singular.png)
 
 
+## Lecture 4 · Factorization into A = LU
+
+![A = LU for the lecture’s matrix 2 1; 8 7: L holds the multiplier 4 under a diagonal of ones, and U holds the pivots 2 and 3.](figures/l4-lu-2x2.png)
+
+![The same matrix as A = LDU: the pivots are pulled out into the diagonal matrix D, so that L and U both have ones on the diagonal.](figures/l4-ldu-2x2.png)
+
+![A 3 by 3 elimination part-way through: the multipliers 2 and 0 are already recorded in L, and the last one, 5, has just landed while row 3 of U was being finished.](figures/l4-lu-3x3-midway.png)
+
+![Multiplying back: each row of L is a recipe that rebuilds one row of A from finished rows of U, which is why every multiplier appears in L unchanged.](figures/l4-lu-rebuild.png)
+
+![Why L is kept and E is not: E, which takes A to U, contains a 10 that no elimination step used, while L contains only the multipliers 2, 0 and 5.](figures/l4-e-against-l.png)
+
+![A rover drives move A (red) and then turns and drives move B (blue). The combined motion is the matrix product AB.](figures/l4-rover-two-moves.png)
+
+![Undoing B first and then A retraces the path and brings the rover home: the product A B B⁻¹ A⁻¹ is the identity. This is (AB)⁻¹ = B⁻¹A⁻¹.](figures/l4-rover-undo-right-order.png)
+
+![Undoing A first and then B uses two correct inverses in the wrong order. The rover ends 3.44 m from home (amber ring) and the product is not the identity.](figures/l4-rover-undo-wrong-order.png)
+
+![Work for n = 100 unknowns and 1,000 right-hand sides, drawn to one scale: 343,300,000 operations when elimination is repeated every time, 10,333,300 when A is factored once.](figures/l4-cost-bars.png)
+
+![At n = 500 one solve from scratch costs about 41.9 million operations, against 250,000 with L and U stored: 2.4 control ticks a second against 400 at the assumed processor speed.](figures/l4-cost-tick-budget.png)
+
+![A natural cubic spline through seven waypoints. The tridiagonal matrix T holds only fours and ones; the waypoints appear only in the amber right-hand side, and the blue unknowns are the accelerations at the waypoints.](figures/l4-spline-path.png)
+
+![One waypoint has been dragged upward. The path and the right-hand side changed, the matrix did not: the counter still shows a single LU factorization, with only the triangular solves repeated.](figures/l4-spline-after-drag.png)
+
+![Dot patterns of T = LU. T has three diagonals and its factors have two each, so a solve costs about 3n operations. The pivots settle at 2 + √3 ≈ 3.7321.](figures/l4-spline-banded-factors.png)
+
+![The six 3 by 3 permutation matrices, with an exchange chosen as P and a cycle as Q. The two products PQ and QP are different members of the six, and the wiring diagrams show three motors receiving their signals in different orders.](figures/l4-permutations-order-matters.png)
+
+![For a permutation matrix the inverse is the transpose: Pᵀ P = I. The two cycles are transposes of each other, so each one undoes the other.](figures/l4-permutations-inverse-transpose.png)
+
+![All 36 products of the six permutation matrices. Every entry is again one of the six, which is what makes them a group; the table is not symmetric, because order matters.](figures/l4-permutations-group-table.png)
+
+
 ## Lecture 5 · Transposes, Permutations, Spaces Rⁿ
 
 ![A zero sits in the first pivot position, so rows 1 and 2 change places (amber). The permutation matrix P on the left records the exchange while L waits for its multipliers.](figures/l5-row-exchange.png)
@@ -173,6 +208,41 @@ Every picture shows the lab exactly as the page draws it, so the colours keep th
 ![Doubling b doubles the shift. The point x on the amber line is always the point on the blue nullspace line plus the same red arrow.](figures/l6-shifted-two-solutions.png)
 
 ![Shrink b to zero and the solution line lands on the nullspace. The solutions of A x = b form a subspace only when b = 0.](figures/l6-shifted-b-zero.png)
+
+
+## Lecture 7 · Solving Ax = 0
+
+![Elimination on the lecture’s 3 by 4 matrix reaches column 2 and finds only zeros at and below the pivot position. The column gets no pivot, is marked free (blue), and elimination moves right instead of stopping.](figures/l7-free-column.png)
+
+![The echelon form U of the lecture’s matrix. Two circled pivots give rank 2; pivot columns 1 and 3 are red, free columns 2 and 4 are blue, and the zero row records that row 3 was row 1 plus row 2.](figures/l7-echelon-form.png)
+
+![The reduced row echelon form R beside the nullspace matrix N. The free columns of R, with their signs flipped, fill the pivot rows of N, so the special solutions (−2, 1, 0, 0) and (2, 0, −2, 1) are read off without any calculation.](figures/l7-reduced-form-and-nullspace.png)
+
+![The lecture’s second example, the transpose. A zero sits in the pivot position of column 2 but a non-zero entry lies below it, so a row exchange (amber rows) rescues the pivot. A column is free only when everything at and below the pivot position is zero.](figures/l7-transpose-row-exchange.png)
+
+![The Jacobian of a four-joint arm in its staircase pose, reduced to R. Two pivots mean the hand can move in every direction on the table; the two free columns give two special solutions, the arm’s two basic self-motions.](figures/l7-arm-jacobian-reduced.png)
+
+![Building special solution 1 by hand. The free variables are set to x₂ = 1 and x₄ = 0 (blue); back-substitution forces the pivot variables x₃ = 0 and x₁ = −2 (red); and that mix of the columns of A adds up to zero.](figures/l7-special-solution.png)
+
+![Any choice of the free variables gives a solution. With x₂ = 3 and x₄ = −1 the result (−8, 3, 2, −1) is 3 of the first special solution minus 1 of the second: the free variables are the mixing amounts.](figures/l7-free-variables-mix.png)
+
+![A four-joint arm in the staircase pose. Elimination on its 2 by 4 Jacobian makes joints 1 and 2 the pivot joints (red) and leaves joints 3 and 4 free (blue): rank 2, with two joints to spare.](figures/l7-arm-pivot-and-free-joints.png)
+
+![Special solution 1 in motion. Free joint 3 leads, pivot joints 1 and 2 counter-turn as R dictates, and the hand stays on the amber ring while the arm leaves its starting shape (grey).](figures/l7-arm-self-motion.png)
+
+![The arm stretched straight. All four columns of J are parallel, so only one pivot survives: the rank drops to 1, three joints are free, and the hand has lost the direction along the arm. A singularity is a drop in rank.](figures/l7-arm-singular.png)
+
+![Four thrusters, three jobs. A 1 N side push solved with the free thruster T4 held at zero: the bow thruster pushes and the two propellers fight each other to cancel the twist, 3 N of thrust in all.](figures/l7-thrusters-free-at-zero.png)
+
+![The same side push after adding half of the special solution s = (−2, −1, 2, 1). The net force and torque are unchanged because B s = 0, but the two side thrusters now share the work and the total thrust falls from 3 N to 1 N.](figures/l7-thrusters-least-effort.png)
+
+![Thruster T4 has failed, which deletes its column. The remaining 3 by 3 matrix still has rank 3, so full control survives, but there is no free variable left: the costly 3 N answer is now the only one.](figures/l7-thrusters-one-failed.png)
+
+![Both propellers have failed. Two columns can hold at most two pivots, so the rank is 2 and a direction is lost: no setting of the side thrusters produces the forward push that is being asked for.](figures/l7-thrusters-two-failed.png)
+
+![A layout whose special solution is (1, −2, 1, 0). The zero entry marks T4 as the thruster with no understudy: when it fails the rank drops to 2 at once, while any one of the other three could have been lost safely.](figures/l7-thruster-without-backup.png)
+
+![The lecture’s matrix and its transpose, each reduced to echelon form. The pivots sit in different places but there are two in both: A and Aᵀ always have the same rank, here with 2 and 1 free variables.](figures/l7-rank-of-transpose.png)
 
 
 ## Capstone: one robot, seven lectures

@@ -13,7 +13,7 @@ Robots: a four-joint planar arm (two spare joints), a four-thruster vehicle
 import math
 from fractions import Fraction
 from linalg import (frac, show, fmt, heading, copy, shape, transpose, column, from_columns,
-                    matvec, matmul, rref, rank, nullspace, arm_points, arm_jacobian, norm)
+                    matvec, matmul, rref, rank, nullspace, arm_points, arm_jacobian)
 
 LECTURE_A = [[1, 2, 2, 2],
              [2, 4, 6, 8],
@@ -47,6 +47,8 @@ def echelon(A, verbose=False, tol=1e-9):
     pivot_cols, r = [], 0
     for c in range(n):
         if r == m:
+            if verbose:
+                print(f"  every row now holds a pivot: column(s) {', '.join(str(j + 1) for j in range(c, n))} cannot get one -> FREE")
             break
         p = next((i for i in range(r, m) if abs(A[i][c]) > tol), None)
         if p is None:
@@ -340,7 +342,6 @@ def four_thrusters():
         p = particular(B, b)
         print(f"wanted (Fx, Fy, torque) = {want}")
         print(f"  free thruster set to 0:  f = {vec(p)}   total thrust {fmt(sum(abs(v) for v in p))} N")
-        best = None
         for c in (Fraction(1, 4), Fraction(1, 2), Fraction(1)):
             f = [pi + c * si for pi, si in zip(p, s)]
             effort = sum(abs(v) for v in f)
@@ -421,6 +422,53 @@ def same_rank():
     print("Velocities go through J, forces through J^T (Lecture 5). Both count the same r directions.\n")
 
 
+def practice():
+    heading("13. Practice problems (answers to P1-P10 on the page)")
+    A = frac([[1, 3, 1, 2], [2, 6, 4, 8], [0, 0, 2, 4]])
+    U, piv = echelon(A)
+    free = [j for j in range(4) if j not in piv]
+    print("P1   U =", [vec(r) for r in U], "  pivot columns", names(piv), "  free columns", names(free), "  rank", len(piv))
+    sols = [solve_from_free(U, piv, {c: (1 if c == f else 0) for c in free}) for f in free]
+    print("P2   special solutions by back-substitution:", [vec(x) for x in sols], "  A s =", [vec(matvec(A, x)) for x in sols])
+    R, pivR = rref(A)
+    F, N, _ = blocks(R, pivR)
+    print("P3   R =", [vec(r) for r in R], "  F =", [vec(r) for r in F], "  columns of N:", [vec(column(N, j)) for j in range(2)])
+    print("P4   (a) 3 by 5, rank 3: n - r =", 5 - 3, "  (b) 5 by 3, rank 3: n - r =", 3 - 3, "(only x = 0)",
+          "  (c) 3 by 5: n - r is at least", 5 - 3, "so never only zero")
+    A5 = frac([[1, 2, 1], [2, 4, 3]])
+    print("P5   A: rank", rank(A5), " special solutions", [vec(x) for x in nullspace(A5)],
+          "   A^T: rank", rank(transpose(A5)), " special solutions", [vec(x) for x in nullspace(transpose(A5))])
+    q6 = [0, 0, math.pi / 2, 0]                     # two links along the table, then two straight up
+    J = exact(arm_jacobian(ARM_LINKS, q6))
+    U6, piv6 = echelon(J)
+    R6, _ = rref(J)
+    s6 = nullspace(J)
+    print("P6   hand at", vec(arm_points(ARM_LINKS, q6)[-1]), "  J =", [vec(r) for r in J], "  U =", [vec(r) for r in U6])
+    print("     R =", [vec(r) for r in R6], "  rank", len(piv6), "  pivot joints", names(piv6), "  special solutions", [vec(x) for x in s6])
+    qd = [Fraction(1, 5) * v for v in s6[0]]
+    print("P7   0.2 * s1 =", vec([float(v) for v in qd]), "  J q_dot =", vec(matvec(J, qd)))
+    qd2 = [a + Fraction(1, 5) * b for a, b in zip(qd, s6[1])]
+    print("     follow-up, joint 4 also at 0.2:", vec([float(v) for v in qd2]), "  J q_dot =", vec(matvec(J, qd2)))
+    J8 = exact(arm_jacobian(ARM_LINKS, [math.pi / 2, 0, 0, 0]))
+    R8, piv8 = rref(J8)
+    print("P8   J =", [vec(r) for r in J8], "  R =", [vec(r) for r in R8], "  rank", len(piv8), "  n - r =", 4 - len(piv8))
+    print("     special solutions", [vec(x) for x in nullspace(J8)])
+    B = exact(from_columns([thruster_column(-1, 1, 0), thruster_column(-1, -1, 0),
+                            thruster_column(1, 0, math.pi / 2), thruster_column(-1, 0, math.pi / 2)]))
+    U9, piv9 = echelon(B)
+    R9, _ = rref(B)
+    s = nullspace(B)[0]
+    print("P9   B =", [vec(r) for r in B], "  U =", [vec(r) for r in U9])
+    print("     R =", [vec(r) for r in R9], "  rank", len(piv9), "  s =", vec(s), "  B s =", vec(matvec(B, s)))
+    print("     rank with one thruster removed:", [rank([[row[j] for j in range(4) if j != dead] for row in B]) for dead in range(4)])
+    p = particular(B, frac([0, 2, 0]))
+    best = min((-pi / si for pi, si in zip(p, s) if si != 0), key=lambda c: (sum(abs(pi + c * si) for pi, si in zip(p, s)), abs(c)))
+    f = [pi + best * si for pi, si in zip(p, s)]
+    print("P10  free thruster at zero: f =", vec(p), " total", fmt(sum(abs(v) for v in p)), "N;",
+          " least effort at c =", fmt(best), ": f =", vec(f), " total", fmt(sum(abs(v) for v in f)), "N;  B f =", vec(matvec(B, f)))
+    print()
+
+
 if __name__ == "__main__":
     lecture_matrix()
     U, piv = elimination()
@@ -434,3 +482,4 @@ if __name__ == "__main__":
     four_thrusters()
     repeated_sensor()
     same_rank()
+    practice()

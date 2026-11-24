@@ -401,8 +401,9 @@
     <div class="eq wrapok">
       <span data-cmx="1 2 0 -2; 0 0 1 2; 0 0 0 0" data-kinds="p f p f" data-heads="x1 x2 x3 x4" data-labels data-dimrows="2" data-cap="R"></span>
       <span class="op">&nbsp;</span>
-      <span data-mx="1 0; 0 1" data-cols="0:h1,1:h1" data-cap="I · columns 1 and 3"></span>
-      <span data-mx="2 -2; 0 2" data-cols="0:h2,1:h2" data-cap="F · columns 2 and 4"></span>
+      <span data-mx="1 0; 0 1" data-cols="0:h1,1:h1" data-cap="I · pivot columns"></span>
+      <span class="op">&nbsp;</span>
+      <span data-mx="2 -2; 0 2" data-cols="0:h2,1:h2" data-cap="F · free columns"></span>
     </div>
     <p>If the pivot columns stood first, <span class="m">R</span> would read as four blocks: <span class="m">I</span> then <span class="m">F</span> on top, and zeros underneath. Strang writes this as <span class="m">R = [ I F ; 0 0 ]</span>. The zero row at the bottom is the record that row 3 of <span class="m">A</span> was a combination of the rows above it.</p>
   </div>
@@ -414,8 +415,9 @@
     <div class="eq wrapok">
       <span data-cmx="-2 2; 1 0; 0 -2; 0 1" data-rowkinds="p f p f" data-rowheads="x1 x2 x3 x4" data-heads="s1 s2" data-cap="N"></span>
       <span class="op">&nbsp;</span>
-      <span data-mx="-2 2; 0 -2" data-cols="0:h1,1:h1" data-cap="−F · rows 1 and 3"></span>
-      <span data-mx="1 0; 0 1" data-cols="0:h2,1:h2" data-cap="I · rows 2 and 4"></span>
+      <span data-mx="-2 2; 0 -2" data-cols="0:h1,1:h1" data-cap="−F · pivot rows"></span>
+      <span class="op">&nbsp;</span>
+      <span data-mx="1 0; 0 1" data-cols="0:h2,1:h2" data-cap="I · free rows"></span>
     </div>
     <p>Every column of <span class="m">N</span> solves <span class="m">R<b>x</b> = <b>0</b></span>, so <span class="m">RN = 0</span>. With the pivot variables listed on top and the free variables below, <span class="m">N = [ −F ; I ]</span>. Multiply the blocks to see why it works: <span class="m">[ I F ]</span> times <span class="m">[ −F ; I ]</span> is <span class="m">−F + F = 0</span>.</p>
     <p>The two pictures trade places. In <span class="m">R</span> the identity sits in the pivot columns and <span class="m">F</span> in the free columns. In <span class="m">N</span> the identity sits in the free rows, because each free variable takes its turn to be 1, and <span class="m">−F</span> fills the pivot rows. This second identity is <span class="m">n − r</span> by <span class="m">n − r</span>, one row for each free variable.</p>

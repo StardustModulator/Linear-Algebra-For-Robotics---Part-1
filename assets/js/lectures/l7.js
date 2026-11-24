@@ -360,13 +360,21 @@
       var rowTint = {};
       kinds.forEach(function (k, j) { rowTint[j] = k === 'p' ? 'h1' : 'h2'; });
       var parts = [{ cls: 'left' }], c = sc.get(), d = sd.get();
-      parts.push(cmx(rt ? rt.raw : ['–', '–', '–', '–'], { rowHeads: heads, rowKinds: kinds, fmt: f2, cls: 'sm', cap: 'joint speeds' }));
-      parts.push('=');
-      ns.basis.forEach(function (s, k) {
-        if (k === 1) parts.push('+');
-        if (k < 2) parts.push('<span class="m u c2">' + par(k ? d : c, f2) + '</span>');
-        parts.push(UI.mx(s, { rows: rowTint, fmt: f2, cls: 'sm', cap: 's' + SUB[k] + (k === 2 ? ' · not driven' : ''), dim: k === 2 ? function () { return true; } : null }));
-      });
+      if (r === 2 && rt) {
+        parts.push(cmx(rt.raw, { rowHeads: heads, rowKinds: kinds, fmt: f2, cls: 'sm', cap: 'joint speeds' }));
+        parts.push('=');
+        ns.basis.forEach(function (s, k) {
+          if (k) parts.push('+');
+          parts.push('<span class="m u c2">' + par(k ? d : c, f2) + '</span>');
+          parts.push(UI.mx(s, { rows: rowTint, fmt: f2, cls: 'sm', cap: 's' + SUB[k] }));
+        });
+      } else {
+        /* a singular pose: more special solutions than sliders, so just list them */
+        parts[0] = { cls: 'left gap' };
+        ns.basis.forEach(function (s, k) {
+          parts.push(k ? UI.mx(s, { rows: rowTint, fmt: f2, cls: 'sm', cap: 's' + SUB[k] }) : cmx(s, { rowHeads: heads, rowKinds: kinds, fmt: f2, cls: 'sm', cap: 's' + SUB[k] }));
+        });
+      }
       eqQ.innerHTML = UI.eq.apply(null, parts);
       var moved = LA.norm(LA.vsub(st.tip, target));
       out.rank(String(r)); out.spare(String(4 - r)); out.drift(fix(moved * 1000, 1) + ' mm');
