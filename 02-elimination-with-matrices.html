@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lecture 2 · Elimination with Matrices</title>
+<meta name="description" content="Elimination, pivots, back-substitution, elimination matrices and permutation matrices, taught from scratch with an omni-wheel robot that turns three encoder readings into one body velocity.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
+<link rel="stylesheet" href="assets/css/mit.css">
+<style>
+/* Lecture 2 only: small helpers built from the existing design tokens */
+#lab-elim .stepper-view { min-height: 21.5em; }
+#lab-elim .stepper-view .eq { align-items: flex-start; column-gap: 1.3em; }
+#lab-elim .stepper-view .eq .op { margin-top: 2.2em; }
+#lab-emat .lab-math .eq, #lab-perm .lab-math .eq { column-gap: .8em; }
+.ops { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--font-mono); font-size: 12px; color: var(--chalk-2); }
+.ops span { padding: 5px 8px; border: 1px solid var(--board-rule); background: var(--board-2); line-height: 1.2; }
+.ops b { color: var(--chalk); font-weight: 500; }
+.steps { display: grid; gap: 6px; padding-left: 1.3em; font-size: 15.5px; color: var(--ink-2); max-width: 66ch; }
+</style>
+</head>
+<body>
+<main data-lecture="2">
+
+<section class="lec-hero">
+  <div class="wrap">
+    <div class="lec-num">02<i>.</i></div>
+    <div class="lec-kicker label"><span class="bars"></span><span>MIT 18.06 · Lecture 2</span><span><i data-ic="clock"></i> 47:42</span></div>
+    <h1>Elimination with Matrices</h1>
+    <p class="lec-lede"><strong>Elimination</strong> is the method every computer uses to solve <span class="m">A<b>x</b> = <b>b</b></span>. This lecture does it by hand once, on three equations, and then shows that each step of the method is itself a <strong>matrix</strong>. The robot of the lecture has three omni wheels, and it uses elimination to turn three encoder readings into one body velocity.</p>
+    <div class="lec-meta">
+      <a class="btn primary" data-ocw="video" href="#"><i data-ic="video"></i><span>Watch the lecture on OCW</span></a>
+      <a class="btn" data-ocw="summary" href="#"><i data-ic="book"></i><span>Lecture summary</span></a>
+      <a class="btn" href="article/02-elimination-with-matrices.md"><i data-ic="pen"></i><span>Article notes</span></a>
+    </div>
+  </div>
+</section>
+
+<div class="wrap lec-layout">
+<nav class="toc"></nav>
+<article class="lec-body">
+
+<!-- ============================================================ 2.0 -->
+<section class="concept" id="start" data-toc="Start here: why we need a method">
+  <header class="concept-head">
+    <span class="concept-no">2.0</span>
+    <h2>Start here: why we need a method</h2>
+    <p class="concept-sub">Lecture 1 showed what a system of equations means. This lecture shows how to solve one.</p>
+  </header>
+  <div class="prose">
+    <p class="big">In Lecture 1 a whole system of linear equations became one short sentence, <span class="m">A<b>x</b> = <b>b</b></span>. We learned to see its solution as lines that cross, or as arrows that add up. What we never did was <em>find</em> that solution by a method that always works.</p>
+    <p>With two equations you can draw the two lines and read off the crossing point. With three you would need planes in space. With a hundred there is no picture at all. So we want an <span class="term">algorithm</span>: a fixed list of steps that a person or a computer can follow without having to be clever.</p>
+    <p>The algorithm is called <span class="term">elimination</span>, or Gaussian elimination after the mathematician Gauss. Strang opens the lecture by saying that this is the way every software package solves equations. He works one example all the way through. It has three equations and three unknowns:</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's system</span>
+    <div class="eq wrapok">
+      <span class="m">x + 2y + z = 2</span><span class="op">&nbsp;&nbsp;</span><span class="m">3x + 8y + z = 12</span><span class="op">&nbsp;&nbsp;</span><span class="m">4y + z = 2</span>
+    </div>
+    <div class="eq">
+      <span data-mx="1 2 1; 3 8 1; 0 4 1" data-cap="A"></span>
+      <span data-mx="x; y; z" data-cap="x"></span>
+      <span class="op">=</span>
+      <span data-mx="2; 12; 2" data-cap="b"></span>
+    </div>
+    <p>The third equation contains no <span class="m">x</span>, so the first number in its row is 0.</p>
+  </div>
+  <div class="prose">
+    <p>The lecture has four parts, and so does this page:</p>
+    <ol>
+      <li><strong>Eliminate.</strong> Subtract equations from one another until the system has a staircase shape.</li>
+      <li><strong>Back-substitute.</strong> Solve the staircase from the bottom step upward.</li>
+      <li><strong>Know when it fails.</strong> See how the method breaks down, and what a breakdown tells you.</li>
+      <li><strong>Write every step as a matrix.</strong> This is the new idea, and the reason for the lecture's title.</li>
+    </ol>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="chip"></i>Robotics link<em>why a robot cares</em></div>
+    <div class="robolink-body">
+      <h3>A robot needs a method that never has to think</h3>
+      <p>A robot's computer solves systems like this one hundreds of times every second: wheel readings go in, body motion comes out. It cannot look at a picture and it cannot guess. Elimination suits it for three reasons. The steps are the same every time. The number of steps is known in advance, so the answer always arrives on schedule. And when no answer exists, the method stops at one clear, recognisable point, which the robot can treat as an alarm.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 2.1 -->
+<section class="concept" id="elimination" data-toc="Elimination: pivots and multipliers">
+  <header class="concept-head">
+    <span class="concept-no">2.1</span>
+    <h2>Elimination: pivots and multipliers</h2>
+    <p class="concept-sub">Use one equation to remove an unknown from the equations below it.</p>
+  </header>
+  <div class="prose">
+    <p>Elimination rests on one permitted move: <strong>subtract a multiple of one equation from another</strong>. If two facts are true, then the second fact minus three times the first is true as well. Nothing is lost either, because adding the same multiple back would restore the equation you started with.</p>
+    <p>The purpose of each move is to make one unknown disappear. Look at the first two equations. Equation 1 begins with <span class="m">1x</span> and equation 2 begins with <span class="m">3x</span>. Subtract 3 times equation 1 from equation 2 and the <span class="m">x</span> terms cancel. Equation 2 is left with only <span class="m">y</span> and <span class="m">z</span>.</p>
+    <p>The letters <span class="m">x</span>, <span class="m">y</span>, <span class="m">z</span> do no work in this. Only the coefficients change. So we run the whole method on the matrix <span class="m">A</span> and leave the letters out. Three words are needed first:</p>
+    <ul>
+      <li>The <span class="term">diagonal</span> of a matrix runs from its top-left corner to its bottom-right corner.</li>
+      <li>A <span class="term">pivot</span> is the entry on the diagonal that we use to clear the entries beneath it. The first pivot is the top-left entry.</li>
+      <li>A <span class="term">multiplier</span> says how many times the pivot's row must be subtracted. It is always <strong>the entry to remove, divided by the pivot</strong>.</li>
+    </ul>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's elimination</span>
+    <div class="eq wrapok">
+      <span data-mx="1 2 1; 3 8 1; 0 4 1" data-pivots="0.0" data-cells="1.0:h3" data-cap="A"></span>
+      <span class="op">→</span>
+      <span data-mx="1 2 1; 0 2 -2; 0 4 1" data-pivots="0.0,1.1" data-cells="2.1:h3" data-cap="after step (2,1)"></span>
+      <span class="op">→</span>
+      <span data-mx="1 2 1; 0 2 -2; 0 0 5" data-pivots="0.0,1.1,2.2" data-cap="U · after step (3,2)"></span>
+    </div>
+    <ol class="steps">
+      <li><strong>Step (2,1).</strong> The first pivot is 1. The entry below it is 3, so the multiplier is <span class="m">3 ÷ 1 = 3</span>. Row 2 − 3 × row 1 is <span class="m">[3 8 1] − [3 6 3] = [0 2 −2]</span>.</li>
+      <li><strong>Step (3,1).</strong> The entry in row 3, column 1 is already 0. The multiplier is 0 and there is nothing to do.</li>
+      <li><strong>Step (3,2).</strong> The second pivot is 2. The entry below it is 4, so the multiplier is <span class="m">4 ÷ 2 = 2</span>. Row 3 − 2 × row 2 is <span class="m">[0 4 1] − [0 4 −4] = [0 0 5]</span>.</li>
+      <li>The third pivot is 5. Nothing lies below it, so elimination is finished. The pivots are <strong>1, 2 and 5</strong>.</li>
+    </ol>
+  </div>
+  <div class="prose">
+    <p>The finished matrix is named <span class="m">U</span>, because it is <span class="term">upper triangular</span>: every entry below the diagonal is 0. Getting from <span class="m">A</span> to <span class="m">U</span> is the whole purpose of elimination.</p>
+    <p>Strang labels each step by the position it clears. Step (2,1) clears row 2, column 1. Keep that labelling in mind. In section 2.4 the same numbers will name the matrices that perform the steps.</p>
+    <p>One remark in passing. Multiply the pivots together and you get <span class="m">1 × 2 × 5 = 10</span>. That number is the <span class="term">determinant</span> of <span class="m">A</span>. The course reaches determinants much later, so for now it is enough to notice that the pivots carry real information about the matrix.</p>
+  </div>
+
+  <div class="lab board" id="lab-elim">
+    <div class="lab-head"><span class="lab-tag">LAB 2.1</span><h3>Elimination, one step at a time</h3><i data-ic="stairs"></i></div>
+    <p class="lab-intro">Press <b>Next step</b> to replay elimination on the lecture's system. The column after the bar holds the right-hand sides, which ride along with their rows (section 2.2 explains why). Once the staircase is complete, the last steps solve it from the bottom up. Load another system, or type your own numbers, to run it again.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <div data-slot="stepper"></div>
+        <div class="lab-caption"><span class="key k1">pivot, circled</span><span class="key k2">pivot row</span><span class="key k3">row being changed, and results</span></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Load a system</span><div data-slot="presets"></div></div>
+        <div class="lab-group"><span class="label">Or edit the augmented matrix [ A | b ]</span><div class="lab-math" data-slot="input"></div></div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Step through the <b>Lecture example</b>. Confirm the multipliers 3, 0 and 2, the pivots 1, 2 and 5, and the solution (2, 1, −2).</li>
+        <li>Load <b>Needs a row exchange</b>. Watch for the step where a 0 lands in a pivot position and a lower row moves up to replace it. A zero pivot with a non-zero entry below it is only a detour.</li>
+        <li>Load <b>Singular (fails)</b>. The last row ends as 0 = −10, so there is no solution. Now change the bottom-right number from 2 to 12. The last row becomes 0 = 0 and there are infinitely many solutions. The matrix is singular either way. The right-hand side only decides which kind of failure you get.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="rover"></i>Robotics link<em>wheel encoders</em></div>
+    <div class="robolink-body">
+      <h3>A pivot says how firmly an equation pins down an unknown</h3>
+      <p>Take the simplest driving robot: two wheels side by side, a distance <span class="m">W</span> apart. It has two unknowns, its forward speed <span class="m">v</span> and its turn rate <span class="m">ω</span>. Each wheel carries an <span class="term">encoder</span>, a sensor that reports how fast the rim of the wheel is moving. The left wheel reads <span class="m">v − (W/2)ω</span> and the right wheel reads <span class="m">v + (W/2)ω</span>. Two readings, two equations:</p>
+      <div class="eq left">
+        <span data-mx="1 -W/2; 1 W/2" data-pivots="0.0"></span>
+        <span data-mx="v; ω"></span>
+        <span class="op">=</span>
+        <span class="mx" style="--cols:1"><span><i>s</i><sub>left</sub></span><span><i>s</i><sub>right</sub></span></span>
+      </div>
+      <p>The first pivot is 1 and the multiplier is 1. Row 2 − row 1 leaves <span class="m">Wω = s<sub>right</sub> − s<sub>left</sub></span>. Every two-wheeled robot performs this subtraction all day long: the difference of its wheel speeds, divided by <span class="m">W</span>, is its turn rate.</p>
+      <p>The second pivot is <span class="m">W</span>, the distance between the wheels. A wide robot has a large pivot, and its turn rate is firmly pinned down. A narrow robot has a small pivot. It has to divide by a small number, so a small encoder error becomes a large error in turn rate. That is a useful way to read any pivot: it measures how strongly its equation grips its unknown.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 2.2 -->
+<section class="concept" id="back-substitution" data-toc="Back-substitution">
+  <header class="concept-head">
+    <span class="concept-no">2.2</span>
+    <h2>Back-substitution and the augmented matrix</h2>
+    <p class="concept-sub">Carry the right-hand side along, then solve from the bottom up.</p>
+  </header>
+  <div class="prose">
+    <p>So far only the left sides of the equations have changed. The right-hand sides must go through exactly the same subtractions, or the equations stop being true.</p>
+    <p>The tidy way to guarantee that is to write <span class="m"><b>b</b></span> as one extra column beside <span class="m">A</span>. The result is the <span class="term">augmented matrix</span>, written <span class="m">[A | <b>b</b>]</span>. Augmented simply means that something has been added on. Every row operation now acts on a whole row, right-hand side included.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's numbers, with b carried along</span>
+    <div class="eq wrapok">
+      <span data-mx="1 2 1 2; 3 8 1 12; 0 4 1 2" data-aug="1" data-cap="[ A | b ]"></span>
+      <span class="op">→</span>
+      <span data-mx="1 2 1 2; 0 2 -2 6; 0 4 1 2" data-aug="1" data-cells="1.3:h3" data-cap="row 2 − 3 × row 1"></span>
+      <span class="op">→</span>
+      <span data-mx="1 2 1 2; 0 2 -2 6; 0 0 5 -10" data-aug="1" data-cells="2.3:h3" data-pivots="0.0,1.1,2.2" data-cap="[ U | c ] · row 3 − 2 × row 2"></span>
+    </div>
+    <p>In the last column, row 2 becomes <span class="m">12 − 3 × 2 = 6</span> and row 3 becomes <span class="m">2 − 2 × 6 = −10</span>. The vector <span class="m"><b>b</b> = (2, 12, 2)</span> has turned into <span class="m"><b>c</b> = (2, 6, −10)</span>. Now read the three rows as equations again:</p>
+    <div class="eq wrapok">
+      <span class="m">x + 2y + z = 2</span><span class="op">&nbsp;&nbsp;</span><span class="m">2y − 2z = 6</span><span class="op">&nbsp;&nbsp;</span><span class="m">5z = −10</span>
+    </div>
+  </div>
+  <div class="prose">
+    <p>This new system, <span class="m">U<b>x</b> = <b>c</b></span>, has the same solution as the original one, and it is easy to solve as long as you begin at the bottom. Solving upward like this is called <span class="term">back-substitution</span>.</p>
+    <ol>
+      <li><strong>Row 3</strong> has one unknown. <span class="m">5z = −10</span>, so <span class="m">z = −2</span>.</li>
+      <li><strong>Row 2</strong> has two unknowns, but <span class="m">z</span> is now known. <span class="m">2y − 2(−2) = 6</span> gives <span class="m">2y = 2</span>, so <span class="m">y = 1</span>.</li>
+      <li><strong>Row 1</strong> has three unknowns, and two are known. <span class="m">x + 2(1) + (−2) = 2</span>, so <span class="m">x = 2</span>.</li>
+    </ol>
+    <p>The solution is <span class="m">(x, y, z) = (2, 1, −2)</span>. Check it in the original equations: <span class="m">2 + 2 − 2 = 2</span>, <span class="m">6 + 8 − 2 = 12</span> and <span class="m">4 − 2 = 2</span>. The last five steps of Lab 2.1 play this out.</p>
+    <p>Notice that every one of those steps divides by a pivot: by 5, then by 2, then by 1. That is a second reason why a pivot must never be zero.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="list"></i>Robotics link<em>order of work</em></div>
+    <div class="robolink-body">
+      <h3>Known quantities first</h3>
+      <p>Back-substitution is a habit every robot programmer has. Start with the equation that holds a single unknown. Then feed each answer into the equation above it. Robot software is arranged like this wherever it can be: if one measurement gives one quantity directly, that quantity is worked out first and then used to unlock the others.</p>
+      <p>You will see it happen in section 2.8. After elimination, the last row of the wheel equations gives the robot's turn rate on its own. Only then do the rows above it give the two sliding speeds.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 2.3 -->
+<section class="concept" id="failure" data-toc="When elimination fails">
+  <header class="concept-head">
+    <span class="concept-no">2.3</span>
+    <h2>When elimination fails</h2>
+    <p class="concept-sub">A zero in the pivot position. Sometimes a detour, sometimes the end of the road.</p>
+  </header>
+  <div class="prose">
+    <p>A pivot can never be zero. The multiplier is the entry to remove divided by the pivot, and nobody can divide by zero. Strang separates two kinds of trouble.</p>
+    <h3>Temporary failure: exchange two rows</h3>
+    <p>Suppose a 0 turns up in the pivot position, but somewhere below it in the same column there is an entry that is not 0. The cure is simple. Swap the two rows. This is a <span class="term">row exchange</span>. Equations may be listed in any order, so swapping two of them changes nothing about the solution.</p>
+  </div>
+  <div class="work">
+    <span class="label">A zero that a row exchange cures</span>
+    <p>Take the lecture's matrix and change the 8 to a 6.</p>
+    <div class="eq wrapok">
+      <span data-mx="1 2 1; 3 6 1; 0 4 1" data-pivots="0.0" data-cap="8 changed to 6"></span>
+      <span class="op">→</span>
+      <span data-mx="1 2 1; 0 0 -2; 0 4 1" data-pivots="0.0" data-cells="1.1:h1" data-cap="zero in pivot position 2"></span>
+      <span class="op">→</span>
+      <span data-mx="1 2 1; 0 4 1; 0 0 -2" data-pivots="0.0,1.1,2.2" data-rows="1:h3,2:h3" data-cap="rows 2 and 3 exchanged"></span>
+    </div>
+    <p>After step (2,1) the second pivot position holds 0. Below it sits a 4. Exchange rows 2 and 3 and the matrix is already upper triangular, with pivots 1, 4 and −2.</p>
+  </div>
+  <div class="prose">
+    <h3>Permanent failure: nothing left to exchange</h3>
+    <p>Now suppose the pivot position holds 0 and every entry below it is 0 too. No exchange can help. Elimination has run out of pivots.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's example of permanent failure</span>
+    <p>Strang changes the bottom-right entry of <span class="m">A</span> from 1 to −4.</p>
+    <div class="eq wrapok">
+      <span data-mx="1 2 1; 3 8 1; 0 4 -4" data-pivots="0.0" data-cap="1 changed to −4"></span>
+      <span class="op">→</span>
+      <span data-mx="1 2 1; 0 2 -2; 0 4 -4" data-pivots="0.0,1.1" data-cap="after step (2,1)"></span>
+      <span class="op">→</span>
+      <span data-mx="1 2 1; 0 2 -2; 0 0 0" data-pivots="0.0,1.1" data-cells="2.2:h1" data-cap="no third pivot"></span>
+    </div>
+    <p>Row 3 − 2 × row 2 is <span class="m">[0 4 −4] − [0 4 −4] = [0 0 0]</span>. The third pivot position holds 0 and no row lies below it. There are two pivots where three are needed.</p>
+  </div>
+  <div class="prose">
+    <p>A square matrix that cannot supply a full set of pivots is <span class="term">singular</span>, the word you met in Lecture 1. Another name for it is <span class="term">not invertible</span>. A matrix that does supply a full set of pivots is <span class="term">invertible</span>, and its system has exactly one solution for every right-hand side.</p>
+    <p>What does the singular system actually say? With the lecture's <span class="m"><b>b</b></span>, the last row ends up as <span class="m">0 = −10</span>. No values of <span class="m">x</span>, <span class="m">y</span>, <span class="m">z</span> can make that true, so there is no solution. With a different <span class="m"><b>b</b></span> the last row could read <span class="m">0 = 0</span>, which is true for every <span class="m">z</span>, and then there are infinitely many solutions. These are the two singular cases of Lecture 1, the parallel lines and the repeated line, found this time by arithmetic.</p>
+    <p>Both failures are waiting in Lab 2.1. Load its second and third systems and step through them.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="wheel"></i>Robotics link<em>what a sensor can see</em></div>
+    <div class="robolink-body">
+      <h3>A zero pivot is a sensor with nothing to say</h3>
+      <p>In a robot, each row is one sensor's equation and each column belongs to one unknown. A zero in the pivot position means that the sensor whose turn it is carries no information about the unknown it is being asked for.</p>
+      <p><strong>Temporary.</strong> Often another sensor does know. Section 2.8 has a three-wheeled robot whose first wheel rolls exactly sideways, so its equation has a 0 in the forward-speed column. Elimination exchanges two rows and asks a different wheel first. Nothing is wrong with the robot.</p>
+      <p><strong>Permanent.</strong> If all three wheels roll in the same direction, no wheel turns when the robot slides sideways. The sideways column of the matrix is all zeros and there is no row to exchange in. No software can repair that. Only re-mounting a wheel can.</p>
+    </div>
+  </div>
+  <div class="note warn">
+    <i data-ic="warn"></i>
+    <span class="note-title">Watch out</span>
+    <div class="note-body"><p>A pivot that is tiny, though not quite zero, is still trouble. Dividing by a small number magnifies every small error in the readings, so the answer exists but cannot be trusted. This is the ill-conditioning of Lecture 1 again. Real software therefore does not wait for an exact zero. At each step it exchanges rows to bring the largest available entry into the pivot position, a habit called <strong>partial pivoting</strong>.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 2.4 -->
+<section class="concept" id="elimination-matrices" data-toc="Each step is a matrix">
+  <header class="concept-head">
+    <span class="concept-no">2.4</span>
+    <h2>Each step is a matrix</h2>
+    <p class="concept-sub">The idea that gives the lecture its title.</p>
+  </header>
+  <div class="prose">
+    <p>Until now elimination has been a list of spoken instructions: subtract this row from that one. Strang's main point is that each instruction can be written down as a matrix. Carrying out the step is then the same as multiplying by that matrix.</p>
+    <h3>Two ways to read a product</h3>
+    <p>First recall from Lecture 1 how a matrix multiplies a column. <strong>A matrix times a column is a combination of the columns of the matrix.</strong> The entries of the column say how much of each one to take.</p>
+  </div>
+  <div class="work">
+    <span class="label">Matrix times column: a combination of columns</span>
+    <div class="eq wrapok">
+      <span data-mx="1 2 1; 3 8 1; 0 4 1" data-cols="0:h1,1:h2,2:h4"></span>
+      <span data-mx="2; 1; -2" data-rows="0:h1,1:h2,2:h4"></span>
+      <span class="op">=</span>
+      <span class="m u c1">2</span><span data-mx="1; 3; 0" data-cols="0:h1"></span>
+      <span class="op">+</span>
+      <span class="m u c2">1</span><span data-mx="2; 8; 4" data-cols="0:h2"></span>
+      <span class="op">−</span>
+      <span class="m u c4">2</span><span data-mx="1; 1; 1" data-cols="0:h4"></span>
+      <span class="op">=</span>
+      <span data-mx="2; 12; 2"></span>
+    </div>
+    <p>This is the solution of section 2.2, read by columns: 2 of column 1, 1 of column 2 and −2 of column 3 add up to <span class="m"><b>b</b></span>.</p>
+  </div>
+  <div class="prose">
+    <p>Now put the single line of numbers on the other side. A list of numbers written sideways is a <span class="term">row vector</span>. <strong>A row times a matrix is a combination of the rows of the matrix.</strong> The entries of the row say how much of each row to take.</p>
+  </div>
+  <div class="work">
+    <span class="label">Row times matrix: a combination of rows</span>
+    <div class="eq wrapok">
+      <span data-mx="-3 1 0" data-cells="0.0:h1,0.1:h2,0.2:h4"></span>
+      <span data-mx="1 2 1; 3 8 1; 0 4 1" data-rows="0:h1,1:h2,2:h4"></span>
+      <span class="op">=</span>
+      <span class="m u c1">−3</span><span data-mx="1 2 1" data-rows="0:h1"></span>
+      <span class="op">+</span>
+      <span class="m u c2">1</span><span data-mx="3 8 1" data-rows="0:h2"></span>
+      <span class="op">+</span>
+      <span class="m u c4">0</span><span data-mx="0 4 1" data-rows="0:h4"></span>
+      <span class="op">=</span>
+      <span data-mx="0 2 -2"></span>
+    </div>
+    <p>The answer, <span class="m">[0 2 −2]</span>, is exactly the new row 2 from the first elimination step. So a row operation is a multiplication from the left.</p>
+  </div>
+  <div class="prose">
+    <h3>The matrix for step (2,1)</h3>
+    <p>We want a matrix that multiplies <span class="m">A</span> on the left, leaves rows 1 and 3 alone, and replaces row 2 by row 2 − 3 × row 1. Build it one row at a time:</p>
+    <ul>
+      <li>Row 1 of the answer should be row 1 of <span class="m">A</span>. Take one of row 1 and none of the others: <span class="m">[1 0 0]</span>.</li>
+      <li>Row 2 of the answer should be −3 of row 1 plus one of row 2: <span class="m">[−3 1 0]</span>.</li>
+      <li>Row 3 of the answer should be row 3 of <span class="m">A</span>: <span class="m">[0 0 1]</span>.</li>
+    </ul>
+    <p>The matrix with rows <span class="m">[1 0 0]</span>, <span class="m">[0 1 0]</span>, <span class="m">[0 0 1]</span> would leave every row alone. It is the <span class="term">identity matrix</span>, written <span class="m">I</span>. It does to a matrix what multiplying by 1 does to a number. Our matrix is the identity with one extra entry, a −3 in row 2, column 1. Strang calls it <span class="m">E<sub>21</sub></span>, an <span class="term">elimination matrix</span>, numbered after the position it clears. Textbooks also say <em>elementary matrix</em>.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's two elimination matrices</span>
+    <div class="eq wrapok">
+      <span data-mx="1 0 0; -3 1 0; 0 0 1" data-cells="1.0:h3" data-cap="E21"></span>
+      <span data-mx="1 2 1; 3 8 1; 0 4 1" data-cap="A"></span>
+      <span class="op">=</span>
+      <span data-mx="1 2 1; 0 2 -2; 0 4 1" data-rows="1:h3" data-cap="E21 A"></span>
+    </div>
+    <div class="eq wrapok">
+      <span data-mx="1 0 0; 0 1 0; 0 -2 1" data-cells="2.1:h3" data-cap="E32"></span>
+      <span data-mx="1 2 1; 0 2 -2; 0 4 1" data-cap="E21 A"></span>
+      <span class="op">=</span>
+      <span data-mx="1 2 1; 0 2 -2; 0 0 5" data-rows="2:h3" data-pivots="0.0,1.1,2.2" data-cap="U"></span>
+    </div>
+    <p><span class="m">E<sub>21</sub></span> subtracts 3 × row 1 from row 2. <span class="m">E<sub>32</sub></span> subtracts 2 × row 2 from row 3. Together: <span class="m">E<sub>32</sub> (E<sub>21</sub> A) = U</span>.</p>
+    <p>The recipe is always the same. Start from the identity and write <strong>minus the multiplier</strong> in the position you want to clear. Step (3,1) had multiplier 0, so its matrix <span class="m">E<sub>31</sub></span> is the identity itself.</p>
+  </div>
+
+  <div class="lab board" id="lab-emat">
+    <div class="lab-head"><span class="lab-tag">LAB 2.2</span><h3>Elimination matrices at work</h3><i data-ic="multiply"></i></div>
+    <p class="lab-intro">Five views of the lecture's matrices. The slider sets the multiplier <b>ℓ</b> written inside E<sub>21</sub>. Begin with view 1 and move the slider: exactly one value clears the entry. Then walk through the other views.</p>
+    <div class="lab-main stack">
+      <div class="lab-stage">
+        <div class="lab-row"><div data-slot="view"></div></div>
+        <div class="lab-math" data-slot="eq"></div>
+        <div class="lab-caption"><span class="key k2">pivot row, or what multiplies it</span><span class="key k3">row being changed, and new entries</span><span class="key k1">an entry that should be 0 and is not</span></div>
+        <div data-slot="status"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group" data-slot="slider"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>In view 1, slide ℓ from 0 to 5. The (2,1) entry of the product is 3 − ℓ. It is zero only at ℓ = 3, the multiplier that elimination computed for you.</li>
+        <li>Set ℓ = 3 and open view 3. Find the 6 in the corner of E. Then open view 4, where the same two matrices are multiplied in the opposite order. The 6 has gone. <b>Brackets may move, the order may not.</b></li>
+        <li>Stay in view 4 and slide ℓ to 0. The two products become equal, because E<sub>21</sub> has become the identity. Open view 5 and try any ℓ: the product stays the identity. <b>Every elimination step can be undone.</b></li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="code"></i>Robotics link<em>software</em></div>
+    <div class="robolink-body">
+      <h3>Elimination matrices are recorded instructions</h3>
+      <p>A matrix such as <span class="m">E<sub>21</sub></span> is one step of a procedure, stored as data. That matters to a robot. Its computer can keep the steps, replay them on new numbers and, as section 2.7 shows, run them backwards.</p>
+      <p>A robot's wheel geometry does not change while it drives, so the matrix <span class="m">A</span> stays the same from one moment to the next. Only the readings change. The elimination steps for <span class="m">A</span> can therefore be worked out once and replayed on every fresh set of readings.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 2.5 -->
+<section class="concept" id="associative" data-toc="Brackets may move, order may not">
+  <header class="concept-head">
+    <span class="concept-no">2.5</span>
+    <h2>Brackets may move, order may not</h2>
+    <p class="concept-sub">One law you may always use, and one you must never assume.</p>
+  </header>
+  <div class="prose">
+    <p>Elimination on the lecture's matrix is now a single line, <span class="m">E<sub>32</sub> (E<sub>21</sub> A) = U</span>. The brackets say: apply <span class="m">E<sub>21</sub></span> to <span class="m">A</span> first, then apply <span class="m">E<sub>32</sub></span> to the result.</p>
+    <p>Could we multiply the two <span class="m">E</span>'s together first, and get one matrix that does the whole job? Yes. Matrix multiplication obeys the <span class="term">associative law</span>, which says you may move the brackets:</p>
+    <div class="eq"><span class="m">E<sub>32</sub> (E<sub>21</sub> A) = (E<sub>32</sub> E<sub>21</sub>) A</span></div>
+    <p>So give the product a name, <span class="m">E = E<sub>32</sub> E<sub>21</sub></span>. Then <span class="m">E A = U</span>, and one matrix carries all of elimination.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's product, in the right order</span>
+    <div class="eq wrapok">
+      <span data-mx="1 0 0; 0 1 0; 0 -2 1" data-cap="E32"></span>
+      <span data-mx="1 0 0; -3 1 0; 0 0 1" data-cap="E21"></span>
+      <span class="op">=</span>
+      <span data-mx="1 0 0; -3 1 0; 6 -2 1" data-cells="2.0:h3" data-cap="E"></span>
+    </div>
+    <p>Where does the 6 come from? Row 3 of <span class="m">E</span> says how row 3 of <span class="m">U</span> is built from the rows of <span class="m">A</span>: 6 of row 1, −2 of row 2 and 1 of row 3. Step (3,2) subtracted twice the <em>new</em> row 2, and the new row 2 already contained −3 of row 1. Minus 2 times minus 3 is 6. Check it: <span class="m">6[1 2 1] − 2[3 8 1] + [0 4 1] = [0 0 5]</span>.</p>
+  </div>
+  <div class="prose">
+    <p>What you may not do is change the order. Matrix multiplication is <span class="term">not commutative</span>: for two matrices <span class="m">A</span> and <span class="m">B</span>, the products <span class="m">AB</span> and <span class="m">BA</span> are usually different.</p>
+  </div>
+  <div class="work">
+    <span class="label">The same two matrices, in the opposite order</span>
+    <div class="eq wrapok">
+      <span data-mx="1 0 0; -3 1 0; 0 0 1" data-cap="E21"></span>
+      <span data-mx="1 0 0; 0 1 0; 0 -2 1" data-cap="E32"></span>
+      <span class="op">=</span>
+      <span data-mx="1 0 0; -3 1 0; 0 -2 1" data-cells="2.0:h1" data-cap="not E"></span>
+    </div>
+    <p>The 6 has gone. In this order step (3,2) happens first and uses the old row 2, which has no row 1 mixed into it yet. Applied to <span class="m">A</span>, this product does not give <span class="m">U</span>.</p>
+  </div>
+  <div class="prose">
+    <p>Strang's summary of the two rules is the one to remember: you can move the parentheses, but you cannot move the matrices.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="stopwatch"></i>Robotics link<em>control loop</em></div>
+    <div class="robolink-body">
+      <h3>Do the work once, and keep the order</h3>
+      <p>Two things follow for a robot. First, because <span class="m">E</span> is one stored matrix, the computer can apply it to each new vector of readings with a single multiplication. For the lecture's numbers, <span class="m">E<b>b</b> = <b>c</b></span>: multiply <span class="m">E</span> by (2, 12, 2) and you get (2, 6, −10), the same <span class="m"><b>c</b></span> that elimination produced row by row. Lecture 4 turns this into the standard way to solve quickly.</p>
+      <p>Second, robots feel non-commutativity in their own motion. Turn a quarter turn and then drive one metre, and you finish in a different place than if you drive one metre and then turn. Lecture 3 looks at that closely.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 2.6 -->
+<section class="concept" id="permutation" data-toc="Permutation matrices">
+  <header class="concept-head">
+    <span class="concept-no">2.6</span>
+    <h2>Permutation matrices</h2>
+    <p class="concept-sub">A row exchange is a matrix too.</p>
+  </header>
+  <div class="prose">
+    <p>The row exchange of section 2.3 can also be done by multiplying. The matrix that does it is a <span class="term">permutation matrix</span>, written <span class="m">P</span>. A permutation is a re-ordering.</p>
+    <p>Strang shows the 2 by 2 case. To exchange the two rows of a matrix, multiply it on the left by this <span class="m">P</span>:</p>
+  </div>
+  <div class="work">
+    <span class="label">P on the left exchanges rows</span>
+    <div class="eq">
+      <span data-mx="0 1; 1 0" data-cap="P"></span>
+      <span data-mx="a b; c d" data-rows="0:h1,1:h2"></span>
+      <span class="op">=</span>
+      <span data-mx="c d; a b" data-rows="0:h2,1:h1"></span>
+    </div>
+    <p>Read <span class="m">P</span> by rows. Its first row is <span class="m">[0 1]</span>: take none of row 1 and one of row 2. So the new first row is <span class="m">[c d]</span>. Its second row is <span class="m">[1 0]</span>, so the new second row is <span class="m">[a b]</span>.</p>
+    <p>A permutation matrix is easy to build. It is the identity matrix with its own rows re-ordered.</p>
+  </div>
+  <div class="prose">
+    <p>Now move the same <span class="m">P</span> to the right-hand side of the matrix.</p>
+  </div>
+  <div class="work">
+    <span class="label">P on the right exchanges columns</span>
+    <div class="eq">
+      <span data-mx="a b; c d" data-cols="0:h1,1:h2"></span>
+      <span data-mx="0 1; 1 0" data-cap="P"></span>
+      <span class="op">=</span>
+      <span data-mx="b a; d c" data-cols="0:h2,1:h1"></span>
+    </div>
+    <p>This time read <span class="m">P</span> by columns, because a matrix times a column is a combination of columns. The first column of <span class="m">P</span> is (0, 1): none of column 1 and one of column 2. So the new first column is <span class="m">(b, d)</span>. The columns have changed places and the rows have stayed where they were.</p>
+  </div>
+  <div class="note idea">
+    <i data-ic="idea"></i>
+    <span class="note-title">Key idea</span>
+    <div class="note-body"><p>Row operations multiply on the left. Column operations multiply on the right. Elimination uses row operations only, which is why every E and every P stands to the left of A.</p></div>
+  </div>
+
+  <div class="lab board" id="lab-perm">
+    <div class="lab-head"><span class="lab-tag">LAB 2.3</span><h3>P on the left, P on the right</h3><i data-ic="permute"></i></div>
+    <p class="lab-intro">One permutation matrix does two different jobs, depending on which side of A it stands. Switch sides and follow the colours.</p>
+    <div class="lab-main stack">
+      <div class="lab-stage">
+        <div class="lab-row"><div data-slot="side"></div></div>
+        <div class="lab-math" data-slot="eq"></div>
+        <div class="lab-caption" data-slot="keys"></div>
+        <div data-slot="status"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Matrix A</span><div data-slot="size"></div></div>
+        <div class="lab-group" data-slot="pair-group"><span class="label">Which two does P exchange?</span><div data-slot="pair"></div></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>With the 2 by 2 matrix, switch between <b>P · A</b> and <b>A · P</b>. On the left, whole rows trade places. On the right, whole columns do.</li>
+        <li>Choose the <b>3 by 3</b> matrix. It is the matrix that got stuck in Lab 2.1, with a 0 in its second pivot position. Put P on the left, exchanging 2 and 3. The zero leaves the diagonal and the matrix is upper triangular.</li>
+        <li>Keep the 3 by 3 and move P to the right. Now columns 2 and 3 trade places. In a system of equations that re-orders the unknowns from (x, y, z) to (x, z, y), so the answer has to be re-ordered as well.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="permute"></i>Robotics link<em>wiring and labels</em></div>
+    <div class="robolink-body">
+      <h3>Re-ordering sensors, re-ordering unknowns</h3>
+      <p><strong>Exchanging rows re-orders the equations.</strong> In a robot that means listing the sensors in a different order, as happens when two encoder cables are plugged into each other's sockets. The robot and its motion are unchanged. Only the order of the rows is different, and a <span class="m">P</span> on the left describes it.</p>
+      <p><strong>Exchanging columns re-orders the unknowns.</strong> That happens when two axes are re-labelled, or when two pieces of software number the motors differently. The entries of <span class="m"><b>x</b></span> must then be re-ordered to match, and a <span class="m">P</span> on the right describes it. Mixing up the two is a classic source of bugs: one changes the list of sensors, the other changes the meaning of the answer.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 2.7 -->
+<section class="concept" id="inverse" data-toc="Undoing a step: a first inverse">
+  <header class="concept-head">
+    <span class="concept-no">2.7</span>
+    <h2>Undoing a step: a first inverse</h2>
+    <p class="concept-sub">Every elimination step can be taken back.</p>
+  </header>
+  <div class="prose">
+    <p><span class="m">E<sub>21</sub></span> subtracted 3 × row 1 from row 2. How would you undo that? Add 3 × row 1 back to row 2. That instruction is a matrix as well: the identity with <span class="m">+3</span> in row 2, column 1.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's first inverse</span>
+    <div class="eq wrapok">
+      <span data-mx="1 0 0; 3 1 0; 0 0 1" data-cells="1.0:h2" data-cap="E21 inverse · adds"></span>
+      <span data-mx="1 0 0; -3 1 0; 0 0 1" data-cells="1.0:h3" data-cap="E21 · subtracts"></span>
+      <span class="op">=</span>
+      <span data-mx="1 0 0; 0 1 0; 0 0 1" data-cap="I"></span>
+    </div>
+    <p>Row 2 of the product is <span class="m">3 × [1 0 0] + 1 × [−3 1 0] = [0 1 0]</span>. The two steps cancel and the identity is left.</p>
+  </div>
+  <div class="prose">
+    <p>The matrix that undoes <span class="m">E<sub>21</sub></span> is called its <span class="term">inverse</span>, written <span class="m">E<sub>21</sub><sup>−1</sup></span>. In general the inverse of a matrix <span class="m">M</span> is the matrix <span class="m">M<sup>−1</sup></span> for which <span class="m">M<sup>−1</sup>M = I</span>. Apply <span class="m">M</span>, then <span class="m">M<sup>−1</sup></span>, and you are back where you began.</p>
+    <p>For an elimination matrix the inverse costs nothing to find: flip the sign of the multiplier. For a row exchange it is easier still. Exchange the same two rows a second time, so that <span class="m">P</span> is its own inverse.</p>
+    <p>Some matrices have no inverse. A singular matrix throws information away (remember the row of zeros in section 2.3), and nothing can bring back information that has been thrown away. Lecture 3 takes up inverses properly.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="inverse"></i>Robotics link<em>replay and undo</em></div>
+    <div class="robolink-body">
+      <h3>A robot must be able to go back</h3>
+      <p>Robots undo things all the time. An arm that has reached into a box retraces its moves to come out again. A mobile robot that knows the motion from its dock to a shelf needs the opposite motion to get home. Each motion is stored as a matrix, and going back means applying the inverse matrices in the opposite order, so the last step is undone first.</p>
+      <p>Elimination works the same way. To recover <span class="m">A</span> from <span class="m">U</span>, undo step (3,2) first and step (2,1) second. Lecture 4 builds a whole factorization out of that observation.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 2.8 -->
+<section class="concept" id="omni" data-toc="The robot: omni-wheel odometry">
+  <header class="concept-head">
+    <span class="concept-no">2.8</span>
+    <h2>The robot: omni-wheel odometry</h2>
+    <p class="concept-sub">Three wheels, three encoder readings, one body velocity.</p>
+  </header>
+  <div class="prose">
+    <p class="big">Everything in this lecture now goes to work on one machine.</p>
+    <p>An <span class="term">omni wheel</span> has small free rollers set around its rim. It grips the floor along its rolling direction and slips freely sideways. A platform with three of them can drive in any direction and turn at the same time, which makes the design popular for warehouse carts and robot football.</p>
+    <p>Seen from above, the robot's motion at any instant is three numbers, together called its <span class="term">body velocity</span>:</p>
+    <ul>
+      <li><span class="m">v<sub>x</sub></span>, how fast it moves straight ahead, in metres per second;</li>
+      <li><span class="m">v<sub>y</sub></span>, how fast it slides to its left, in metres per second;</li>
+      <li><span class="m">ω</span>, how fast it turns, in radians per second, counter-clockwise counted as positive.</li>
+    </ul>
+    <p>The robot cannot measure these three numbers directly. What it can measure is how fast each wheel is rolling. Each wheel has an encoder, which reports the speed of the wheel's rim. Call the three readings <span class="m">s<sub>1</sub></span>, <span class="m">s<sub>2</sub></span>, <span class="m">s<sub>3</sub></span>.</p>
+    <h3>Each wheel writes one equation</h3>
+    <p>Put wheel <span class="m">i</span> on a circle of radius <span class="m">R</span> around the robot's centre, at the angle <span class="m">α<sub>i</sub></span>, rolling along the tangent to the circle. Its reading is</p>
+    <div class="eq"><span class="m">s<sub>i</sub> = −<span class="u">sin</span>(α<sub>i</sub>) v<sub>x</sub> + <span class="u">cos</span>(α<sub>i</sub>) v<sub>y</sub> + R ω</span></div>
+    <p>The reason is short. A wheel only feels motion along its rolling direction, and that direction is the tangent <span class="m">(−<span class="u">sin</span> α<sub>i</sub>, <span class="u">cos</span> α<sub>i</sub>)</span>. So it picks up that share of <span class="m">v<sub>x</sub></span> and that share of <span class="m">v<sub>y</sub></span>. Turning the robot carries every wheel along its own tangent at the speed <span class="m">Rω</span>, so each wheel picks up the same <span class="m">Rω</span>.</p>
+    <p>Three wheels give three linear equations in three unknowns. Sensors write the rows, as they did in Lecture 1.</p>
+  </div>
+  <div class="work">
+    <span class="label">Wheels at 90°, 210° and 330°, radius R = 0.2 m</span>
+    <div class="eq wrapok">
+      <span data-mx="-1 0 0.2; 0.5 -0.87 0.2; 0.5 0.87 0.2" data-rows="0:h1,1:h2,2:h4" data-cap="A · one row per wheel"></span>
+      <span class="mx" style="--cols:1"><span><i>v</i><sub>x</sub></span><span><i>v</i><sub>y</sub></span><span><i>ω</i></span></span>
+      <span class="op">=</span>
+      <span class="mx" style="--cols:1"><span class="h1"><i>s</i><sub>1</sub></span><span class="h2"><i>s</i><sub>2</sub></span><span class="h4"><i>s</i><sub>3</sub></span></span>
+    </div>
+    <p>Elimination needs no row exchange here. The pivots are −1, −0.87 and 0.6. The last row of <span class="m">U</span> reads <span class="m">0.6 ω = s<sub>1</sub> + s<sub>2</sub> + s<sub>3</sub></span>: add the three readings, divide by <span class="m">3R</span>, and you have the turn rate. Back-substitution then gives <span class="m">v<sub>y</sub></span> and <span class="m">v<sub>x</sub></span>.</p>
+    <p>With readings (−0.20, 0.25, 0.25) m/s, the sum is 0.30, so <span class="m">ω = 0.30 ÷ 0.6 = 0.5</span> rad/s. Then <span class="m">v<sub>y</sub> = 0</span> and <span class="m">v<sub>x</sub> = 0.3</span> m/s. The robot is driving round a circle of radius 0.6 m.</p>
+  </div>
+  <div class="prose">
+    <h3>Three more layouts, three lessons</h3>
+    <p><strong>Wheels at 0°, 120°, 240°.</strong> This is the same robot with its wheels numbered from a different starting angle. Wheel 1 now rolls exactly along <span class="m">y</span>, so its row is <span class="m">[0 1 0.2]</span>. The first pivot position holds 0. Elimination exchanges rows 1 and 2 and carries on. This is the temporary failure, and its meaning is plain: wheel 1 knows nothing about <span class="m">v<sub>x</sub></span>, so ask a different wheel first.</p>
+    <p><strong>Nearly parallel.</strong> Mount the wheels so that they all roll almost along <span class="m">x</span>, fanned apart by only 8°. A second pivot exists, but it is small (0.14). The answer exists too, but it is fragile, as the warning in section 2.3 said it would be.</p>
+    <p><strong>All parallel.</strong> Now mount all three wheels to roll exactly along <span class="m">x</span>. A wheel at height <span class="m">y<sub>i</sub></span> reads <span class="m">v<sub>x</sub> − y<sub>i</sub>ω</span>, so its row is <span class="m">[1 0 −y<sub>i</sub>]</span>. The whole <span class="m">v<sub>y</sub></span> column is zero. Elimination finds no second pivot and nothing to exchange in. This is the permanent failure: the robot can slide sideways and no encoder will notice.</p>
+    <h3>Odometry: solve, step, repeat</h3>
+    <p>A robot repeats this calculation many times a second. Each time, it solves for its body velocity, multiplies by the short time since the last reading, and adds that small motion to its running estimate of where it is. Tracking position by adding up small measured motions is called <span class="term">odometry</span>, or <span class="term">dead reckoning</span>.</p>
+  </div>
+
+  <div class="lab board" id="lab-omni">
+    <div class="lab-head"><span class="lab-tag">LAB 2.4</span><h3>Odometry: three encoder readings, one body velocity</h3><i data-ic="omni"></i></div>
+    <p class="lab-intro">The three sliders are the encoder readings. The lab writes one equation per wheel, runs elimination and back-substitution, and drives the robot with the body velocity that comes out. Change the wheel layout to meet both kinds of failure.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="wide" aria-label="Top view of a three-wheeled omni robot driving on a grid"></canvas>
+        <div class="lab-caption"><span class="key k1">wheel 1</span><span class="key k2">wheel 2</span><span class="key k4">wheel 3</span><span class="key k3">body velocity found by elimination</span><span>the grid scrolls as the robot moves</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+        <div class="ops" data-slot="ops"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Wheel layout</span><div data-slot="layout"></div></div>
+        <div class="lab-group" data-slot="sliders"></div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+        <div class="lab-group"><span class="label">Set the readings for a simple motion</span><div class="lab-row" data-slot="buttons"></div></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>With the first layout, press <b>Spin</b>. All three readings are equal. Look at the last row of [ U | c ]: 0.60 ω equals the sum of the three readings. The turn rate is the first thing back-substitution finds.</li>
+        <li>Switch to <b>Wheels at 0°, 120°, 240°</b>. The first row of [ A | s ] starts with 0, so elimination exchanges rows before it can begin. The robot still drives normally. A zero pivot that a row exchange cures is no fault in the machine.</li>
+        <li>Switch to <b>All parallel</b> and press <b>Sideways</b>. Every encoder reads zero, exactly as if the robot were standing still. The ghost shows the slide that no reading can reveal. Then try <b>Nearly parallel</b>: the answer is back, but a small change in one reading now makes the sideways speed jump.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="omni"></i>Robotics link<em>dead reckoning</em></div>
+    <div class="robolink-body">
+      <h3>What a real robot adds to this</h3>
+      <p>The model here is an ideal one: a flat floor, perfectly round wheels and no slipping. On a real floor the wheels slip a little. Each small error is added into the position estimate and never taken out again, so odometry slowly drifts. Robots therefore combine it with sensors that look at the outside world, such as the beacons of Lecture 1.</p>
+      <p>The linear algebra does not change. The computer still builds a matrix from the wheel layout, still eliminates, and still treats a missing or tiny pivot as a warning about the hardware.</p>
+    </div>
+  </div>
+
+  <div class="note idea">
+    <i data-ic="idea"></i>
+    <span class="note-title">Key idea</span>
+    <div class="note-body"><p>Elimination questions the sensors one at a time. A zero pivot is a sensor with nothing to say about the unknown in question. If another sensor can answer, exchange rows. If none can, the robot is blind in that direction.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 2.9 -->
+<section class="concept" id="table" data-toc="The lecture in one table">
+  <header class="concept-head">
+    <span class="concept-no">2.9</span>
+    <h2>The lecture in one table</h2>
+    <p class="concept-sub">Every idea of Lecture 2, in plain words and in a robot.</p>
+  </header>
+  <div class="tablewrap">
+    <table class="t">
+      <thead><tr><th>Lecture idea</th><th>In plain words</th><th>What it is in a robot</th></tr></thead>
+      <tbody>
+        <tr><td>Elimination</td><td>Subtract multiples of one row from the rows below until the entries under the diagonal are 0</td><td>Untangling sensor readings until each equation holds fewer unknowns than the one above</td></tr>
+        <tr><td>Pivot</td><td>The diagonal entry used to clear its column; it must not be 0</td><td>How firmly one sensor's equation pins down one unknown, like the wheel spacing W of a two-wheeled robot</td></tr>
+        <tr><td>Multiplier</td><td>Entry to remove ÷ pivot</td><td>How much of one reading is subtracted from another</td></tr>
+        <tr><td>Upper triangular U</td><td>All zeros below the diagonal</td><td>A chain of equations whose last link has a single unknown</td></tr>
+        <tr><td>Augmented matrix [ A | b ]</td><td>The right-hand side carried along as an extra column</td><td>The readings go through the same subtractions as the geometry</td></tr>
+        <tr><td>Back-substitution</td><td>Solve the last equation first, then work upward</td><td>Known quantities first: turn rate, then the two sliding speeds</td></tr>
+        <tr><td>Row exchange (temporary failure)</td><td>A 0 in the pivot position with a non-zero entry below it: swap the rows</td><td>This sensor says nothing about this unknown, so ask another sensor first</td></tr>
+        <tr><td>Singular (permanent failure)</td><td>A 0 in the pivot position and nothing below to exchange in</td><td>A motion that no sensor can see, such as sideways sliding on parallel wheels; only new hardware cures it</td></tr>
+        <tr><td>Small pivot</td><td>Dividing by a small number magnifies errors</td><td>A fragile estimate; real solvers pivot on the largest entry available</td></tr>
+        <tr><td>Matrix times column, row times matrix</td><td>A combination of the columns; a combination of the rows</td><td>The reason a row operation is a multiplication on the left</td></tr>
+        <tr><td>Elimination matrix E<sub>21</sub></td><td>The identity with minus the multiplier in position (2,1)</td><td>One step of a procedure, stored as data and ready to replay</td></tr>
+        <tr><td>E = E<sub>32</sub> E<sub>21</sub> (associative law)</td><td>Brackets may move, so one matrix does every step</td><td>Work the steps out once for a fixed wheel layout, then apply them to each new reading: E b = c</td></tr>
+        <tr><td>Not commutative</td><td>The order of the matrices may not change</td><td>Turn-then-drive ends somewhere different from drive-then-turn</td></tr>
+        <tr><td>Permutation matrix P</td><td>On the left it exchanges rows; on the right it exchanges columns</td><td>Re-ordering sensors (rows), or re-labelling axes and motors (columns)</td></tr>
+        <tr><td>Inverse E<sub>21</sub><sup>−1</sup></td><td>The matrix that undoes a step: add back what was subtracted</td><td>Retracing a motion, or running a recorded procedure backwards</td></tr>
+        <tr><td>Solving the system every tick</td><td>The same elimination, repeated on fresh right-hand sides</td><td>Odometry: wheel readings become body velocity, and the small motions are added up</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ practice -->
+<section class="concept" id="practice" data-toc="Practice problems">
+  <header class="concept-head">
+    <span class="concept-no">2.10</span>
+    <h2>Practice problems</h2>
+    <p class="concept-sub">Ten problems, from a first elimination to robot diagnosis. Work each on paper, then open the solution. Every answer has been checked by the code for this lecture.</p>
+  </header>
+  <div class="quiz problems">
+    <details><summary><span class="q">P1</span><span>Solve <span class="m">x + 2y = 5</span>, <span class="m">3x + 8y = 17</span> by elimination. Name the multiplier and both pivots.<em class="tag">elimination</em></span></summary>
+      <div class="a">
+        <p>The first pivot is 1. The entry to remove is 3, so the multiplier is <span class="m">3 ÷ 1 = 3</span>. Row 2 − 3 × row 1: <span class="m">[3 8 | 17] − [3 6 | 15] = [0 2 | 2]</span>.</p>
+        <p>The second pivot is 2. Back-substitute: <span class="m">2y = 2</span> gives <span class="m">y = 1</span>, then <span class="m">x + 2 = 5</span> gives <span class="m">x = 3</span>.</p>
+        <p><strong>Answer:</strong> multiplier 3, pivots 1 and 2, solution (3, 1). Check: <span class="m">9 + 8 = 17</span>.</p>
+      </div></details>
+    <details><summary><span class="q">P2</span><span>Reduce <span data-mx="1 1 1 6; 2 4 3 19; 3 7 8 41" data-aug="1" data-cls="sm"></span> to <span class="m">[U | <b>c</b>]</span> and solve by back-substitution. List the three multipliers and the three pivots.<em class="tag">elimination</em></span></summary>
+      <div class="a">
+        <ol>
+          <li>Step (2,1), multiplier 2: row 2 becomes <span class="m">[0 2 1 | 7]</span>.</li>
+          <li>Step (3,1), multiplier 3: row 3 becomes <span class="m">[0 4 5 | 23]</span>.</li>
+          <li>Step (3,2), multiplier <span class="m">4 ÷ 2 = 2</span>: row 3 becomes <span class="m">[0 0 3 | 9]</span>.</li>
+        </ol>
+        <div class="eq"><span data-mx="1 1 1 6; 0 2 1 7; 0 0 3 9" data-aug="1" data-pivots="0.0,1.1,2.2" data-cap="[ U | c ]"></span></div>
+        <p>From the bottom: <span class="m">3z = 9</span> so <span class="m">z = 3</span>. Then <span class="m">2y + 3 = 7</span> so <span class="m">y = 2</span>. Then <span class="m">x + 2 + 3 = 6</span> so <span class="m">x = 1</span>.</p>
+        <p><strong>Answer:</strong> multipliers 2, 3, 2; pivots 1, 2, 3; solution (1, 2, 3).</p>
+      </div></details>
+    <details><summary><span class="q">P3</span><span>Run elimination on (a) <span data-mx="1 2 1; 2 4 5; 0 3 1" data-cls="sm"></span> and (b) <span data-mx="1 2 1; 2 4 5; 3 6 4" data-cls="sm"></span>. Each one hits a zero in a pivot position. Which failure is temporary and which is permanent?<em class="tag">failure</em></span></summary>
+      <div class="a">
+        <p><strong>(a)</strong> Row 2 − 2 × row 1 is <span class="m">[0 0 3]</span>. The second pivot position holds 0, but the entry below it is 3. Exchange rows 2 and 3 and the matrix is upper triangular, with rows <span class="m">[1 2 1]</span>, <span class="m">[0 3 1]</span>, <span class="m">[0 0 3]</span>.</p>
+        <p><strong>(b)</strong> Row 2 − 2 × row 1 is <span class="m">[0 0 3]</span> and row 3 − 3 × row 1 is <span class="m">[0 0 1]</span>. The second pivot position holds 0 and so does the entry below it. There is nothing to exchange in.</p>
+        <p><strong>Answer:</strong> (a) is temporary: one row exchange, pivots 1, 3, 3. (b) is permanent: the matrix is singular. You could have seen it coming, because its second column is twice its first.</p>
+      </div></details>
+    <details><summary><span class="q">P4</span><span>For the matrix of P2, write <span class="m">E<sub>21</sub></span>, <span class="m">E<sub>31</sub></span> and <span class="m">E<sub>32</sub></span>. Multiply them into one matrix <span class="m">E = E<sub>32</sub> E<sub>31</sub> E<sub>21</sub></span> and check that <span class="m">E<b>b</b> = <b>c</b></span>.<em class="tag">matrices</em></span></summary>
+      <div class="a">
+        <p>Each one is the identity with minus its multiplier in the position it clears: −2 in position (2,1), −3 in position (3,1), −2 in position (3,2).</p>
+        <p>Multiply from the right. <span class="m">E<sub>31</sub> E<sub>21</sub></span> has rows <span class="m">[1 0 0]</span>, <span class="m">[−2 1 0]</span>, <span class="m">[−3 0 1]</span>. Then <span class="m">E<sub>32</sub></span> replaces row 3 by row 3 − 2 × row 2: <span class="m">[−3 0 1] − 2[−2 1 0] = [1 −2 1]</span>.</p>
+        <div class="eq"><span class="m">E</span><span class="op">=</span><span data-mx="1 0 0; -2 1 0; 1 -2 1" data-cells="2.0:h3"></span></div>
+        <p>Check with <span class="m"><b>b</b> = (6, 19, 41)</span>: row 2 gives <span class="m">−12 + 19 = 7</span> and row 3 gives <span class="m">6 − 38 + 41 = 9</span>.</p>
+        <p><strong>Answer:</strong> <span class="m">E<b>b</b> = (6, 7, 9)</span>, the same <span class="m"><b>c</b></span> as in P2. The 1 in the corner of <span class="m">E</span> is <span class="m">−3 + (−2)(−2)</span>: the steps have mixed.</p>
+      </div></details>
+    <details><summary><span class="q">P5</span><span>Let <span class="m">P</span> be the 3 by 3 identity with rows 1 and 2 exchanged, and let <span class="m">A</span> = <span data-mx="1 2 3; 4 5 6; 7 8 9" data-cls="sm"></span>. Find <span class="m">PA</span>, <span class="m">AP</span> and <span class="m">PP</span>.<em class="tag">permutation</em></span></summary>
+      <div class="a">
+        <p>On the left, <span class="m">P</span> exchanges rows 1 and 2. On the right, it exchanges columns 1 and 2.</p>
+        <div class="eq"><span class="m">PA</span><span class="op">=</span><span data-mx="4 5 6; 1 2 3; 7 8 9" data-rows="0:h2,1:h1"></span><span class="op">&nbsp;&nbsp;</span><span class="m">AP</span><span class="op">=</span><span data-mx="2 1 3; 5 4 6; 8 7 9" data-cols="0:h2,1:h1"></span></div>
+        <p><strong>Answer:</strong> as shown, and <span class="m">PP = I</span>. Exchanging the same two rows twice puts everything back, so this <span class="m">P</span> is its own inverse.</p>
+      </div></details>
+    <details><summary><span class="q">P6</span><span>The lecture's steps were <span class="m">E<sub>21</sub></span> (multiplier 3) and then <span class="m">E<sub>32</sub></span> (multiplier 2). Write both inverses. In which order must they multiply <span class="m">U</span> to give back <span class="m">A</span>? Compute that product of the two inverses.<em class="tag">inverse</em></span></summary>
+      <div class="a">
+        <p>Flip the sign of each multiplier. <span class="m">E<sub>21</sub><sup>−1</sup></span> has +3 in position (2,1). <span class="m">E<sub>32</sub><sup>−1</sup></span> has +2 in position (3,2).</p>
+        <p>The last step done is the first step undone. <span class="m">U = E<sub>32</sub> E<sub>21</sub> A</span>, so undo <span class="m">E<sub>32</sub></span> first: <span class="m">A = E<sub>21</sub><sup>−1</sup> E<sub>32</sub><sup>−1</sup> U</span>.</p>
+        <div class="eq"><span class="m">E<sub>21</sub><sup>−1</sup> E<sub>32</sub><sup>−1</sup></span><span class="op">=</span><span data-mx="1 0 0; 3 1 0; 0 2 1" data-cells="1.0:h3,2.1:h3"></span></div>
+        <p><strong>Answer:</strong> the product has the multipliers 3 and 2 sitting untouched in their own positions, and 0 in the corner. Multiply it by <span class="m">U</span> and you get <span class="m">A</span> back.</p>
+        <p>Follow-up: in the wrong order, <span class="m">E<sub>32</sub><sup>−1</sup> E<sub>21</sub><sup>−1</sup></span>, a 6 appears in the corner and the product does not rebuild <span class="m">A</span>. Lecture 4 names the tidy matrix above <span class="m">L</span>.</p>
+      </div></details>
+    <details><summary><span class="q">P7</span><span>A field robot has two wheels 2 m apart. The left encoder reads 1 m/s and the right reads 3 m/s. Find its forward speed and turn rate by elimination. Then say how much a 0.1 m/s error on the right encoder changes the turn rate.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>With <span class="m">W = 2</span> the wheel equations are <span class="m">v − ω = 1</span> and <span class="m">v + ω = 3</span>.</p>
+        <div class="eq"><span data-mx="1 -1 1; 1 1 3" data-aug="1" data-pivots="0.0"></span><span class="op">→</span><span data-mx="1 -1 1; 0 2 2" data-aug="1" data-pivots="0.0,1.1"></span></div>
+        <p>Multiplier 1. Row 2 − row 1 gives <span class="m">2ω = 2</span>, so <span class="m">ω = 1</span>. Then <span class="m">v − 1 = 1</span>, so <span class="m">v = 2</span>.</p>
+        <p><strong>Answer:</strong> 2 m/s forward, turning at 1 rad/s. The pivots are 1 and 2, and the second pivot is the wheel spacing. An error of 0.1 m/s is divided by that pivot, so the turn rate changes by 0.05 rad/s.</p>
+        <p>Follow-up: put the wheels 0.2 m apart. The second pivot is 0.2 and the same error changes the turn rate by 0.5 rad/s, ten times as much.</p>
+      </div></details>
+    <details><summary><span class="q">P8</span><span>An omni robot of radius 1 m has its wheels at 0°, 90° and 180°. The encoders read <span class="m">(s<sub>1</sub>, s<sub>2</sub>, s<sub>3</sub>) = (5, 2, 1)</span> m/s. Write the three wheel equations and find the body velocity. What must elimination do before it can start, and why?<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>Each row is <span class="m">[−<span class="u">sin</span> α, <span class="u">cos</span> α, R]</span> with <span class="m">R = 1</span>. For 0° that is <span class="m">[0 1 1]</span>, for 90° it is <span class="m">[−1 0 1]</span>, for 180° it is <span class="m">[0 −1 1]</span>.</p>
+        <div class="eq wrapok"><span data-mx="0 1 1 5; -1 0 1 2; 0 -1 1 1" data-aug="1" data-cells="0.0:h1"></span><span class="op">→</span><span data-mx="-1 0 1 2; 0 1 1 5; 0 -1 1 1" data-aug="1" data-pivots="0.0,1.1"></span><span class="op">→</span><span data-mx="-1 0 1 2; 0 1 1 5; 0 0 2 6" data-aug="1" data-pivots="0.0,1.1,2.2"></span></div>
+        <p>The first pivot position holds 0, because wheel 1 rolls along <span class="m">y</span> and feels nothing of <span class="m">v<sub>x</sub></span>. Exchange rows 1 and 2. Then row 3 + row 2 gives <span class="m">2ω = 6</span>.</p>
+        <p>Back-substitute: <span class="m">ω = 3</span>. Then <span class="m">v<sub>y</sub> + 3 = 5</span>, so <span class="m">v<sub>y</sub> = 2</span>. Then <span class="m">−v<sub>x</sub> + 3 = 2</span>, so <span class="m">v<sub>x</sub> = 1</span>.</p>
+        <p><strong>Answer:</strong> <span class="m">(v<sub>x</sub>, v<sub>y</sub>, ω) = (1, 2, 3)</span>, after one row exchange. The pivots are −1, 1 and 2. The robot is healthy. Only the order of the questions had to change.</p>
+      </div></details>
+    <details><summary><span class="q">P9</span><span>The robot of P8 is moving in exactly the same way, but a technician has plugged the cables of encoders 1 and 2 into each other's sockets. The computer now receives (2, 5, 1) and still uses the old matrix. What does it report? Which matrix repairs the software: a <span class="m">P</span> on the left of <span class="m">A</span>, or on the right?<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>With the old matrix and the right-hand side (2, 5, 1), the row exchange gives <span class="m">[−1 0 1 | 5]</span>, <span class="m">[0 1 1 | 2]</span>, <span class="m">[0 −1 1 | 1]</span>. Row 3 + row 2: <span class="m">2ω = 3</span>. So <span class="m">ω = 1.5</span>, <span class="m">v<sub>y</sub> = 0.5</span> and <span class="m">v<sub>x</sub> = 1.5 − 5 = −3.5</span>.</p>
+        <p>The computer believes the robot is reversing at 3.5 m/s. The true motion is still (1, 2, 3).</p>
+        <p>The readings arrive in a different order, so the equations must be listed in that order too. Re-ordering equations is a row exchange: use <span class="m">PA</span>, with <span class="m">P</span> exchanging rows 1 and 2. Solving <span class="m">PA<b>x</b> = (2, 5, 1)</span> gives (1, 2, 3) again.</p>
+        <p><strong>Answer:</strong> it reports (−3.5, 0.5, 1.5). The cure is <span class="m">P</span> on the left. A <span class="m">P</span> on the right would re-order the unknowns, which is a different change: it would swap the meanings of <span class="m">v<sub>x</sub></span> and <span class="m">v<sub>y</sub></span>.</p>
+      </div></details>
+    <details><summary><span class="q">P10</span><span>A cart has three wheels that all roll along <span class="m">x</span>, mounted at heights <span class="m">y = 1, 0, −1</span>. A wheel at height <span class="m">y</span> reads <span class="m">v<sub>x</sub> − yω</span>. Which motion can the encoders not see? Do the readings (1, 2, 3) fit a rigid motion? Do (1, 2, 4)? Suggest a repair.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <div class="eq"><span data-mx="1 0 -1; 1 0 0; 1 0 1" data-cols="1:h1" data-cap="columns: vx, vy, ω"></span></div>
+        <p>The <span class="m">v<sub>y</sub></span> column is all zeros. After step (2,1) and step (3,1) the second pivot position holds 0 with a 0 below it: permanent failure. Sliding sideways turns no wheel.</p>
+        <p><strong>Readings (1, 2, 3).</strong> Row 2 − row 1 says <span class="m">ω = 1</span>. Row 3 − row 1 says <span class="m">2ω = 2</span>. They agree. So <span class="m">ω = 1</span> and <span class="m">v<sub>x</sub> = 2</span>, while <span class="m">v<sub>y</sub></span> can be anything: infinitely many solutions.</p>
+        <p><strong>Readings (1, 2, 4).</strong> Now the rows say <span class="m">ω = 1</span> and <span class="m">2ω = 3</span>. They contradict each other, so no rigid motion fits. A wheel is slipping or a sensor is faulty.</p>
+        <p><strong>Answer:</strong> sideways motion is invisible; (1, 2, 3) is consistent with <span class="m">v<sub>x</sub> = 2</span>, <span class="m">ω = 1</span> and unknown <span class="m">v<sub>y</sub></span>; (1, 2, 4) is impossible.</p>
+        <p>Follow-up: turn the middle wheel to roll along <span class="m">y</span>. Its row becomes <span class="m">[0 1 0]</span>, the pivots become 1, 1, 2, and the readings (1, 2, 3) then give exactly one motion, <span class="m">(v<sub>x</sub>, v<sub>y</sub>, ω) = (2, 2, 1)</span>.</p>
+      </div></details>
+  </div>
+</section>
+
+<!-- ============================================================ check -->
+<section class="concept" id="check" data-toc="Check yourself">
+  <header class="concept-head">
+    <span class="concept-no">2.11</span>
+    <h2>Check yourself</h2>
+    <p class="concept-sub">Answer in your head first, then open each one.</p>
+  </header>
+  <div class="quiz">
+    <details><summary><span class="q">Q1</span><span>In the lecture's matrix, which multiplier clears the entry in row 2, column 1, and how do you find it?</span></summary>
+      <div class="a"><p>The multiplier is 3. It is the entry to remove divided by the pivot: <span class="m">3 ÷ 1 = 3</span>. Subtracting 3 × row 1 from row 2 turns <span class="m">[3 8 1]</span> into <span class="m">[0 2 −2]</span>.</p></div></details>
+    <details><summary><span class="q">Q2</span><span>Elimination has produced <span class="m">x + 2y + z = 2</span>, <span class="m">2y − 2z = 6</span>, <span class="m">5z = −10</span>. Solve it, and say why you start with the last equation.</span></summary>
+      <div class="a"><p>The last equation has only one unknown, so it can be solved at once: <span class="m">z = −2</span>. Put that into the second: <span class="m">2y + 4 = 6</span>, so <span class="m">y = 1</span>. Put both into the first: <span class="m">x + 2 − 2 = 2</span>, so <span class="m">x = 2</span>. The answer is (2, 1, −2).</p></div></details>
+    <details><summary><span class="q">Q3</span><span>Change the bottom-right entry of <span class="m">A</span> from 1 to −4. What happens during elimination, and what is such a matrix called?</span></summary>
+      <div class="a"><p>The last step gives <span class="m">[0 4 −4] − 2 × [0 2 −2] = [0 0 0]</span>. The third pivot position holds 0 and there is no row below to exchange with. Elimination fails permanently. The matrix is singular, or not invertible. With the lecture's right-hand side the last row reads <span class="m">0 = −10</span>, so there is no solution.</p></div></details>
+    <details><summary><span class="q">Q4</span><span>Write the matrix that subtracts 3 × row 1 from row 2 of a 3 by 3 matrix. Then write the matrix that undoes it.</span></summary>
+      <div class="a"><p><span class="m">E<sub>21</sub></span> is the identity with −3 in row 2, column 1: rows <span class="m">[1 0 0]</span>, <span class="m">[−3 1 0]</span>, <span class="m">[0 0 1]</span>. Its inverse adds the same amount back, so it has +3 in that position: rows <span class="m">[1 0 0]</span>, <span class="m">[3 1 0]</span>, <span class="m">[0 0 1]</span>. Their product is the identity.</p></div></details>
+    <details><summary><span class="q">Q5</span><span><span class="m">E<sub>32</sub> E<sub>21</sub></span> has a 6 in its bottom-left corner. <span class="m">E<sub>21</sub> E<sub>32</sub></span> has a 0 there. Why are they different?</span></summary>
+      <div class="a"><p>In <span class="m">E<sub>32</sub> E<sub>21</sub></span>, step (2,1) acts first. Row 2 already contains −3 of row 1 by the time step (3,2) subtracts twice row 2 from row 3, and <span class="m">(−2) × (−3) = 6</span>. In the other order, step (3,2) acts first on the untouched row 2, so no row 1 reaches row 3. Matrix multiplication is associative but not commutative.</p></div></details>
+    <details><summary><span class="q">Q6</span><span>You multiply a 2 by 2 matrix by <span class="m">P</span>, the identity with its rows exchanged, on the <em>right</em>. What happens, and what would that be in a robot?</span></summary>
+      <div class="a"><p>The two columns trade places. Columns belong to unknowns, so this re-orders the unknowns, for example re-labelling two axes or numbering two motors the other way round. On the left, the same <span class="m">P</span> would exchange the rows, which re-orders the equations, that is, the sensors.</p></div></details>
+    <details><summary><span class="q">Q7</span><span>An omni robot has wheels at 0°, 120° and 240°. The first row of its matrix is <span class="m">[0 1 R]</span>. What does the zero say, and what does elimination do about it? What if all three wheels were parallel?</span></summary>
+      <div class="a"><p>The zero says that wheel 1 rolls along <span class="m">y</span> and feels nothing of <span class="m">v<sub>x</sub></span>. The first pivot position is zero, so elimination exchanges row 1 with a row below it and goes on normally. With three parallel wheels, the whole <span class="m">v<sub>y</sub></span> column is zero. No row can supply the second pivot, the matrix is singular, and sideways sliding cannot be detected by any encoder.</p></div></details>
+  </div>
+
+  <div class="note say">
+    <i data-ic="pen"></i>
+    <span class="note-title">For your article</span>
+    <div class="note-body">
+      <p><strong>One-line summary:</strong> elimination solves a system by removing one unknown at a time, and every step of it is a matrix that can be stored, multiplied together and undone.</p>
+      <p><strong>A robot sentence you can reuse:</strong> elimination questions the sensors one by one; a zero pivot is a sensor with nothing to say, and a singular matrix is a motion that no sensor can see.</p>
+      <p><strong>Good figures to capture:</strong> Lab 2.1 at the step "Row 2 − 3 × Row 1" and at its final "Upper triangular" step; Lab 2.4 with the first layout next to the same lab with all wheels parallel.</p>
+      <p>The full notes, derivations and worked numbers for this lecture are in <a href="article/02-elimination-with-matrices.md">article/02-elimination-with-matrices.md</a>, and runnable code is in <a href="code/l02_elimination.py">code/l02_elimination.py</a>.</p>
+    </div>
+  </div>
+</section>
+
+</article>
+</div>
+</main>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/la.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/plot.js"></script>
+<script src="assets/js/robots.js"></script>
+<script src="assets/js/lectures/l2.js"></script>
+</body>
+</html>

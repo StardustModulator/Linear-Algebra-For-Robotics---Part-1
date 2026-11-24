@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lecture 3 · Multiplication and Inverse Matrices</title>
+<meta name="description" content="Five ways to multiply matrices, why AB is not BA, inverses and Gauss-Jordan, taught from scratch with robot arms, rovers and coordinate frames.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
+<link rel="stylesheet" href="assets/css/mit.css">
+<style>
+/* Lecture 3 only: small layout helpers built from the shared design tokens */
+.mx.tight { font-size: .8em; margin: 0 .05em; }
+.mx.tight > span { padding: .1em .22em; min-width: 1em; }
+.tap .mx > span { cursor: pointer; }
+.tap .mx > span:hover { background: var(--m3-wash); }
+.lab .eq.arith { font-size: 1.14em; padding: .2em 0 .5em; }
+.eq-lbl { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; font-style: normal; color: var(--chalk-2); }
+.eq-name { font-size: 1.2em; }
+.lc { text-transform: none; font-style: italic; font-family: var(--font-math); font-size: 1.25em; letter-spacing: 0; }
+.eq-gap { width: 1.4em; }
+.mx.dots { gap: 4px; padding: 8px 10px; }
+.mx.dots > i { display: block; width: 11px; height: 11px; background: var(--chalk-3); }
+.mx.dots > i.r { background: var(--s1); }
+.mx.dots > i.c { background: var(--s2); }
+.mx.dots > i.y { background: var(--s3); }
+.nope { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; font-style: normal; color: var(--s1); border: 1px dashed var(--s1); padding: 8px 10px; }
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px 30px; align-items: start; }
+.duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.duo figure { margin: 0; display: grid; gap: 6px; min-width: 0; align-content: start; }
+.duo figcaption { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--chalk-3); }
+.halves { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 28px; font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--chalk-3); }
+#lab-ways .stepper-view { min-height: 25em; }
+#lab-gj .stepper-view { min-height: 19em; }
+@media (max-width: 560px) {
+  #lab-ways .eq.lg { font-size: 1em; }
+  #lab-ways .eq.lg .mx > span { padding: .1em .28em; min-width: 1.2em; }
+  #lab-ways .stepper-view { min-height: 27em; }
+}
+</style>
+</head>
+<body>
+<main data-lecture="3">
+
+<section class="lec-hero">
+  <div class="wrap">
+    <div class="lec-num">03<i>.</i></div>
+    <div class="lec-kicker label"><span class="bars"></span><span>MIT 18.06 · Lecture 3</span><span><i data-ic="clock"></i> 46:49</span></div>
+    <h1>Multiplication and Inverse Matrices</h1>
+    <p class="lec-lede">Multiplying two matrices means <strong>doing one thing after another</strong>. Inverting a matrix means <strong>undoing it</strong>. The lecture gives five ways to multiply and one clean way to invert. A robot uses both all day: the pose of an arm is a product of matrices, and changing viewpoint is an inverse.</p>
+    <div class="lec-meta">
+      <a class="btn primary" data-ocw="video" href="#"><i data-ic="video"></i><span>Watch the lecture on OCW</span></a>
+      <a class="btn" data-ocw="summary" href="#"><i data-ic="book"></i><span>Lecture summary</span></a>
+      <a class="btn" href="article/03-multiplication-and-inverse-matrices.md"><i data-ic="pen"></i><span>Article notes</span></a>
+    </div>
+  </div>
+</section>
+
+<div class="wrap lec-layout">
+<nav class="toc"></nav>
+<article class="lec-body">
+
+<!-- ============================================================ 3.0 -->
+<section class="concept" id="start" data-toc="Start here: one thing after another">
+  <header class="concept-head">
+    <span class="concept-no">3.0</span>
+    <h2>Start here: one thing after another</h2>
+    <p class="concept-sub">You need one idea from Lecture 1: a matrix times a vector is a mix of the matrix's columns. Nothing else.</p>
+  </header>
+  <div class="prose">
+    <p class="big">Think of a <span class="term">matrix</span> as a machine. A list of numbers goes in, the matrix multiplies it, and a new list comes out. Lecture 1 wrote this as <span class="m">A<b>x</b></span>.</p>
+    <p>Now put two machines in a row. Whatever comes out of the first one, <span class="m">B</span>, is fed straight into the second one, <span class="m">A</span>. The pair behaves like a single bigger machine, and that machine is again a matrix. It is called the <span class="term">product</span> of the two and is written <span class="m">AB</span>. Read it from the right: <span class="m">B</span> acts first, then <span class="m">A</span>.</p>
+    <p>Some machines can be run backwards. The matrix that takes every output of <span class="m">A</span> back to the input it came from is called the <span class="term">inverse</span> of <span class="m">A</span>, written <span class="m">A<sup>−1</sup></span> and read "A inverse".</p>
+    <p>The lecture answers two questions.</p>
+    <ul>
+      <li><strong>How do you work out <span class="m">AB</span>?</strong> Professor Strang gives five ways. They always produce the same numbers, but each one shows you something different about the product.</li>
+      <li><strong>When does a matrix have an inverse, and how do you find it?</strong> The answer to "when" is the word <em>singular</em> from Lecture 1. The answer to "how" is a method called Gauss-Jordan elimination, which is Lecture 2's elimination taken one step further.</li>
+    </ul>
+    <p>One warning before starting, because it is used all the way through: <strong><span class="m">AB</span> is usually not the same as <span class="m">BA</span></strong>. The order of the machines matters. Section 3.6 shows why.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="frame"></i>Robotics link<em>poses and frames</em></div>
+    <div class="robolink-body">
+      <h3>A robot's pose is a matrix</h3>
+      <p>A robot has to say where things are, and "where" always means "measured from something". A <span class="term">frame</span> is that something: a starting point called the origin, plus two arrows at right angles called the <span class="m">x</span> axis and the <span class="m">y</span> axis. One frame is fixed to the floor and called the <strong>world</strong> frame. Another is fixed to the robot, with <span class="m">x</span> pointing forward and <span class="m">y</span> pointing to the robot's left.</p>
+      <p>Say a rover stands at the world point <span class="m">(x, y)</span> and faces the direction <span class="m">θ</span>, an angle measured anticlockwise from the world <span class="m">x</span> axis. Position and direction together are the rover's <span class="term">pose</span>. A rock that the rover sees <span class="m">a</span> metres ahead and <span class="m">b</span> metres to its left sits at this place in the world:</p>
+      <div class="eq left wrapok"><span class="m">x<sub>world</sub> = (<span class="u">cos</span> θ) a − (<span class="u">sin</span> θ) b + x</span><span class="op">&nbsp;&nbsp;&nbsp;</span><span class="m">y<sub>world</sub> = (<span class="u">sin</span> θ) a + (<span class="u">cos</span> θ) b + y</span></div>
+      <p>Here <span class="m"><span class="u">cos</span> θ</span> and <span class="m"><span class="u">sin</span> θ</span> are just two numbers. They say how much of one step in the direction <span class="m">θ</span> goes along the world <span class="m">x</span> axis and how much along the world <span class="m">y</span> axis. At 0° they are 1 and 0. At 90° they are 0 and 1.</p>
+      <p>Roboticists pack both lines into one matrix by giving every point a third entry that is always 1:</p>
+      <div class="eq left"><span data-mx="x_world; y_world; 1" data-cls="sm"></span><span class="op">=</span><span data-mx="cos_θ -sin_θ x; sin_θ cos_θ y; 0 0 1" data-cols="0:h1,1:h2,2:h3" data-cap="T · the pose"></span><span data-mx="a; b; 1"></span></div>
+      <p>This 3 by 3 matrix <span class="m">T</span> is called a <span class="term">homogeneous transform</span>. It holds the whole pose, and multiplying by it converts rover coordinates into world coordinates. The extra 1 is a bookkeeping trick that lets one multiplication both turn and shift. This page stays in the flat plane. A robot working in three dimensions uses the same idea with 4 by 4 matrices.</p>
+      <p><strong>Example.</strong> A rover stands at (3, 1) and faces 90°, straight up the page. A rock lies 2 m ahead of it, so the rock is at (2, 0) in the rover's frame.</p>
+      <div class="eq left"><span data-mx="0 -1 3; 1 0 1; 0 0 1" data-cols="0:h1,1:h2,2:h3"></span><span data-mx="2; 0; 1"></span><span class="op">=</span><span data-mx="3; 3; 1"></span></div>
+      <p>The rock is at (3, 3) in the world: 2 m further up the page than the rover, as it should be. Keep this rover in mind. The rest of the page multiplies matrices like <span class="m">T</span> to chain frames together, and inverts them to change viewpoint.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 3.1 -->
+<section class="concept" id="entries" data-toc="Entries, and the size rule">
+  <header class="concept-head">
+    <span class="concept-no">3.1</span>
+    <h2>Way 1: one entry at a time</h2>
+    <p class="concept-sub">The rule most people learn first: a row times a column.</p>
+  </header>
+  <div class="prose">
+    <p>Write the product as <span class="m">AB = C</span>. Each number inside a matrix is called an <span class="term">entry</span>, and it is named by its row and then its column: <span class="m">a<sub>32</sub></span> is the entry of <span class="m">A</span> in row 3, column 2.</p>
+    <p>The standard rule builds <span class="m">C</span> one entry at a time. For the entry in row <span class="m">i</span> and column <span class="m">j</span>, take <strong>row <span class="m">i</span> of <span class="m">A</span></strong> and <strong>column <span class="m">j</span> of <span class="m">B</span></strong>. Multiply their first numbers together, their second numbers together, and so on. Add the results. This row-times-column sum is the <span class="term">dot product</span> from Lecture 1.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's entry</span>
+    <div class="eq wrapok">
+      <span class="m">c<sub>34</sub></span><span class="op">=</span><span class="m">(row 3 of A) · (column 4 of B)</span><span class="op">=</span><span class="m">a<sub>31</sub>b<sub>14</sub> + a<sub>32</sub>b<sub>24</sub> + a<sub>33</sub>b<sub>34</sub> + ⋯</span>
+    </div>
+    <p>Strang chooses row 3 and column 4 so that nobody mistakes the pattern for something special about a corner. Follow the small numbers. The 3 stays fixed on every <span class="m">a</span>. The 4 stays fixed on every <span class="m">b</span>. The inside numbers run 1, 2, 3, … together.</p>
+  </div>
+  <div class="prose">
+    <p>Here is a pair small enough to finish by hand. The matrix <span class="m">A</span> and the top row of <span class="m">B</span> are the numbers Strang writes on the board later in the lecture. The whole page uses this pair.</p>
+  </div>
+  <div class="work">
+    <span class="label">The pair used on this page</span>
+    <div class="eq">
+      <span data-mx="2 7; 3 8; 4 9" data-rows="2:h1" data-cap="A"></span>
+      <span data-mx="1 6; 1 2" data-cols="1:h2" data-cap="B"></span>
+      <span class="op">=</span>
+      <span data-mx="9 26; 11 34; 13 42" data-cells="2.1:h3" data-cap="C = AB"></span>
+    </div>
+    <p>The <span class="hl3">bottom-right entry</span> is <span class="hl1">row 3 of <span class="m">A</span></span> times <span class="hl2">column 2 of <span class="m">B</span></span>: <span class="m">c<sub>32</sub> = 4·6 + 9·2 = 24 + 18 = 42</span>. The other five entries are found the same way.</p>
+  </div>
+  <div class="prose">
+    <h3>The size rule</h3>
+    <p>A row can only be multiplied into a column that holds the same number of entries. A row of <span class="m">A</span> has as many entries as <span class="m">A</span> has columns. A column of <span class="m">B</span> has as many entries as <span class="m">B</span> has rows. So the number of <strong>columns of <span class="m">A</span></strong> must equal the number of <strong>rows of <span class="m">B</span></strong>.</p>
+    <p>Sizes are always given as rows by columns. If <span class="m">A</span> is <span class="m">m</span> by <span class="m">n</span> and <span class="m">B</span> is <span class="m">n</span> by <span class="m">p</span>, then <span class="m">AB</span> is <span class="m">m</span> by <span class="m">p</span>. Write the two sizes side by side, <span class="m">(m × n)(n × p)</span>. The inner numbers must match, and then they drop out. The outer numbers are the size of the answer.</p>
+    <p>Our pair is (3 × 2)(2 × 2), so the product is 3 × 2. Now try the other order: <span class="m">BA</span> would be (2 × 2)(3 × 2). The inner numbers are 2 and 3. They do not match, so <span class="m">BA</span> does not exist. That is the first sign that order matters.</p>
+  </div>
+
+  <div class="lab board" id="lab-ways">
+    <div class="lab-head"><span class="lab-tag">LAB 3.1</span><h3>One product, four ways to see it</h3><i data-ic="multiply"></i></div>
+    <p class="lab-intro">Pick a way of multiplying, then step through it or <b>tap any entry of C</b>. The coloured parts of <b>A</b> and <b>B</b> are the only numbers used to make the amber part of <b>C</b>. Every way ends with the same matrix.</p>
+    <div class="lab-main stack">
+      <div class="lab-stage">
+        <div class="lab-row"><div data-slot="mode"></div></div>
+        <div data-slot="stepper"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Size rule checker: choose the shapes of A and B</span></div>
+        <div class="split">
+          <div class="lab-group" data-slot="sizes"></div>
+          <div class="lab-group"><div class="lab-math" data-slot="shape"></div><div data-slot="status"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>In <b>Entries</b>, tap the bottom-right entry of C. Row 3 of A meets column 2 of B and you get 4·6 + 9·2 = 42.</li>
+        <li>Switch to <b>Columns</b>, then <b>Rows</b>, then <b>Column × row</b>. The same 26 turns up inside a column mix, then inside a row mix, then as 12 + 14. The numbers never change, only the way they are grouped.</li>
+        <li>In the size checker, give B three rows. A row of A now holds 2 numbers and a column of B holds 3, so there is no product. Then make the inner sizes match again and watch the outer sizes set the shape of the answer.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="link"></i>Robotics link<em>wiring</em></div>
+    <div class="robolink-body">
+      <h3>The size rule is a wiring rule: frames must chain</h3>
+      <p>Every robot matrix converts one list of numbers into another. A matrix that turns the 3 numbers of a body velocity into 4 wheel speeds is 4 by 3, and it can only be fed by something that produces 3 numbers. The size rule is the check an electrician makes: the plug has to fit the socket.</p>
+      <p>Pose matrices are all 3 by 3, so their sizes always fit. Robot programmers therefore apply a stricter version of the rule to the <strong>frames</strong>. Name each transform by the frame it converts to and the frame it converts from. <span class="m">T<sub class="u">world←rover</sub></span> turns rover coordinates into world coordinates. <span class="m">T<sub class="u">rover←camera</sub></span> turns camera coordinates into rover coordinates. Then</p>
+      <div class="eq left wrapok"><span class="m">T<sub class="u">world←rover</sub></span><span class="m">T<sub class="u">rover←camera</sub></span><span class="op">=</span><span class="m">T<sub class="u">world←camera</sub></span></div>
+      <p>The two inner names match and drop out, exactly like the inner sizes. The frame that the right-hand matrix delivers must be the frame that the left-hand matrix expects. A product such as <span class="m">T<sub class="u">world←rover</sub></span><span class="m">T<sub class="u">world←camera</sub></span> passes the size check and is still nonsense. Writing the frame names on every transform is how careful robot code catches that mistake.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 3.2 -->
+<section class="concept" id="columns" data-toc="Columns">
+  <header class="concept-head">
+    <span class="concept-no">3.2</span>
+    <h2>Way 2: a whole column at a time</h2>
+    <p class="concept-sub">Each column of AB is A times a column of B.</p>
+  </header>
+  <div class="prose">
+    <p>Lecture 1 showed that a matrix times a vector is a <span class="term">combination</span> of the matrix's columns: stretch each column by a number, then add. The second way to multiply matrices uses nothing more than that.</p>
+    <p>Cut <span class="m">B</span> into its columns. Multiply <span class="m">A</span> by each one. Stand the answers side by side and you have <span class="m">C</span>:</p>
+    <div class="eq"><span class="m">column j of AB</span><span class="op">=</span><span class="m">A × (column j of B)</span></div>
+    <p>So <strong>every column of <span class="m">AB</span> is a combination of the columns of <span class="m">A</span></strong>. Column <span class="m">j</span> of <span class="m">B</span> holds the amounts.</p>
+  </div>
+  <div class="work">
+    <span class="label">Our pair, by columns</span>
+    <div class="eq wrapok">
+      <span class="m c1">1</span><span data-mx="2; 3; 4" data-cols="0:h1"></span><span class="op">+</span><span class="m c2">1</span><span data-mx="7; 8; 9" data-cols="0:h2"></span><span class="op">=</span><span data-mx="9; 11; 13" data-cols="0:h3"></span>
+      <span class="op">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+      <span class="m c1">6</span><span data-mx="2; 3; 4" data-cols="0:h1"></span><span class="op">+</span><span class="m c2">2</span><span data-mx="7; 8; 9" data-cols="0:h2"></span><span class="op">=</span><span data-mx="26; 34; 42" data-cols="0:h3"></span>
+    </div>
+    <p>The amounts 1 and 1 are the first column of <span class="m">B</span>. The amounts 6 and 2 are its second column. The two amber results are the two columns of <span class="m">C</span>.</p>
+  </div>
+  <div class="prose">
+    <h3>Why the rule is what it is</h3>
+    <p>Matrix multiplication was designed so that the product does the job of both machines. Feeding <span class="m"><b>x</b></span> through <span class="m">B</span> and then through <span class="m">A</span> must give the same result as feeding it through <span class="m">AB</span> once:</p>
+    <div class="eq"><span class="m">A(B<b>x</b>)</span><span class="op">=</span><span class="m">(AB)<b>x</b></span></div>
+    <p>Check it with <span class="m"><b>x</b> = (1, 1)</span>. First <span class="m">B<b>x</b> = (7, 3)</span>, then <span class="m">A</span> times (7, 3) is (35, 45, 55). The short way: <span class="m">AB</span> times (1, 1) adds the two columns of <span class="m">C</span>, which is (9 + 26, 11 + 34, 13 + 42) = (35, 45, 55).</p>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="arm"></i>Robotics link<em>forward kinematics</em></div>
+    <div class="robolink-body">
+      <h3>The pose of a hand is a product, and its columns are the hand's frame</h3>
+      <p>Take a flat arm with two links. Fix a frame to each moving part: one to link 1 at the shoulder, one to link 2 at the elbow, one to the hand. Each frame's <span class="m">x</span> axis points along its link. Three small transforms describe the arm, and each one relates a frame to the frame before it.</p>
+      <ul>
+        <li><span class="m">T<sub>1</sub></span>, link 1 seen from the world: turn by the shoulder angle <span class="m">θ<sub>1</sub></span>.</li>
+        <li><span class="m">T<sub>2</sub></span>, link 2 seen from link 1: move the length of link 1 along it, then turn by the elbow angle <span class="m">θ<sub>2</sub></span>.</li>
+        <li><span class="m">T<sub>3</sub></span>, the hand seen from link 2: move the length of link 2 along it.</li>
+      </ul>
+      <p>The pose of the hand in the world is the product <span class="m">T = T<sub>1</sub>T<sub>2</sub>T<sub>3</sub></span>. Finding the hand from the joint angles is called <span class="term">forward kinematics</span>. For every serial arm, with any number of joints, it is a chain of matrix products like this one.</p>
+      <p>With links of 2 m and 1.5 m, a shoulder at 30° and an elbow at 60°:</p>
+      <div class="eq left wrapok">
+        <span data-mx="0.87 -0.50 0; 0.50 0.87 0; 0 0 1" data-cls="sm" data-cap="T₁"></span>
+        <span data-mx="0.50 -0.87 2; 0.87 0.50 0; 0 0 1" data-cls="sm" data-cap="T₂"></span>
+        <span data-mx="1 0 1.5; 0 1 0; 0 0 1" data-cls="sm" data-cap="T₃"></span>
+        <span class="op">=</span>
+        <span data-mx="0 -1 1.73; 1 0 2.50; 0 0 1" data-cols="0:h1,1:h2,2:h3" data-cap="T · the hand"></span>
+      </div>
+      <p>Now read <span class="m">T</span> by columns. The <span class="hl1">first column</span> says where the hand's <span class="m">x</span> axis points in the world: (0, 1), straight up. The <span class="hl2">second column</span> says where its <span class="m">y</span> axis points: (−1, 0). The <span class="hl3">third column</span> says where the hand is: (1.73, 2.50). One matrix, three facts, one per column.</p>
+      <p>That is way 2 at work. Each column of the product is <span class="m">T<sub>1</sub>T<sub>2</sub></span> times a column of <span class="m">T<sub>3</sub></span>, and the columns of <span class="m">T<sub>3</sub></span> are the hand's axes and origin as link 2 sees them.</p>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-chain">
+    <div class="lab-head"><span class="lab-tag">LAB 3.2</span><h3>Forward kinematics: three matrices, one hand</h3><i data-ic="arm"></i></div>
+    <p class="lab-intro">Move the two joints. Every frame is drawn with a red <b>x</b> axis and a blue <b>y</b> axis. Under the picture the three transforms multiply into one matrix whose columns are the hand's frame: red, blue, and the amber position.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="wide" aria-label="Two-link arm with a frame on each link and on the hand"></canvas>
+        <div class="lab-caption"><span class="key k1">x axis of a frame</span><span class="key k2">y axis of a frame</span><span class="key k3">origin of the product's frame</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group" data-slot="sliders"></div>
+        <div class="lab-group"><span class="label">Multiply this much of the chain</span><div data-slot="upto"></div></div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Leave the pose at 30° and 60°. The third column of the product reads (1.73, 2.50). Find the amber ring on the grid and check both numbers by eye.</li>
+        <li>Choose <b>T₁</b>, then <b>T₁ T₂</b>, then <b>T₁ T₂ T₃</b>. The amber ring walks from the shoulder to the elbow to the hand. Each extra matrix on the right carries you one frame further down the arm.</li>
+        <li>Move only the elbow. <b>T₁</b> stays as it is, <b>T₂</b> changes, and the product follows. Set the elbow to 0° and the hand's axes point the same way as link 1's.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 3.3 -->
+<section class="concept" id="rows" data-toc="Rows">
+  <header class="concept-head">
+    <span class="concept-no">3.3</span>
+    <h2>Way 3: a whole row at a time</h2>
+    <p class="concept-sub">The mirror image: each row of AB is a row of A times B.</p>
+  </header>
+  <div class="prose">
+    <p>Everything in the last section can be turned on its side. Cut <span class="m">A</span> into its rows. Multiply each row by <span class="m">B</span>. Stack the answers and you have <span class="m">C</span>:</p>
+    <div class="eq"><span class="m">row i of AB</span><span class="op">=</span><span class="m">(row i of A) × B</span></div>
+    <p>A row times a matrix is a combination of the matrix's <em>rows</em>. So <strong>every row of <span class="m">AB</span> is a combination of the rows of <span class="m">B</span></strong>. Row <span class="m">i</span> of <span class="m">A</span> holds the amounts.</p>
+  </div>
+  <div class="work">
+    <span class="label">Our pair, by rows</span>
+    <div class="eq wrapok">
+      <span class="m c1">2</span><span data-mx="1 6" data-rows="0:h1"></span><span class="op">+</span><span class="m c2">7</span><span data-mx="1 2" data-rows="0:h2"></span><span class="op">=</span><span data-mx="9 26" data-rows="0:h3"></span>
+      <span class="op">&nbsp;&nbsp;&nbsp;</span>
+      <span class="m c1">3</span><span data-mx="1 6" data-rows="0:h1"></span><span class="op">+</span><span class="m c2">8</span><span data-mx="1 2" data-rows="0:h2"></span><span class="op">=</span><span data-mx="11 34" data-rows="0:h3"></span>
+      <span class="op">&nbsp;&nbsp;&nbsp;</span>
+      <span class="m c1">4</span><span data-mx="1 6" data-rows="0:h1"></span><span class="op">+</span><span class="m c2">9</span><span data-mx="1 2" data-rows="0:h2"></span><span class="op">=</span><span data-mx="13 42" data-rows="0:h3"></span>
+    </div>
+    <p>The amounts 2 and 7 are row 1 of <span class="m">A</span>, then 3 and 8 are row 2, then 4 and 9 are row 3.</p>
+  </div>
+  <div class="prose">
+    <p>Put ways 2 and 3 side by side and you can read a product from both ends. <strong>The columns of <span class="m">AB</span> are combinations of the columns of <span class="m">A</span>. The rows of <span class="m">AB</span> are combinations of the rows of <span class="m">B</span>.</strong></p>
+    <p>You met the row way in Lecture 2 without its name. The step "subtract 2 times row 1 from row 2" is done by multiplying on the left with a matrix whose second row is (−2, 1). The new row 2 is −2 of row 1 plus 1 of row 2: a combination of rows. Section 3.9 leans on this.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="wheel"></i>Robotics link<em>wheel mixing</em></div>
+    <div class="robolink-body">
+      <h3>Each wheel listens to one row</h3>
+      <p>A rover with a left wheel and a right wheel turns by driving them at different speeds. Suppose the body should move forward at <span class="m">v</span> metres per second and turn at <span class="m">ω</span> radians per second. (<span class="m">ω</span> is the Greek letter omega, and one radian is about 57°.) With the wheels 0.5 m apart, the wheel speeds must be</p>
+      <div class="eq left"><span data-mx="left; right"></span><span class="op">=</span><span data-mx="1 -0.25; 1 0.25" data-rows="0:h1,1:h2" data-cap="W"></span><span data-mx="v; ω"></span></div>
+      <p>Read it by rows. The <span class="hl1">left wheel's row</span> says: take all of the forward speed and subtract a quarter of the turn rate. The <span class="hl2">right wheel's row</span> says: add a quarter instead. Each wheel speed is a weighted mix of the body velocities, and its row holds the weights. The 0.25 is half the distance between the wheels.</p>
+      <p>Now put a joystick in front. A second matrix <span class="m">G</span> turns the two stick positions into a body velocity: full forward stick means 0.8 m/s, full turn stick means 2 rad/s. The product goes straight from stick to wheels:</p>
+      <div class="eq left"><span data-mx="1 -0.25; 1 0.25" data-cap="W"></span><span data-mx="0.8 0; 0 2" data-cap="G"></span><span class="op">=</span><span data-mx="0.8 -0.5; 0.8 0.5" data-rows="0:h1,1:h2" data-cap="WG"></span></div>
+      <p>By the row way, the left wheel's row of the product is 1 times the first row of <span class="m">G</span> minus 0.25 times the second: (0.8, 0) − 0.25 (0, 2) = (0.8, −0.5). The mixing that a wheel used to do to body velocities, it now does to whole rows of <span class="m">G</span>. This model assumes ideal wheels that never slip.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 3.4 -->
+<section class="concept" id="col-row" data-toc="Columns times rows">
+  <header class="concept-head">
+    <span class="concept-no">3.4</span>
+    <h2>Way 4: columns times rows</h2>
+    <p class="concept-sub">Turn the dot product around and a whole matrix appears.</p>
+  </header>
+  <div class="prose">
+    <p>A row times a column gives one number. Swap the order to a column times a row, and the size rule says something surprising: (3 × 1)(1 × 2) is 3 × 2. The result is a full matrix.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's column times row</span>
+    <div class="eq">
+      <span data-mx="2; 3; 4" data-cols="0:h1"></span><span data-mx="1 6" data-rows="0:h1"></span><span class="op">=</span><span data-mx="2 12; 3 18; 4 24"></span>
+    </div>
+    <p>Each entry is one number from the column times one number from the row. Look at what that forces. Every <strong>row</strong> of the result is a multiple of [1 6]: 2 times it, then 3 times it, then 4 times it. Every <strong>column</strong> is a multiple of (2, 3, 4).</p>
+  </div>
+  <div class="prose">
+    <p>Strang calls this a very special matrix. All of its rows lie along one line, and so do all of its columns. Later in the course such a matrix is said to have <span class="term">rank one</span>, which means it holds only one independent row and one independent column.</p>
+    <p>The fourth way to multiply builds any product out of these special pieces:</p>
+    <div class="eq wrapok"><span class="m">AB</span><span class="op">=</span><span class="m">(column 1 of A)(row 1 of B)</span><span class="op">+</span><span class="m">(column 2 of A)(row 2 of B)</span><span class="op">+ ⋯</span></div>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's example</span>
+    <div class="eq wrapok">
+      <span data-mx="2 7; 3 8; 4 9" data-cols="0:h1,1:h2"></span><span data-mx="1 6; 0 0" data-rows="0:h1,1:h2"></span><span class="op">=</span>
+      <span data-mx="2; 3; 4" data-cols="0:h1"></span><span data-mx="1 6" data-rows="0:h1"></span><span class="op">+</span>
+      <span data-mx="7; 8; 9" data-cols="0:h2"></span><span data-mx="0 0" data-rows="0:h2"></span><span class="op">=</span>
+      <span data-mx="2 12; 3 18; 4 24"></span>
+    </div>
+    <p>On the board the second row of <span class="m">B</span> is zero, so the second piece adds nothing and the product is the special matrix itself. With this page's <span class="m">B</span>, whose second row is [1 2], both pieces count:</p>
+    <div class="eq wrapok">
+      <span data-mx="2 12; 3 18; 4 24" data-cols="0:h1,1:h1" data-cap="(2, 3, 4) times [1 6]"></span><span class="op">+</span>
+      <span data-mx="7 14; 8 16; 9 18" data-cols="0:h2,1:h2" data-cap="(7, 8, 9) times [1 2]"></span><span class="op">=</span>
+      <span data-mx="9 26; 11 34; 13 42" data-cols="0:h3,1:h3" data-cap="AB"></span>
+    </div>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="push"></i>Robotics link<em>a one-trick controller</em></div>
+    <div class="robolink-body">
+      <h3>A column times a row is a one-trick machine</h3>
+      <p>Call the column <span class="m"><b>d</b></span> and the row <span class="m"><b>w</b></span>, and let the matrix be <span class="m">K = <b>d</b> <b>w</b></span>. Feed any vector <span class="m"><b>e</b></span> into <span class="m">K</span>. The row acts first and boils <span class="m"><b>e</b></span> down to a single number. The column then stretches itself by that number. Whatever goes in, the output points along <span class="m"><b>d</b></span>. Only its size changes.</p>
+      <p>Picture a hovering robot with one side thruster that can push only along the direction <span class="m"><b>d</b> = (1, 2)</span>. Its controller reads a position error <span class="m"><b>e</b></span> and commands the push <span class="m">K<b>e</b></span>, with <span class="m"><b>w</b> = [1 3]</span>:</p>
+      <div class="eq left"><span class="m">K</span><span class="op">=</span><span data-mx="1; 2" data-cols="0:h1"></span><span data-mx="1 3" data-rows="0:h2"></span><span class="op">=</span><span data-mx="1 3; 2 6"></span></div>
+      <p>An error of (2, 1) gives the number 1·2 + 3·1 = 5, so the push is 5 times <span class="m"><b>d</b></span>, which is (5, 10). An error of (3, −1) gives 1·3 + 3·(−1) = 0: no push at all. This controller listens along one direction and pushes along one direction. It is blind to any error at right angles to <span class="m"><b>w</b></span>, and it can never push off the line of <span class="m"><b>d</b></span>.</p>
+      <p>Robot papers write this as <span class="m">K = <b>d</b><b>w</b><sup>T</sup></span>. The small T, for transpose, only means "<span class="m"><b>w</b></span> laid on its side as a row", and Lecture 5 covers it. Remember this matrix. It returns in section 3.8 as the lecture's example of a matrix that cannot be undone.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 3.5 -->
+<section class="concept" id="blocks" data-toc="Blocks">
+  <header class="concept-head">
+    <span class="concept-no">3.5</span>
+    <h2>Way 5: block by block</h2>
+    <p class="concept-sub">Cut big matrices into smaller ones and multiply the pieces.</p>
+  </header>
+  <div class="prose">
+    <p>The last way is a piece of bookkeeping. Draw lines through <span class="m">A</span> and <span class="m">B</span> to cut each into smaller matrices called <span class="term">blocks</span>. Then multiply as if every block were a single number:</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's block rule</span>
+    <div class="eq wrapok">
+      <span data-mx="A₁ A₂; A₃ A₄"></span><span data-mx="B₁ B₂; B₃ B₄"></span><span class="op">=</span>
+      <span data-mx="A₁B₁+A₂B₃ A₁B₂+A₂B₄; A₃B₁+A₄B₃ A₃B₂+A₄B₄" data-cells="0.0:h3"></span>
+    </div>
+    <p>The <span class="hl3">top-left block</span> of the answer is "row 1 times column 1", exactly as it would be for numbers, except that each product is now a matrix product.</p>
+  </div>
+  <div class="prose">
+    <p>Two cautions. The cuts must fit: every block product, such as <span class="m">A<sub>1</sub>B<sub>1</sub></span>, has to pass the size rule, and that happens when the column cuts of <span class="m">A</span> match the row cuts of <span class="m">B</span>. And the order inside each product must be kept: <span class="m">A<sub>1</sub>B<sub>1</sub></span>, never <span class="m">B<sub>1</sub>A<sub>1</sub></span>.</p>
+    <p>The earlier ways are block multiplication with particular cuts. Cut <span class="m">B</span> into its columns and leave <span class="m">A</span> whole, and you have way 2. Cut <span class="m">A</span> into its rows and leave <span class="m">B</span> whole, and you have way 3.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="chip"></i>Robotics link<em>how robot code is written</em></div>
+    <div class="robolink-body">
+      <h3>This is how robot software multiplies poses</h3>
+      <p>A pose matrix has a natural cut. The top-left 2 by 2 block is the turning part, a <span class="term">rotation</span> matrix <span class="m">R</span>. The top-right block is the position <span class="m"><b>p</b></span>. The bottom row is always 0 0 1. Multiply two poses block by block:</p>
+      <div class="eq left wrapok">
+        <span data-mx="R <b>p</b>; 0 1"></span><span data-mx="R′ <b>p</b>′; 0 1"></span><span class="op">=</span><span data-mx="RR′ R<b>p</b>′+<b>p</b>; 0 1" data-cells="0.0:h2,0.1:h3"></span>
+      </div>
+      <p>Top-left: <span class="m">RR′ + <b>p</b>·0 = RR′</span>. Top-right: <span class="m">R<b>p</b>′ + <b>p</b>·1</span>. Bottom row: 0 and 1 again. Two plain rules come out.</p>
+      <ul>
+        <li><strong>Rotations compose with rotations.</strong> The new turning part is <span class="m">RR′</span> and nothing else.</li>
+        <li><strong>Positions add after being rotated.</strong> The second position <span class="m"><b>p</b>′</span> is measured in the first frame, so it is turned by <span class="m">R</span> before it is added to <span class="m"><b>p</b></span>.</li>
+      </ul>
+      <p>Robot libraries store only <span class="m">R</span> and <span class="m"><b>p</b></span> and use this formula directly. The bottom row never changes, so multiplying it out would be wasted work. Check it on the arm of Lab 3.2: <span class="m">T<sub>1</sub>T<sub>2</sub></span> has turning part "30° then 60°", which is a turn of 90°, and position <span class="m">R<sub>1</sub>(2, 0) + (0, 0) = (1.73, 1.00)</span>. That is the elbow. In three dimensions <span class="m">R</span> is 3 by 3, <span class="m"><b>p</b></span> has three entries, and the block formula is unchanged.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 3.6 -->
+<section class="concept" id="order" data-toc="AB is usually not BA">
+  <header class="concept-head">
+    <span class="concept-no">3.6</span>
+    <h2>Order matters: AB is usually not BA</h2>
+    <p class="concept-sub">The one habit from ordinary arithmetic that you have to drop.</p>
+  </header>
+  <div class="prose">
+    <p>With numbers, 3 × 5 and 5 × 3 are the same. With matrices the two orders are different questions, and three things can go wrong.</p>
+    <ul>
+      <li><strong><span class="m">BA</span> may not exist.</strong> Our 3 by 2 and 2 by 2 pair multiplies in one order only.</li>
+      <li><strong><span class="m">BA</span> may have a different size.</strong> A 2 by 3 matrix times a 3 by 2 matrix is 2 by 2. In the other order it is 3 by 3.</li>
+      <li><strong>Even when both are square and the same size, the numbers usually differ.</strong></li>
+    </ul>
+  </div>
+  <div class="work">
+    <span class="label">Same two matrices, two orders</span>
+    <div class="eq wrapok">
+      <span data-mx="0 1; 1 0" data-cap="P"></span><span data-mx="1 3; 2 7" data-cap="A"></span><span class="op">=</span><span data-mx="2 7; 1 3" data-cap="PA · rows exchanged"></span>
+      <span class="op">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+      <span data-mx="1 3; 2 7" data-cap="A"></span><span data-mx="0 1; 1 0" data-cap="P"></span><span class="op">=</span><span data-mx="3 1; 7 2" data-cap="AP · columns exchanged"></span>
+    </div>
+    <p>Multiplying by <span class="m">P</span> on the left works on rows (way 3) and exchanges the two rows of <span class="m">A</span>. Multiplying by <span class="m">P</span> on the right works on columns (way 2) and exchanges the two columns. Different jobs, different answers.</p>
+  </div>
+  <div class="prose">
+    <p>Mathematicians say matrix multiplication is not <span class="term">commutative</span>. One freedom does survive. You may move the brackets, <span class="m">(AB)C = A(BC)</span>, as long as the matrices keep their left-to-right order. That is why a chain such as <span class="m">T<sub>1</sub>T<sub>2</sub>T<sub>3</sub></span> needs no brackets.</p>
+    <p>A few special pairs do commute, and the most important is a matrix and its own inverse. That is the next section.</p>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="rover"></i>Robotics link<em>order of moves</em></div>
+    <div class="robolink-body">
+      <h3>Turn then drive is not drive then turn</h3>
+      <p>Give a rover two commands. <span class="m">R</span> is "turn 90° to the left on the spot". <span class="m">D</span> is "drive 2 m straight ahead". Each command is a pose matrix: the pose the rover reaches if it starts at the world origin facing along the <span class="m">x</span> axis.</p>
+      <div class="eq left wrapok"><span data-mx="0 -1 0; 1 0 0; 0 0 1" data-cap="R · turn 90°"></span><span class="op">&nbsp;&nbsp;</span><span data-mx="1 0 2; 0 1 0; 0 0 1" data-cap="D · drive 2 m"></span></div>
+      <p>Each command is carried out in the rover's own frame at that moment, so the pose after two commands is their product in the order they were given.</p>
+      <div class="eq left wrapok"><span data-mx="0 -1 0; 1 0 2; 0 0 1" data-cols="2:h1" data-cap="RD · turn, then drive"></span><span class="op">≠</span><span data-mx="0 -1 2; 1 0 0; 0 0 1" data-cols="2:h2" data-cap="DR · drive, then turn"></span></div>
+      <p>Read the third columns. <span class="hl1">Turn-then-drive</span> ends at (0, 2). <span class="hl2">Drive-then-turn</span> ends at (2, 0). Both rovers face the same way, because the turning blocks agree, but they stand 2.83 m apart. Anyone who has parked a car knows this. The matrices know it too.</p>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-order">
+    <div class="lab-head"><span class="lab-tag">LAB 3.3</span><h3>Turn then drive, or drive then turn?</h3><i data-ic="rover"></i></div>
+    <p class="lab-intro">Two rovers start in the same pose and receive the same two commands in opposite orders. Choose the turn and the distance, then press <b>Play both orders</b>.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="wide" aria-label="Two rovers following the same commands in opposite orders"></canvas>
+        <div class="lab-caption"><span class="key k1">turn, then drive: R D</span><span class="key k2">drive, then turn: D R</span><span class="key k3">gap between the results</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group" data-slot="sliders"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Play the default, 90° and 2 m. Red ends at (0, 2) and blue at (2, 0). Find those numbers in the tinted third columns of the two products.</li>
+        <li>Slide the turn to 0°, or the distance to 0 m. The gap closes and the ≠ sign becomes =. A command that does nothing commutes with everything.</li>
+        <li>Set the turn to 180°. The rovers now end as far apart as they can be, twice the driving distance, and still face the same way.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <i data-ic="warn"></i>
+    <span class="note-title">Two ways to read a chain, both correct</span>
+    <div class="note-body">
+      <p><strong>Left to right, as moves.</strong> In <span class="m">RD</span> the rover turns, then drives, and each move is made in the frame the rover has just reached.</p>
+      <p><strong>Right to left, as conversions.</strong> Hand <span class="m">RD</span> a point written in the rover's final frame. <span class="m">D</span> acts first and rewrites the point in the frame the rover had before driving. <span class="m">R</span> then rewrites it in the world frame. This is the "<span class="m">B</span> first, then <span class="m">A</span>" rule of section 3.0.</p>
+      <p>Same matrices, same product. Pick one reading and keep to it until the calculation is finished.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 3.7 -->
+<section class="concept" id="inverse" data-toc="Inverses">
+  <header class="concept-head">
+    <span class="concept-no">3.7</span>
+    <h2>The inverse: a matrix that undoes another</h2>
+    <p class="concept-sub">Square matrices only, from here to the end of the lecture.</p>
+  </header>
+  <div class="prose">
+    <p>For numbers, multiplying by 5 is undone by multiplying by <span class="m">1/5</span>, because <span class="m">(1/5) × 5 = 1</span> and multiplying by 1 changes nothing.</p>
+    <p>The matrix that changes nothing is the <span class="term">identity matrix</span> <span class="m">I</span>: ones down the diagonal and zeros everywhere else. <span class="m">I<b>x</b> = <b>x</b></span> for every vector, and <span class="m">IA = A = AI</span> for every matrix that fits.</p>
+    <p>The inverse of a square matrix <span class="m">A</span> is the matrix <span class="m">A<sup>−1</sup></span> that brings you back to <span class="m">I</span>:</p>
+    <div class="eq"><span class="m">A<sup>−1</sup>A</span><span class="op">=</span><span class="m">I</span><span class="op">=</span><span class="m">AA<sup>−1</sup></span></div>
+    <p>The left half says <span class="m">A<sup>−1</sup></span> undoes <span class="m">A</span>. The right half says <span class="m">A</span> undoes <span class="m">A<sup>−1</sup></span>. Since order matters, these are two separate claims. Strang states a fact that is far from obvious and takes real work to prove: <strong>for a square matrix, an inverse that works on the left also works on the right</strong>. A square matrix and its inverse are one of the rare pairs that commute.</p>
+    <p>A matrix that has an inverse is called <span class="term">invertible</span> or <span class="term">non-singular</span>. Lecture 1 used the same words for a system with exactly one solution, and they mean the same thing here: if <span class="m">A<b>x</b> = <b>b</b></span> and the inverse exists, multiply both sides by it and the only possible solution is <span class="m"><b>x</b> = A<sup>−1</sup><b>b</b></span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's invertible matrix, checked in both orders</span>
+    <div class="eq wrapok">
+      <span data-mx="7 -3; -2 1" data-cap="A⁻¹"></span><span data-mx="1 3; 2 7" data-cap="A"></span><span class="op">=</span><span data-mx="1 0; 0 1" data-cap="I"></span>
+      <span class="op">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+      <span data-mx="1 3; 2 7" data-cap="A"></span><span data-mx="7 -3; -2 1" data-cap="A⁻¹"></span><span class="op">=</span><span data-mx="1 0; 0 1" data-cap="I"></span>
+    </div>
+    <p>Section 3.9 shows where <span class="m">A<sup>−1</sup></span> comes from. For now check two entries of the first product by row times column: top-left <span class="m">7·1 + (−3)·2 = 1</span>, top-right <span class="m">7·3 + (−3)·7 = 0</span>.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="inverse"></i>Robotics link<em>undo</em></div>
+    <div class="robolink-body">
+      <h3>Undo a move, or change your point of view</h3>
+      <p><strong>Undo.</strong> The command <span class="m">D</span> drove the rover 2 m forward. Its inverse drives it 2 m backward, and together they leave the rover where it began:</p>
+      <div class="eq left wrapok"><span data-mx="1 0 -2; 0 1 0; 0 0 1" data-cap="D⁻¹"></span><span data-mx="1 0 2; 0 1 0; 0 0 1" data-cap="D"></span><span class="op">=</span><span data-mx="1 0 0; 0 1 0; 0 0 1" data-cap="I · never moved"></span></div>
+      <p>The inverse of the turn <span class="m">R</span> is a turn of 90° the other way. To undo a chain of moves, undo the last one first, as you take off shoes before socks: <span class="m">(RD)<sup>−1</sup> = D<sup>−1</sup>R<sup>−1</sup></span>. Lecture 4 proves that rule.</p>
+      <p><strong>Change viewpoint.</strong> The pose <span class="m">T</span> turns "where the rover sees a thing" into "where the thing is in the world". Very often a robot needs the opposite. Its map says where a landmark is in the world, and it has to work out where that is from its own seat. That conversion is <span class="m">T<sup>−1</sup></span>. Section 3.10 builds it and Lab 3.5 lets you drive it.</p>
+    </div>
+  </div>
+  <div class="note warn">
+    <i data-ic="warn"></i>
+    <span class="note-title">Watch out</span>
+    <div class="note-body"><p>Do not compute <span class="m">A<sup>−1</sup></span> just to solve one system <span class="m">A<b>x</b> = <b>b</b></span>. Elimination reaches <span class="m"><b>x</b></span> with less work, and Lecture 4 counts the difference. Robots compute an inverse when the inverse itself means something, such as a viewpoint, or when it has a shortcut formula, as poses do.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 3.8 -->
+<section class="concept" id="singular" data-toc="The singular case">
+  <header class="concept-head">
+    <span class="concept-no">3.8</span>
+    <h2>The singular case: when there is no way back</h2>
+    <p class="concept-sub">Not every square matrix can be undone. Here is how to tell.</p>
+  </header>
+  <div class="prose">
+    <p>Some square matrices have no inverse. They are the <span class="term">singular</span> matrices of Lecture 1, and the lecture puts one on the board to study.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's singular matrix</span>
+    <div class="eq"><span class="m">A</span><span class="op">=</span><span data-mx="1 3; 2 6" data-cols="0:h1,1:h2"></span></div>
+    <p><strong>Reason one: look at the columns.</strong> The <span class="hl2">second column</span> (3, 6) is 3 times the <span class="hl1">first column</span> (1, 2). Both lie on the same line through the origin. By way 2, every column of <span class="m">A</span> times anything is a combination of these two columns, so it stays on that line. But <span class="m">AA<sup>−1</sup> = I</span> would need a column equal to (1, 0), the first column of <span class="m">I</span>, and (1, 0) is not on the line. No matrix can do it.</p>
+    <p><strong>Reason two, the one to remember: some vector is sent to zero.</strong> Take <span class="m"><b>x</b> = (3, −1)</span>.</p>
+    <div class="eq wrapok"><span data-mx="1 3; 2 6" data-cols="0:h1,1:h2"></span><span data-mx="3; -1" data-cols="0:h4"></span><span class="op">=</span><span class="m">3</span><span data-mx="1; 2" data-cols="0:h1"></span><span class="op">−</span><span class="m">1</span><span data-mx="3; 6" data-cols="0:h2"></span><span class="op">=</span><span data-mx="0; 0"></span></div>
+    <p>Suppose an inverse existed. Multiply both sides of <span class="m">A<b>x</b> = <b>0</b></span> by it. The left side becomes <span class="m">A<sup>−1</sup>A<b>x</b> = <b>x</b></span>. The right side becomes <span class="m">A<sup>−1</sup><b>0</b> = <b>0</b></span>. Together they say <span class="m"><b>x</b> = <b>0</b></span>. But <span class="m"><b>x</b></span> is (3, −1), which is not zero. The contradiction means the inverse cannot exist.</p>
+  </div>
+  <div class="prose">
+    <p>The same argument in plain words: this matrix sends (3, −1) to zero, and like every matrix it also sends (0, 0) to zero. Two different inputs, one output. A machine that ran <span class="m">A</span> backwards would be handed that output and could not know which input to give back.</p>
+  </div>
+  <div class="note idea">
+    <i data-ic="idea"></i>
+    <span class="note-title">Key idea</span>
+    <div class="note-body"><p>If a matrix sends any non-zero vector to zero, it has no inverse. The vector it wipes out is the information it throws away.</p></div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="camera"></i>Robotics link<em>lost information</em></div>
+    <div class="robolink-body">
+      <h3>Singular means information was destroyed</h3>
+      <p>Imagine the simplest possible camera, looking along the <span class="m">y</span> axis. It records how far left or right a point is, and it loses how far away the point is. As a matrix:</p>
+      <div class="eq left wrapok"><span data-mx="1 0; 0 0" data-cap="keep x, drop depth"></span><span data-mx="2; 1"></span><span class="op">=</span><span data-mx="2; 0"></span><span class="op">&nbsp;&nbsp;and&nbsp;&nbsp;</span><span data-mx="1 0; 0 0"></span><span data-mx="2; 5"></span><span class="op">=</span><span data-mx="2; 0"></span></div>
+      <p>The points (2, 1) and (2, 5) give the same image. No calculation on the image alone can say which one was there, so this matrix cannot have an inverse. The vector it sends to zero is (0, 1), a step straight toward or away from the lens. <strong>The <span class="m"><b>x</b></span> with <span class="m">A<b>x</b> = <b>0</b></span> is exactly the motion the sensor cannot see.</strong> A real camera also makes distant things smaller, which is not a matrix multiplication, but the depth is lost in the same way.</p>
+      <p>The one-trick controller of section 3.4 was the lecture's matrix in disguise: [1 3; 2 6] is the column (1, 2) times the row [1 3]. The error it could not hear, (3, −1), is the vector Strang uses.</p>
+      <p>The arm of Lecture 1 runs into this too. Its Jacobian <span class="m">J</span> turns joint speeds into hand velocity, and <span class="m">J<sup>−1</sup></span> would turn a wanted hand velocity back into joint speeds. Stretch that arm out straight and the columns of <span class="m">J</span> line up. Then turning the shoulder at 1.7 rad/s while the elbow turns at −3.9 rad/s moves the hand not at all. That is a non-zero <span class="m"><b>x</b></span> with <span class="m">J<b>x</b> = <b>0</b></span>, so there is no <span class="m">J<sup>−1</sup></span>, and the controller has no answer to give.</p>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-flat">
+    <div class="lab-head"><span class="lab-tag">LAB 3.6</span><h3>Flatten a shape until it cannot be recovered</h3><i data-ic="squeeze"></i></div>
+    <p class="lab-intro">The left panel is what goes in. The right panel is what comes out when every point is multiplied by <b>A</b>. Slide the second column of A onto the line of the first and watch the output lose a dimension.</p>
+    <div class="lab-main stack">
+      <div class="lab-stage">
+        <div class="duo">
+          <figure><figcaption>In · the shape, P, Q and x</figcaption><canvas class="sq" aria-label="Input plane with a robot outline, two marked points and the vector x"></canvas></figure>
+          <figure><figcaption>Out · A times every point</figcaption><canvas class="sq" aria-label="Output plane with the transformed outline and the columns of A"></canvas></figure>
+        </div>
+        <div class="lab-caption"><span class="key k1">unit arrow (1, 0) and column 1</span><span class="key k2">unit arrow (0, 1) and column 2</span><span class="key k4">x, the points P and Q, and their images</span><span class="key k3">undo: A⁻¹ applied to the output</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="split">
+          <div class="lab-group"><div data-slot="sliders"></div><div data-slot="undo"></div><div class="lab-row" data-slot="buttons"></div></div>
+          <div class="lab-group"><div data-slot="status"></div><div data-slot="readouts"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Slide to 0%. The red and blue unit arrows on the left become the two columns of A on the right. Tick <b>Undo</b>: the amber outline lands exactly on the original shape.</li>
+        <li>Slide to 90%. The shape is a sliver and P and Q almost touch. The inverse still exists, but its entries have grown past 10, so it would magnify any small error in the output.</li>
+        <li>Slide to 100%. A is now the lecture's [1 3; 2 6]. P and Q land on one point, x = (3, −1) goes to zero, and Undo can only offer a whole line of possible inputs.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 3.9 -->
+<section class="concept" id="gauss-jordan" data-toc="Gauss-Jordan">
+  <header class="concept-head">
+    <span class="concept-no">3.9</span>
+    <h2>Gauss-Jordan: finding the inverse</h2>
+    <p class="concept-sub">Solve for every column of the inverse at once.</p>
+  </header>
+  <div class="prose">
+    <p>Now take a matrix that does have an inverse, the lecture's <span class="m">A</span> with rows (1, 3) and (2, 7), and find it. Way 2 turns the definition <span class="m">AA<sup>−1</sup> = I</span> into something familiar: <span class="m">A</span> times column <span class="m">j</span> of <span class="m">A<sup>−1</sup></span> equals column <span class="m">j</span> of <span class="m">I</span>. Call the unknown columns <span class="m">(a, b)</span> and <span class="m">(c, d)</span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">Two systems with the same A</span>
+    <div class="eq wrapok">
+      <span data-mx="1 3; 2 7"></span><span data-mx="a; b" data-cols="0:h3"></span><span class="op">=</span><span data-mx="1; 0"></span>
+      <span class="op">&nbsp;&nbsp;and&nbsp;&nbsp;</span>
+      <span data-mx="1 3; 2 7"></span><span data-mx="c; d" data-cols="0:h3"></span><span class="op">=</span><span data-mx="0; 1"></span>
+    </div>
+    <p>Lecture 2 solved one system like this by elimination. The row steps depend only on <span class="m">A</span>, so the same steps solve both.</p>
+  </div>
+  <div class="prose">
+    <p><span class="term">Gauss-Jordan elimination</span> does both at once. Write <span class="m">A</span> with <em>both</em> right-hand sides beside it. The two right-hand sides together are the identity, so the starting block is <span class="m">[ A | I ]</span>. Then do row steps until the left half becomes <span class="m">I</span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's elimination</span>
+    <div class="eq wrapok">
+      <span data-mx="1 3 1 0; 2 7 0 1" data-aug="2" data-pivots="0.0"></span><span class="op">→</span>
+      <span data-mx="1 3 1 0; 0 1 -2 1" data-aug="2" data-pivots="0.0,1.1"></span><span class="op">→</span>
+      <span data-mx="1 0 7 -3; 0 1 -2 1" data-aug="2" data-cols="2:h3,3:h3"></span>
+    </div>
+    <p><strong>First step, Gauss's part.</strong> Subtract 2 times row 1 from row 2. That clears the entry below the first pivot. The left half is now upper triangular, which is where Lecture 2 would stop.</p>
+    <p><strong>Second step, Jordan's part.</strong> Keep going, upward. Subtract 3 times row 2 from row 1 to clear the entry above the second pivot.</p>
+    <p>The left half is now <span class="m">I</span> and the <span class="hl3">right half</span> is the inverse, with rows (7, −3) and (−2, 1). If a pivot were not 1, one more step would divide its row by it.</p>
+  </div>
+
+  <div class="lab board" id="lab-gj">
+    <div class="lab-head"><span class="lab-tag">LAB 3.4</span><h3>Gauss-Jordan, one row step at a time</h3><i data-ic="inverse"></i></div>
+    <p class="lab-intro">Step through the elimination of <b>[ A | I ]</b>. The circled entry is the pivot, the blue row does the work and the amber row is the one that changes. Load a case, or type your own numbers into A.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <div data-slot="stepper"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Load a case</span><div data-slot="presets"></div></div>
+        <div class="lab-group"><span class="label">The matrix A · edit any entry</span><div class="lab-math" data-slot="input"></div></div>
+        <div data-slot="status"></div>
+        <div class="lab-group"><span class="label">Result</span><div class="lab-math" data-slot="result"></div></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Step through the <b>Lecture</b> case. Two row steps turn [ A | I ] into [ I | A⁻¹ ], and the right half ends with rows (7, −3) and (−2, 1).</li>
+        <li>Go through again watching only the right half. After each step it holds the record of every row step so far. When the left half reaches I, that record is the inverse.</li>
+        <li>Load <b>Singular</b>. After one step the left half has a row of zeros and no second pivot. Elimination stops and shows the vector (3, −1) that A sends to zero.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="prose">
+    <h3>Why it works</h3>
+    <p>Lecture 2 showed that every row step is a multiplication on the left by a small matrix. The first step above is <span class="m">E<sub>21</sub></span> and the second is <span class="m">E<sub>12</sub></span>. Doing one and then the other is a single matrix, their product. Call it <span class="m">E</span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">All the row steps as one matrix</span>
+    <div class="eq wrapok">
+      <span class="m">E</span><span class="op">=</span><span data-mx="1 -3; 0 1" data-cap="E₁₂ · second step"></span><span data-mx="1 0; -2 1" data-cap="E₂₁ · first step"></span><span class="op">=</span><span data-mx="7 -3; -2 1" data-cols="0:h3,1:h3"></span>
+    </div>
+    <div class="eq wrapok"><span class="m">E [ A | I ]</span><span class="op">=</span><span class="m">[ EA | EI ]</span><span class="op">=</span><span class="m">[ I | E ]</span></div>
+    <p>The second line is block multiplication: <span class="m">E</span> multiplies both halves at once. The steps were chosen so that the left half became <span class="m">I</span>. That is the statement <span class="m">EA = I</span>, and it says <span class="m">E</span> is <span class="m">A<sup>−1</sup></span>. Meanwhile the right half started as <span class="m">I</span> and became <span class="m">EI = E</span>. So the inverse appears exactly where the identity used to be.</p>
+  </div>
+  <div class="prose">
+    <p>Gauss-Jordan does not search for the inverse. It builds it, one row step at a time, by doing to <span class="m">I</span> everything it does to <span class="m">A</span>.</p>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="sliders"></i>Robotics link<em>unit commands</em></div>
+    <div class="robolink-body">
+      <h3>Gauss-Jordan answers every unit command at once</h3>
+      <p>Go back to the two-wheeled rover. From its wheel sensors it can work out its own body velocity. The forward speed is the average of the two wheel speeds. The turn rate is their difference divided by the 0.5 m between the wheels.</p>
+      <div class="eq left"><span data-mx="v; ω"></span><span class="op">=</span><span data-mx="1/2 1/2; -2 2" data-cap="F"></span><span data-mx="left; right"></span></div>
+      <p>A controller needs the reverse: which wheel speeds give the body velocity I want? Gauss-Jordan on <span class="m">[ F | I ]</span> gives</p>
+      <div class="eq left"><span class="m">F<sup>−1</sup></span><span class="op">=</span><span data-mx="1 -1/4; 1 1/4" data-cols="0:h1,1:h2"></span></div>
+      <p>Look at its columns. The <span class="hl1">first</span>, (1, 1), is the pair of wheel speeds that gives one unit of forward speed and no turn. The <span class="hl2">second</span>, (−1/4, 1/4), gives one unit of turn and no forward motion. That is what the right-hand sides (1, 0) and (0, 1) asked for. <strong>Column <span class="m">j</span> of an inverse answers the question "which input gives one unit of output <span class="m">j</span> and nothing else?"</strong></p>
+      <p>Every other command is a mix of those two columns. Moving at 0.6 m/s while turning at 2 rad/s needs 0.6 (1, 1) + 2 (−1/4, 1/4) = (0.1, 1.1) m/s at the wheels. Load <b>Rover wheels</b> in Lab 3.4 to watch this inverse appear. It is the wheel matrix <span class="m">W</span> of section 3.3.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 3.10 -->
+<section class="concept" id="viewpoint" data-toc="The robot: changing viewpoint">
+  <header class="concept-head">
+    <span class="concept-no">3.10</span>
+    <h2>The robot: changing viewpoint</h2>
+    <p class="concept-sub">Product, blocks and inverse, all working on one rover.</p>
+  </header>
+  <div class="prose">
+    <p>The rover's pose <span class="m">T</span> converts rover coordinates into world coordinates. Its inverse converts the other way. A pose can always be undone, and block multiplication gives the inverse with no elimination at all.</p>
+    <p>Think about what <span class="m">T</span> does to a point: it turns the point by <span class="m">R</span>, then shifts it by <span class="m"><b>p</b></span>. To undo that, shift back by <span class="m">−<b>p</b></span> and then turn back. Turning back is the inverse of the rotation, and a rotation matrix has a very cheap inverse: swap its rows with its columns. The swapped matrix is called the <span class="term">transpose</span> and written <span class="m">R<sup>T</sup></span>. Lecture 5 explains why this works. Here we check it by multiplying.</p>
+  </div>
+  <div class="work">
+    <span class="label">The inverse of a pose</span>
+    <div class="eq wrapok">
+      <span class="m">T<sup>−1</sup></span><span class="op">=</span><span data-mx="R<sup>T</sup> −R<sup>T</sup><b>p</b>; 0 1" data-cells="0.0:h2,0.1:h3"></span>
+      <span class="op">&nbsp;&nbsp;check:&nbsp;&nbsp;</span>
+      <span data-mx="R<sup>T</sup> −R<sup>T</sup><b>p</b>; 0 1"></span><span data-mx="R <b>p</b>; 0 1"></span><span class="op">=</span><span data-mx="R<sup>T</sup>R R<sup>T</sup><b>p</b>−R<sup>T</sup><b>p</b>; 0 1"></span><span class="op">=</span><span data-mx="I <b>0</b>; 0 1"></span>
+    </div>
+    <p>The rover of section 3.0 stands at (3, 1) facing 90°. Its rotation block has rows (0, −1) and (1, 0). Swapping rows with columns gives <span class="m">R<sup>T</sup></span> with rows (0, 1) and (−1, 0), and then <span class="m">−R<sup>T</sup><b>p</b> = (−1, 3)</span>.</p>
+    <div class="eq wrapok">
+      <span data-mx="0 -1 3; 1 0 1; 0 0 1" data-cols="0:h1,1:h2,2:h3" data-cap="T · world ← rover"></span>
+      <span class="op">&nbsp;&nbsp;</span>
+      <span data-mx="0 1 -1; -1 0 3; 0 0 1" data-rows="0:h1,1:h2" data-cap="T⁻¹ · rover ← world"></span>
+      <span data-mx="1; 4; 1" data-cols="0:h4" data-cap="landmark on the map"></span><span class="op">=</span><span data-mx="3; 2; 1" data-rows="0:h1,1:h2" data-cap="ahead, left"></span>
+    </div>
+    <p>The map puts a landmark at (1, 4). Seen from the rover it is 3 m ahead and 2 m to the left. Both views agree on the distance, 3.61 m, as they must.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="eye"></i>Robotics link<em>viewpoint</em></div>
+    <div class="robolink-body">
+      <h3>"Where is that landmark, as seen from me?"</h3>
+      <p>Maps are stored in world coordinates. Decisions are made in robot coordinates: steer left or right, reach forward or back. Every time a robot looks something up on its map and acts on it, a <span class="m">T<sup>−1</sup></span> sits in between.</p>
+      <p>The rows of <span class="m">T<sup>−1</sup></span> say what it does. Its <span class="hl1">first row</span> holds the rover's own <span class="m">x</span> axis, so it measures how far along that axis the landmark lies: the "ahead" number. Its <span class="hl2">second row</span> does the same for the rover's <span class="m">y</span> axis: the "left" number. The two columns of <span class="m">R</span> have become the two rows of <span class="m">R<sup>T</sup></span>. That is the whole reason a transpose appears.</p>
+      <p>Chains of these are everyday robot arithmetic. A camera on the hand sees a cup. Where is the cup from the robot's base? Multiply <span class="m">T<sub class="u">base←hand</sub></span><span class="m">T<sub class="u">hand←camera</sub></span> into the cup's camera coordinates. The map knows the cup in the world. Where is it from the hand? Multiply <span class="m">T<sub class="u">world←hand</sub></span> inverse into its world coordinates.</p>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-frames">
+    <div class="lab-head"><span class="lab-tag">LAB 3.5</span><h3>Seen from the rover: the inverse at work</h3><i data-ic="eye"></i></div>
+    <p class="lab-intro">Drag the <b>rover</b> and the <b>landmark</b>, and turn the rover with the slider. The map gives the landmark in world coordinates. <b>T⁻¹</b> converts them into "ahead" and "left" for the rover.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="wide" aria-label="A rover with its own axes and a landmark on a world grid"></canvas>
+        <div class="lab-caption"><span class="key k1">rover x axis: ahead</span><span class="key k2">rover y axis: left</span><span class="key k3">rover position</span><span class="key k4">landmark</span><span><i data-ic="drag"></i> drag the handles</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group" data-slot="sliders"></div>
+        <div class="lab-group"><span class="label">The rover's pose</span><div class="lab-math" data-slot="pose"></div></div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Start with the default: rover at (3, 1) facing 90°, landmark at (1, 4). Count ticks along the red axis and then the blue: 3 ahead, 2 left, the numbers of the worked example.</li>
+        <li>Turn the rover with the slider and touch nothing else. The landmark's map coordinates stay put while the rover's view of it swings round. The distance is the same from both viewpoints.</li>
+        <li>Drag the landmark onto the red dashed line in front of the rover. "Left" becomes 0. Drag it behind the rover and "ahead" turns negative.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="tablewrap">
+    <table class="t">
+      <thead><tr><th>Lecture idea</th><th>In plain words</th><th>What it is in a robot</th></tr></thead>
+      <tbody>
+        <tr><td>Matrix product AB</td><td>One machine after another: B first, then A</td><td>A chain of transforms, or a chain of signal stages from joystick to wheels</td></tr>
+        <tr><td>Entry rule</td><td>One number of AB is a row of A times a column of B</td><td>How strongly one input channel reaches one output channel through every stage between</td></tr>
+        <tr><td>Size rule</td><td>Inner sizes must match; outer sizes give the answer's shape</td><td>Frames must chain: the frame one matrix delivers is the frame the next expects</td></tr>
+        <tr><td>Columns way</td><td>Columns of AB are combinations of the columns of A</td><td>The columns of a pose are the body's x axis, y axis and position in the world</td></tr>
+        <tr><td>Rows way</td><td>Rows of AB are combinations of the rows of B</td><td>Each wheel speed is a weighted mix of the body velocities</td></tr>
+        <tr><td>Column times row</td><td>A matrix whose every output lies along one column</td><td>A one-trick controller: it listens along one direction and pushes along one direction</td></tr>
+        <tr><td>Block multiplication</td><td>Multiply blocks as if they were numbers, keeping the order</td><td>Pose composition: rotations multiply, positions are rotated and then added</td></tr>
+        <tr><td>AB is not BA</td><td>The order of a product matters</td><td>Turn then drive ends somewhere else than drive then turn</td></tr>
+        <tr><td>Inverse</td><td>The matrix that undoes A</td><td>Reverse a move, or convert world coordinates into the robot's own view</td></tr>
+        <tr><td>Singular</td><td>Some non-zero x has A x = 0, so there is no inverse</td><td>Lost information: a camera that drops depth, an arm stretched straight</td></tr>
+        <tr><td>Gauss-Jordan</td><td>Row-reduce [ A | I ] to [ I | A⁻¹ ]</td><td>Solve for every unit command at once; the columns of the inverse are the answers</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ practice -->
+<section class="concept" id="practice" data-toc="Practice problems">
+  <header class="concept-head">
+    <span class="concept-no">3.11</span>
+    <h2>Practice problems</h2>
+    <p class="concept-sub">Ten problems, from first steps to robot design. Work each on paper, then open the solution. Every answer has been checked by the code for this lecture.</p>
+  </header>
+  <div class="quiz problems">
+    <details><summary><span class="q">P1</span><span><span class="m">A</span> is 2 by 3, <span class="m">B</span> is 3 by 4 and <span class="m">C</span> is 4 by 2. Which of <span class="m">AB</span>, <span class="m">BA</span>, <span class="m">BC</span>, <span class="m">CA</span> and <span class="m">ABC</span> exist, and what size is each?<em class="tag">size rule</em></span></summary>
+      <div class="a">
+        <p>Write the sizes side by side and compare the inner numbers.</p>
+        <ul>
+          <li><span class="m">AB</span>: (2 × 3)(3 × 4). Inner 3 and 3 match. Size 2 × 4.</li>
+          <li><span class="m">BA</span>: (3 × 4)(2 × 3). Inner 4 and 2 differ. Does not exist.</li>
+          <li><span class="m">BC</span>: (3 × 4)(4 × 2). Match. Size 3 × 2.</li>
+          <li><span class="m">CA</span>: (4 × 2)(2 × 3). Match. Size 4 × 3.</li>
+          <li><span class="m">ABC</span>: (2 × 4)(4 × 2), using <span class="m">AB</span> from above. Size 2 × 2.</li>
+        </ul>
+        <p><strong>Answer:</strong> <span class="m">AB</span> is 2 × 4, <span class="m">BC</span> is 3 × 2, <span class="m">CA</span> is 4 × 3, <span class="m">ABC</span> is 2 × 2, and <span class="m">BA</span> does not exist.</p>
+      </div></details>
+    <details><summary><span class="q">P2</span><span>For <span class="m">A</span> = <span data-mx="1 2; 3 4" data-cls="sm"></span> and <span class="m">B</span> = <span data-mx="2 0; 1 3" data-cls="sm"></span>, find <span class="m">AB</span> by entries. Check its second column by the column way and its second row by the row way. Then find <span class="m">BA</span>.<em class="tag">ways 1 to 3</em></span></summary>
+      <div class="a">
+        <p><strong>Entries.</strong> <span class="m">c<sub>11</sub> = 1·2 + 2·1 = 4</span>, <span class="m">c<sub>12</sub> = 1·0 + 2·3 = 6</span>, <span class="m">c<sub>21</sub> = 3·2 + 4·1 = 10</span>, <span class="m">c<sub>22</sub> = 3·0 + 4·3 = 12</span>.</p>
+        <p><strong>Column 2, by columns.</strong> Column 2 of <span class="m">B</span> is (0, 3), so take 0 of (1, 3) and 3 of (2, 4): (6, 12).</p>
+        <p><strong>Row 2, by rows.</strong> Row 2 of <span class="m">A</span> is (3, 4), so take 3 of [2 0] and 4 of [1 3]: [6 0] + [4 12] = [10 12].</p>
+        <p><strong>The other order.</strong> <span class="m">BA</span> has rows (2·1 + 0·3, 2·2 + 0·4) = (2, 4) and (1·1 + 3·3, 1·2 + 3·4) = (10, 14).</p>
+        <div class="eq"><span class="m">AB</span><span class="op">=</span><span data-mx="4 6; 10 12"></span><span class="op">&nbsp;&nbsp;</span><span class="m">BA</span><span class="op">=</span><span data-mx="2 4; 10 14"></span></div>
+        <p><strong>Answer:</strong> <span class="m">AB</span> has rows (4, 6) and (10, 12). <span class="m">BA</span> has rows (2, 4) and (10, 14). They differ, so these two do not commute.</p>
+      </div></details>
+    <details><summary><span class="q">P3</span><span>Write <span data-mx="4 2; 6 3" data-cls="sm"></span> as one column times one row. Find a non-zero <span class="m"><b>x</b></span> that it sends to zero. Does it have an inverse?<em class="tag">column × row</em></span></summary>
+      <div class="a">
+        <p>Row 2 is 1.5 times row 1, and column 1 is 2 times column 2. Take the column (2, 3) and the row [2 1]:</p>
+        <div class="eq"><span data-mx="2; 3" data-cols="0:h1"></span><span data-mx="2 1" data-rows="0:h2"></span><span class="op">=</span><span data-mx="4 2; 6 3"></span></div>
+        <p>The matrix sends <span class="m"><b>x</b></span> to (2, 3) times the number <span class="m">2x<sub>1</sub> + x<sub>2</sub></span>. Choose <span class="m"><b>x</b> = (1, −2)</span> and that number is 0.</p>
+        <p><strong>Answer:</strong> (2, 3) times [2 1]. It sends (1, −2) to zero, so it has no inverse.</p>
+        <p>Follow-up: every multiple of (1, −2) is sent to zero as well. A whole line of inputs disappears.</p>
+      </div></details>
+    <details><summary><span class="q">P4</span><span>Use Gauss-Jordan to invert <span data-mx="1 2; 3 7" data-cls="sm"></span>, and check your answer.<em class="tag">Gauss-Jordan</em></span></summary>
+      <div class="a">
+        <div class="eq"><span data-mx="1 2 1 0; 3 7 0 1" data-aug="2"></span><span class="op">→</span><span data-mx="1 2 1 0; 0 1 -3 1" data-aug="2"></span><span class="op">→</span><span data-mx="1 0 7 -2; 0 1 -3 1" data-aug="2"></span></div>
+        <p>First step: subtract 3 times row 1 from row 2. Second step: subtract 2 times row 2 from row 1.</p>
+        <p>Check the first row of <span class="m">AA<sup>−1</sup></span>: <span class="m">1·7 + 2·(−3) = 1</span> and <span class="m">1·(−2) + 2·1 = 0</span>.</p>
+        <p><strong>Answer:</strong> the inverse has rows (7, −2) and (−3, 1).</p>
+        <p>Follow-up: change the 7 to a 6. Row 2 is then 3 times row 1, the first step leaves a zero row, and the matrix is singular. It sends (2, −1) to zero.</p>
+      </div></details>
+    <details><summary><span class="q">P5</span><span>Invert <span data-mx="1 1 0; 0 1 1; 0 0 1" data-cls="sm"></span> by Gauss-Jordan. Which half of the method does the work?<em class="tag">Gauss-Jordan</em></span></summary>
+      <div class="a">
+        <p>The matrix is already upper triangular with pivots 1, 1, 1, so Gauss's downward pass has nothing to do. Only Jordan's upward pass is needed.</p>
+        <div class="eq"><span data-mx="1 1 0 1 0 0; 0 1 1 0 1 0; 0 0 1 0 0 1" data-aug="3" data-cls="sm"></span><span class="op">→</span><span data-mx="1 1 0 1 0 0; 0 1 0 0 1 -1; 0 0 1 0 0 1" data-aug="3" data-cls="sm"></span><span class="op">→</span><span data-mx="1 0 0 1 -1 1; 0 1 0 0 1 -1; 0 0 1 0 0 1" data-aug="3" data-cls="sm"></span></div>
+        <p>First step: subtract row 3 from row 2. Second step: subtract the new row 2 from row 1.</p>
+        <p><strong>Answer:</strong> the inverse has rows (1, −1, 1), (0, 1, −1) and (0, 0, 1). It is upper triangular too.</p>
+      </div></details>
+    <details><summary><span class="q">P6</span><span>A rover stands at (2, 1) facing 90°. Write its pose matrix. It sees a cone 3 m ahead and 1 m to its left. Where is the cone in the world?<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>At 90° the cosine is 0 and the sine is 1.</p>
+        <div class="eq"><span data-mx="0 -1 2; 1 0 1; 0 0 1" data-cols="0:h1,1:h2,2:h3" data-cap="T"></span><span data-mx="3; 1; 1"></span><span class="op">=</span><span data-mx="1; 4; 1"></span></div>
+        <p>Top entry: <span class="m">0·3 − 1·1 + 2 = 1</span>. Middle entry: <span class="m">1·3 + 0·1 + 1 = 4</span>.</p>
+        <p><strong>Answer:</strong> the cone is at (1, 4). Check by picture: facing up the page from (2, 1), 3 m ahead is (2, 4), and 1 m to the left is (1, 4).</p>
+      </div></details>
+    <details><summary><span class="q">P7</span><span>The rover of P6 drives 3 m forward and then turns 90° to the left. Use the block rule to find its new pose. Then swap the two commands and find the pose again.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>Each command multiplies the pose on the right. The block rule says the new rotation is <span class="m">RR′</span> and the new position is <span class="m">R<b>p</b>′ + <b>p</b></span>.</p>
+        <p><strong>Drive, then turn.</strong> Driving has no turning part and <span class="m"><b>p</b>′ = (3, 0)</span>. The rover's <span class="m">R</span> turns (3, 0) into (0, 3), so the position becomes (0, 3) + (2, 1) = (2, 4). Turning on the spot then changes only the heading, from 90° to 180°.</p>
+        <p><strong>Turn, then drive.</strong> The turn makes the heading 180° and leaves the rover at (2, 1). Now <span class="m">R</span> is a half turn and sends (3, 0) to (−3, 0), so the position becomes (−3, 0) + (2, 1) = (−1, 1).</p>
+        <p><strong>Answer:</strong> drive-then-turn ends at (2, 4) facing 180°. Turn-then-drive ends at (−1, 1) facing 180°. Same heading, places 4.24 m apart.</p>
+      </div></details>
+    <details><summary><span class="q">P8</span><span>A two-link arm has two links of length 1. The shoulder is at 90° and the elbow at −90°. Multiply <span class="m">T<sub>1</sub>T<sub>2</sub>T<sub>3</sub></span> and read off where the hand is and which way it points.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <div class="eq"><span data-mx="0 -1 0; 1 0 0; 0 0 1" data-cls="sm" data-cap="T₁"></span><span data-mx="0 1 1; -1 0 0; 0 0 1" data-cls="sm" data-cap="T₂"></span><span data-mx="1 0 1; 0 1 0; 0 0 1" data-cls="sm" data-cap="T₃"></span></div>
+        <p><strong><span class="m">T<sub>1</sub>T<sub>2</sub></span> by blocks.</strong> The turns of 90° and −90° cancel, so the rotation block is <span class="m">I</span>. The position is <span class="m">R<sub>1</sub>(1, 0) + (0, 0) = (0, 1)</span>: the elbow is straight above the shoulder.</p>
+        <p><strong>Times <span class="m">T<sub>3</sub></span>.</strong> The rotation stays <span class="m">I</span>. The position is <span class="m">I(1, 0) + (0, 1) = (1, 1)</span>.</p>
+        <div class="eq"><span class="m">T</span><span class="op">=</span><span data-mx="1 0 1; 0 1 1; 0 0 1" data-cols="0:h1,1:h2,2:h3"></span></div>
+        <p><strong>Answer:</strong> the hand is at (1, 1) and its <span class="m">x</span> axis points along the world <span class="m">x</span> axis. The arm goes straight up, then straight across.</p>
+      </div></details>
+    <details><summary><span class="q">P9</span><span>A rover stands at (4, 2) facing 180°. Its map shows a charging dock at (1, 3). Build <span class="m">T<sup>−1</sup></span> from the block formula and find the dock as the rover sees it.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>At 180° the rotation block has rows (−1, 0) and (0, −1). Swapping rows with columns leaves it unchanged, so <span class="m">R<sup>T</sup> = R</span>. Then <span class="m">−R<sup>T</sup><b>p</b> = −(−4, −2) = (4, 2)</span>.</p>
+        <div class="eq"><span data-mx="-1 0 4; 0 -1 2; 0 0 1" data-rows="0:h1,1:h2" data-cap="T⁻¹"></span><span data-mx="1; 3; 1" data-cols="0:h4"></span><span class="op">=</span><span data-mx="3; -1; 1" data-rows="0:h1,1:h2"></span></div>
+        <p><strong>Answer:</strong> the dock is 3 m ahead and 1 m to the right (the "left" number is −1). Check by picture: the rover faces along −<span class="m">x</span>, and the dock is 3 m that way and 1 m up the page, which is on the rover's right.</p>
+      </div></details>
+    <details><summary><span class="q">P10</span><span>A joystick mixer sends stick positions (forward, turn) to wheel speeds (left, right) through <span data-mx="1 1; 1 1" data-cls="sm"></span>. The driver reports that the rover will not turn. Diagnose the matrix, repair it, and find the stick position that drives the left wheel at 1 with the right wheel stopped.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p><strong>Diagnosis.</strong> The matrix is the column (1, 1) times the row [1 1], a one-trick machine. Every output lies along (1, 1), so both wheels always get the same speed and the rover can only go straight. The stick position (1, −1) is sent to zero. The matrix is singular.</p>
+        <p><strong>Repair.</strong> Turning needs the wheels to differ, so the turn stick must enter with opposite signs: left = forward − turn, right = forward + turn.</p>
+        <div class="eq"><span data-mx="1 -1 1 0; 1 1 0 1" data-aug="2"></span><span class="op">→</span><span data-mx="1 -1 1 0; 0 2 -1 1" data-aug="2"></span><span class="op">→</span><span data-mx="1 0 1/2 1/2; 0 2 -1 1" data-aug="2"></span><span class="op">→</span><span data-mx="1 0 1/2 1/2; 0 1 -1/2 1/2" data-aug="2"></span></div>
+        <p>The steps: subtract row 1 from row 2, add half of row 2 to row 1, divide row 2 by 2. Column 1 of the inverse is the stick position for "left wheel 1, right wheel 0".</p>
+        <p><strong>Answer:</strong> the repaired mixer has rows (1, −1) and (1, 1). Its inverse has rows (1/2, 1/2) and (−1/2, 1/2), so the stick must be at forward 1/2, turn −1/2. Check: left = 1/2 + 1/2 = 1, right = 1/2 − 1/2 = 0.</p>
+      </div></details>
+  </div>
+</section>
+
+<!-- ============================================================ check -->
+<section class="concept" id="check" data-toc="Check yourself">
+  <header class="concept-head">
+    <span class="concept-no">3.12</span>
+    <h2>Check yourself</h2>
+    <p class="concept-sub">Answer in your head first, then open each one.</p>
+  </header>
+  <div class="quiz">
+    <details><summary><span class="q">Q1</span><span><span class="m">A</span> is 3 by 2 and <span class="m">B</span> is 2 by 4. What size is <span class="m">AB</span>? Does <span class="m">BA</span> exist?</span></summary>
+      <div class="a"><p><span class="m">AB</span> is (3 × 2)(2 × 4). The inner sizes match, so the product exists and is 3 by 4. <span class="m">BA</span> would be (2 × 4)(3 × 2). The inner sizes 4 and 3 differ, so it does not exist.</p></div></details>
+    <details><summary><span class="q">Q2</span><span>The columns of <span class="m">AB</span> are combinations of the columns of which matrix? The rows of <span class="m">AB</span> are combinations of the rows of which matrix?</span></summary>
+      <div class="a"><p>The columns of <span class="m">AB</span> are combinations of the columns of <span class="m">A</span>, with amounts taken from the columns of <span class="m">B</span>. The rows of <span class="m">AB</span> are combinations of the rows of <span class="m">B</span>, with amounts taken from the rows of <span class="m">A</span>.</p></div></details>
+    <details><summary><span class="q">Q3</span><span>Why is every row of the column (2, 3, 4) times the row [1 6] a multiple of [1 6]? What does such a matrix do as a machine?</span></summary>
+      <div class="a"><p>Row <span class="m">i</span> of the result is the <span class="m">i</span>-th number of the column times the whole row, so the rows are 2, 3 and 4 times [1 6]. As a machine it turns any input into one number, using the row, and then stretches the column by that number. Every output lies along the column (2, 3, 4).</p></div></details>
+    <details><summary><span class="q">Q4</span><span>A rover turns 90° left and then drives 2 m. A second rover drives 2 m and then turns 90° left. Where does each end, and what matrix fact is this?</span></summary>
+      <div class="a"><p>Starting at the origin facing along <span class="m">x</span>, the first ends at (0, 2) and the second at (2, 0). Both face 90°. The poses are the products <span class="m">RD</span> and <span class="m">DR</span>, and they differ: matrix multiplication is not commutative.</p></div></details>
+    <details><summary><span class="q">Q5</span><span>Give two reasons why the matrix with rows (1, 3) and (2, 6) has no inverse.</span></summary>
+      <div class="a"><p>First, its columns (1, 2) and (3, 6) lie on one line, so every combination of them does too, and (1, 0), a column of <span class="m">I</span>, can never be produced. Second, it sends the non-zero vector (3, −1) to zero. If an inverse existed, multiplying <span class="m">A<b>x</b> = <b>0</b></span> by it would force <span class="m"><b>x</b> = <b>0</b></span>, which is false.</p></div></details>
+    <details><summary><span class="q">Q6</span><span>In Gauss-Jordan, why does the right half of <span class="m">[ A | I ]</span> end up holding <span class="m">A<sup>−1</sup></span>?</span></summary>
+      <div class="a"><p>All the row steps together are one matrix <span class="m">E</span> multiplying on the left: <span class="m">E[ A | I ] = [ EA | E ]</span>. The steps are chosen to make the left half <span class="m">I</span>, so <span class="m">EA = I</span> and <span class="m">E</span> is the inverse. The right half is <span class="m">EI = E</span>, the same matrix.</p></div></details>
+    <details><summary><span class="q">Q7</span><span>A rover is at (3, 1) facing 90°. A landmark is at (5, 1) on the map. Where is it as the rover sees it?</span></summary>
+      <div class="a"><p>Use the <span class="m">T<sup>−1</sup></span> from section 3.10, with rows (0, 1, −1) and (−1, 0, 3). Ahead: <span class="m">0·5 + 1·1 − 1 = 0</span>. Left: <span class="m">−1·5 + 0·1 + 3 = −2</span>. The landmark is level with the rover and 2 m to its right. That fits the picture: the rover faces up the page and the landmark is 2 m to the east.</p></div></details>
+  </div>
+
+  <div class="note say">
+    <i data-ic="pen"></i>
+    <span class="note-title">For your article</span>
+    <div class="note-body">
+      <p><strong>One-line summary:</strong> a matrix product is one action followed by another, an inverse is the action that takes it back, and a matrix with no inverse has thrown information away.</p>
+      <p><strong>A robot sentence you can reuse:</strong> forward kinematics multiplies, changing viewpoint inverts, and a singular matrix is a sensor or a joint that has lost a direction.</p>
+      <p><strong>Good figures to capture:</strong> Lab 3.3 at 90° and 2 m, Lab 3.2 in its default pose, and Lab 3.6 at 0%, 90% and 100% side by side.</p>
+      <p>The full notes, worked numbers and references for this lecture are in <a href="article/03-multiplication-and-inverse-matrices.md">article/03-multiplication-and-inverse-matrices.md</a>, and runnable code is in <a href="code/l03_multiplication_inverses.py">code/l03_multiplication_inverses.py</a>.</p>
+    </div>
+  </div>
+</section>
+
+</article>
+</div>
+</main>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/la.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/plot.js"></script>
+<script src="assets/js/robots.js"></script>
+<script src="assets/js/lectures/l3.js"></script>
+</body>
+</html>

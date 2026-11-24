@@ -22,6 +22,11 @@ def row(v, digits=3):
     return "(" + ", ".join(fmt(x, digits) for x in v) + ")"
 
 
+def mat(A):
+    """A small matrix on one line, rows separated by semicolons: [1 2; 3 7]."""
+    return "[" + "; ".join(" ".join(fmt(x) for x in r) for r in A) + "]"
+
+
 # ------------------------------------------------------------------ the lecture
 def inverse_of_a_product():
     heading("1. Inverse of a product: (AB)^-1 = B^-1 A^-1")
@@ -207,7 +212,9 @@ def control_loop():
 
 # ------------------------------------------------------------------ robots
 def pose_of(T):
-    return T[0][2], T[1][2], math.degrees(math.atan2(T[1][0], T[0][0]))
+    """(x, y, heading in degrees) of a planar transform, with tiny round-off cleaned to zero."""
+    tidy = lambda v: 0.0 if abs(v) < 5e-10 else v
+    return tidy(T[0][2]), tidy(T[1][2]), tidy(math.degrees(math.atan2(T[1][0], T[0][0])))
 
 
 def socks_and_shoes_rover():
@@ -368,13 +375,63 @@ def six_permutations():
     print("inverse = transpose for all six:",
           ", ".join(f"{names[p]}^-1 = {names[key[tuple(map(tuple, transpose(mats[p])))]]}" for p in order))
     print("how many: 3 by 3 ->", len(list(permutations(range(3)))), "  4 by 4 ->", len(list(permutations(range(4)))),
-          "  n by n -> n!  (5! =", math.factorial(5), ", 6! =", math.factorial(6), ")")
+          f"  n by n -> n!  (5! = {math.factorial(5)}, 6! = {math.factorial(6)})")
 
     commands = [10, 20, 30]                         # what the controller sends on outputs 1, 2, 3
     C = mats[(1, 2, 0)]
     got = matvec(C, commands)
     print("\nmotors wired through C receive", got, "instead of", commands)
-    print("sending C^T times the commands first repairs it:", matvec(C, matvec(transpose(C), commands)), "\n")
+    fix = matvec(transpose(C), commands)
+    print("sending C^T times the commands,", fix, ", repairs it: the motors receive", matvec(C, fix), "\n")
+
+
+def practice():
+    heading("12. Practice problems (answers to P1-P10 on the page)")
+    Ai, Bi = frac([[1, 2], [0, 1]]), frac([[1, 0], [3, 1]])             # the two inverses that are given
+    print("P1   (AB)^-1 = B^-1 A^-1 =", mat(matmul(Bi, Ai)), "  wrong order A^-1 B^-1 =", mat(matmul(Ai, Bi)),
+          "  (A^T)^-1 =", mat(transpose(Ai)))
+    A2 = frac([[3, 1], [6, 5]])
+    L, D, U1 = ldu(A2)
+    print("P2   [3 1; 6 5]:  L =", mat(L), " U =", mat(lu(A2)[2]), " D =", mat(D), " U with unit diagonal =", mat(U1))
+    A3 = frac([[1, 1, 1], [2, 4, 5], [1, 5, 10]])
+    P, L3, U3, perm = lu(A3)
+    E = matmul(frac([[1, 0, 0], [0, 1, 0], [0, -2, 1]]), matmul(frac([[1, 0, 0], [0, 1, 0], [-1, 0, 1]]), frac([[1, 0, 0], [-2, 1, 0], [0, 0, 1]])))
+    print("P3   L =", mat(L3), " U =", mat(U3))
+    print("     E = E32 E31 E21 =", mat(E), "  so E(3,1) =", fmt(E[2][0]), "while L(3,1) =", fmt(L3[2][0]))
+    for b in ([3, 11, 16], [1, 2, 1]):
+        y = forward_substitute(L3, frac(b))
+        print(f"P4   b = {row(b)}:  y = {row(y)}  x = {row(back_substitute(U3, y))}")
+    n, k = 30, 100
+    f, s = factor_ops(n), n * n
+    print(f"P5   n = {n}: factor {f:,}, one right-hand side {s:,}; {k} of them from scratch {k * (f + s):,}, "
+          f"factor once {f + k * s:,}, ratio {k * (f + s) / (f + k * s):.2f}, ceiling {(f + s) / s:.2f}; n = 60 costs {factor_ops(60):,} and {60 * 60:,}")
+    C = permutation_matrix([1, 2, 0])
+    C2 = matmul(C, C)
+    print("P6   P^2 =", mat(C2), "  P^3 = I:", matmul(C2, C) == identity(3), "  P^T == P^2:", transpose(C) == C2,
+          "  5 by 5 permutations:", math.factorial(5))
+    A = hom2(0.0, 2.0, 0.0)                         # drive 2 m
+    B = hom2(math.pi / 2, 0.0, 1.0)                 # turn 90 degrees left, then drive 1 m
+    AB = matmul(A, B)
+    right = matmul(AB, matmul(inverse(B), inverse(A)))
+    wrong = matmul(AB, matmul(inverse(A), inverse(B)))
+    print("P7   after A then B: (%.0f, %.0f) heading %.0f;  undo B then A: (%.0f, %.0f);  undo A then B: (%.0f, %.0f), %.2f m from home"
+          % (pose_of(AB) + pose_of(right)[:2] + pose_of(wrong)[:2] + (math.hypot(*pose_of(wrong)[:2]),)))
+    budget = 20000
+    n = 60
+    print(f"P8   n = {n}: from scratch {factor_ops(n) + n * n:,} per tick, with L and U {n * n:,}; budget {budget:,}.",
+          "Largest n from scratch:", max(m for m in range(1, 500) if factor_ops(m) + m * m <= budget),
+          " with L and U:", max(m for m in range(1, 500) if m * m <= budget),
+          f" (from scratch n = 38 costs {factor_ops(38) + 38 * 38:,}, n = 39 costs {factor_ops(39) + 39 * 39:,})")
+    T = frac([[4, 1], [1, 4]])
+    fT = lu(T)
+    for heights in ([0, 5, 5, 0], [0, 5, 10, 0]):
+        r = frac(spline_rhs(heights))
+        print(f"P9   heights {heights}: right-hand side {row(r)}, accelerations M = {row(lu_solve(fT, r))}   (L = {mat(fT[1])}, U = {mat(fT[2])})")
+    Pw = permutation_matrix([2, 0, 1])              # motor 1 gets output 3, motor 2 gets output 1, motor 3 gets output 2
+    c = [5, 7, 9]
+    send = matvec(transpose(Pw), c)
+    print("P10  P =", mat(Pw), " motors receive", matvec(Pw, c), " send instead", send, " motors then receive", matvec(Pw, send))
+    print()
 
 
 if __name__ == "__main__":
@@ -389,3 +446,4 @@ if __name__ == "__main__":
     one_factorization_for_J_and_JT()
     spline_path()
     six_permutations()
+    practice()

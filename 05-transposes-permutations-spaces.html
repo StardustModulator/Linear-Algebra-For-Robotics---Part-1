@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lecture 5 · Transposes, Permutations, Spaces Rⁿ</title>
+<meta name="description" content="Row exchanges and PA = LU, transposes, symmetric matrices, vector spaces and subspaces, taught from scratch with joint torques on a two-link arm and the velocity space of a wheeled rover.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
+<link rel="stylesheet" href="assets/css/mit.css">
+<style>
+/* Lecture 5 only. Every colour comes from the shared design tokens. */
+.ctl { display: flex; flex-wrap: wrap; gap: 14px 30px; align-items: flex-start; }
+.ctl > .lab-group { min-width: 0; }
+
+/* three-digit experiment: two columns of working */
+.dig-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.dig-col { border: 1px solid var(--board-rule); background: var(--board-2); padding: 12px 14px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.dig-col.bad { border-color: var(--s1); }
+.dig-col.hot { border-color: var(--s3); }
+.dig-col.ok { border-color: var(--s4); }
+.dig-col > .label { color: var(--chalk-2); }
+.dig-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 7px; font-family: var(--font-mono); font-size: 13px; line-height: 1.45; color: var(--chalk-2); }
+.dig-steps b { color: var(--chalk); font-weight: 500; }
+.dig-steps .k { display: block; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--chalk-3); }
+.dig-steps .lost { color: var(--s3); }
+.dig-ans { display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; align-items: baseline; padding-top: 9px; border-top: 1px solid var(--board-rule); font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--chalk-3); }
+.dig-ans b { font-size: 16px; letter-spacing: 0; font-weight: 500; color: var(--chalk); text-transform: none; }
+
+/* transpose lab: entries slide across the diagonal */
+.tr-top { display: flex; flex-wrap: wrap; gap: 16px 30px; align-items: flex-start; }
+.tr-info { flex: 1 1 280px; display: grid; gap: 12px; min-width: 0; }
+.tr-cap { font-family: var(--font-mono); font-size: 12px; color: var(--chalk-2); }
+.flipbox { --cs: 54px; position: relative; flex: none; width: calc(var(--cs) * 3 + 22px); height: calc(var(--cs) * 3 + 12px); }
+.flip-br { position: absolute; left: 0; top: 0; width: calc(var(--cs) * var(--c, 2) + 22px); height: calc(var(--cs) * var(--r, 3) + 12px); transition: width .7s ease, height .7s ease; pointer-events: none; }
+.flip-br::before, .flip-br::after { content: ""; position: absolute; top: 0; bottom: 0; width: 8px; border: 1.6px solid var(--chalk); }
+.flip-br::before { left: 0; border-right: 0; }
+.flip-br::after { right: 0; border-left: 0; }
+.flip-diag { position: absolute; left: 11px; top: 6px; width: calc(var(--cs) * 4.243); border-top: 1px dashed var(--chalk-3); transform-origin: 0 0; transform: rotate(45deg); pointer-events: none; }
+.flip-cell { position: absolute; left: 11px; top: 6px; width: var(--cs); height: var(--cs); display: grid; place-items: center; transform: translate(calc(var(--cs) * var(--x, 0)), calc(var(--cs) * var(--y, 0))); transition: transform .7s cubic-bezier(.5, 0, .2, 1); }
+.flip-cell input { width: 44px; height: 40px; text-align: center; font-family: var(--font-math); font-size: 21px; font-weight: 600; color: var(--tc); background: var(--tw); border: 0; border-bottom: 1px dashed var(--chalk-3); border-radius: 0; padding: 0; -moz-appearance: textfield; }
+.flip-cell input::-webkit-outer-spin-button, .flip-cell input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.flip-cell input:focus { outline: none; border-bottom: 1.5px solid var(--tc); }
+.flip-cell.t1 { --tc: var(--m1); --tw: var(--m1-wash); }
+.flip-cell.t2 { --tc: var(--m2); --tw: var(--m2-wash); }
+.mx > .sel { box-shadow: inset 0 0 0 1.6px var(--m3); font-weight: 600; }
+.mx.pick > span { cursor: pointer; }
+</style>
+</head>
+<body>
+<main data-lecture="5">
+
+<section class="lec-hero">
+  <div class="wrap">
+    <div class="lec-num">05<i>.</i></div>
+    <div class="lec-kicker label"><span class="bars"></span><span>MIT 18.06 · Lecture 5</span><span><i data-ic="clock"></i> 47:42</span></div>
+    <h1>Transposes, Permutations, Spaces R<sup>n</sup></h1>
+    <p class="lec-lede">The lecture first finishes elimination: <strong>row exchanges</strong>, <span class="m">PA = LU</span>, <strong>transposes</strong> and <strong>symmetric matrices</strong>. Then it opens the real subject of the course: <strong>vector spaces</strong> and <strong>subspaces</strong>, the sets of vectors you can reach. For a robot, a subspace is the set of all motions it is able to make.</p>
+    <div class="lec-meta">
+      <a class="btn primary" data-ocw="video" href="#"><i data-ic="video"></i><span>Watch the lecture on OCW</span></a>
+      <a class="btn" data-ocw="summary" href="#"><i data-ic="book"></i><span>Lecture summary</span></a>
+      <a class="btn" href="article/05-transposes-permutations-spaces.md"><i data-ic="pen"></i><span>Article notes</span></a>
+    </div>
+  </div>
+</section>
+
+<div class="wrap lec-layout">
+<nav class="toc"></nav>
+<article class="lec-body">
+
+<!-- ============================================================ 5.0 -->
+<section class="concept" id="start" data-toc="Start here: two halves">
+  <header class="concept-head">
+    <span class="concept-no">5.0</span>
+    <h2>Start here: one job to finish, one idea to begin</h2>
+    <p class="concept-sub">What you already know, and the two questions this lecture answers.</p>
+  </header>
+  <div class="prose">
+    <p class="big">This lecture has two halves. The first half finishes the story of elimination. The second half begins a new story that runs through the rest of the course.</p>
+    <p><strong>What you already know.</strong> <a href="02-elimination-with-matrices.html">Lecture 2</a> solved <span class="m">A<b>x</b> = <b>b</b></span> by <span class="term">elimination</span>: subtract multiples of one row from the rows below it until the matrix has zeros under its diagonal. The number used to clear each column is a <span class="term">pivot</span>, and a pivot is never allowed to be zero. <a href="04-factorization-into-a-lu.html">Lecture 4</a> packed the whole process into one statement, <span class="m">A = LU</span>.</p>
+    <p><strong>The job to finish.</strong> Both lectures assumed that every pivot turned out non-zero. What happens when a zero sits where a pivot should be? The cure is to swap two rows, which is called a <span class="term">row exchange</span>. This lecture gives the matrix that does the swapping, and two small tools that come along with it: the <span class="term">transpose</span> and the <span class="term">symmetric matrix</span>.</p>
+    <p><strong>The idea to begin.</strong> Until now every question was about one system and one answer. Strang now steps back and looks at whole <em>sets</em> of vectors. Which sets can you add and stretch inside without ever falling out? Those sets are called <span class="term">vector spaces</span>, and the smaller ones that live inside them are <span class="term">subspaces</span>. They are the real subject of linear algebra.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="robot"></i>Robotics link<em>why a robot cares</em></div>
+    <div class="robolink-body">
+      <h3>From "solve this one" to "what can I ever do?"</h3>
+      <p>A robot's controller solves one system at a time: this motion, these motor commands. A robot's <em>designer</em> asks a larger question: what is the complete set of motions this machine can make, whatever the commands? That set turns out to be a subspace. A rover that cannot slide sideways owns a flat sheet inside the space of all motions. A robot on omni wheels owns the whole space.</p>
+      <p>The first half of this page gives a robot two everyday tools: elimination that cannot be tripped up by a badly placed number, and the transpose, which turns a force at the hand into torques at the motors. The second half teaches you to see the sets.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 5.1 -->
+<section class="concept" id="permutations" data-toc="Row exchanges and PA = LU">
+  <header class="concept-head">
+    <span class="concept-no">5.1</span>
+    <h2>Row exchanges and PA = LU</h2>
+    <p class="concept-sub">What to do when a zero sits in the pivot position.</p>
+  </header>
+  <div class="prose">
+    <p>Elimination needs a non-zero number in each position along the diagonal. If it finds a zero there, it looks further down the same column for a non-zero entry and swaps that row up. The equations are the same equations in a new order, so the solution does not change.</p>
+    <p>A row exchange is done by a matrix. Start from the <span class="term">identity matrix</span> <span class="m">I</span>, which has ones on the diagonal and zeros elsewhere and leaves every matrix unchanged. Re-order the rows of <span class="m">I</span> and you get a <span class="term">permutation matrix</span> <span class="m">P</span>. Multiplying <span class="m">PA</span> re-orders the rows of <span class="m">A</span> in exactly the same way.</p>
+  </div>
+  <div class="work">
+    <span class="label">One exchange, as a matrix</span>
+    <div class="eq wrapok">
+      <span data-mx="0 1 0; 1 0 0; 0 0 1" data-rows="0:h3,1:h3" data-cap="P · rows 1 and 2 of I swapped"></span>
+      <span data-mx="0 1 1; 1 2 1; 2 7 9" data-rows="0:h1,1:h2" data-cap="A"></span>
+      <span class="op">=</span>
+      <span data-mx="1 2 1; 0 1 1; 2 7 9" data-rows="0:h2,1:h1" data-cap="P A · rows 1 and 2 of A swapped"></span>
+    </div>
+  </div>
+  <div class="prose">
+    <h3>How many permutation matrices are there?</h3>
+    <p>For 3 rows there are 3 choices for the row that goes first, then 2 for the next, then 1. That is <span class="m">3 · 2 · 1 = 6</span>. In general the count is <span class="m">n · (n − 1) · … · 1</span>, written <span class="m">n!</span> and read "<span class="term">n factorial</span>". There are 6 permutation matrices of size 3 and 24 of size 4.</p>
+  </div>
+  <div class="work">
+    <span class="label">All six permutation matrices of size 3</span>
+    <div class="eq wrapok">
+      <span data-mx="1 0 0; 0 1 0; 0 0 1" data-cls="sm"></span>
+      <span data-mx="0 1 0; 1 0 0; 0 0 1" data-cls="sm"></span>
+      <span data-mx="0 0 1; 0 1 0; 1 0 0" data-cls="sm"></span>
+      <span data-mx="1 0 0; 0 0 1; 0 1 0" data-cls="sm"></span>
+      <span data-mx="0 1 0; 0 0 1; 1 0 0" data-cls="sm"></span>
+      <span data-mx="0 0 1; 1 0 0; 0 1 0" data-cls="sm"></span>
+    </div>
+    <p>The first is the identity, which exchanges nothing. The next three swap one pair of rows. The last two move all three rows round in a cycle. Multiply any two of them and you get another one of the six.</p>
+  </div>
+  <div class="prose">
+    <h3>Undoing a permutation costs nothing</h3>
+    <p>Flip a matrix over its diagonal, so that its rows become its columns, and you have its <span class="term">transpose</span>, written with a small T (section 5.3 looks at it properly). For a permutation matrix the transpose is the inverse:</p>
+  </div>
+  <div class="work">
+    <div class="eq"><span class="m">P<sup>−1</sup> = P<sup class="u">T</sup></span><span class="op">&nbsp;&nbsp;which is the same as&nbsp;&nbsp;</span><span class="m">P<sup class="u">T</sup>P = I</span></div>
+    <div class="eq wrapok">
+      <span data-mx="0 0 1; 1 0 0; 0 1 0" data-cap="P transpose"></span>
+      <span data-mx="0 1 0; 0 0 1; 1 0 0" data-cap="P"></span>
+      <span class="op">=</span>
+      <span data-mx="1 0 0; 0 1 0; 0 0 1" data-cap="I"></span>
+    </div>
+    <p>The reason is short. Each row of <span class="m">P</span> holds a single 1. A row multiplied into itself gives <span class="m">1 · 1 = 1</span>. Two different rows have their ones in different places, so they multiply to 0. Those products are exactly the entries of <span class="m">P<sup class="u">T</sup>P</span>.</p>
+  </div>
+  <div class="prose">
+    <h3>The factorization that always works</h3>
+    <p>Lecture 4's <span class="m">A = LU</span> breaks down when a pivot position holds a zero. The repair is to put the rows in a good order first and then factor:</p>
+  </div>
+  <div class="work">
+    <span class="label">The rule from the lecture</span>
+    <div class="eq"><span class="m">PA = LU</span></div>
+    <p><span class="m">P</span> holds the row exchanges, <span class="m">L</span> holds the multipliers and <span class="m">U</span> is the upper triangular result. This works for every <span class="term">invertible</span> matrix <span class="m">A</span>, meaning every matrix whose system has exactly one solution. When no exchange is needed, <span class="m">P = I</span> and you are back at <span class="m">A = LU</span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">A worked example of our own (the lecture states the rule without numbers)</span>
+    <p>The matrix <span class="m">A</span> above has 0 in its first pivot position. Exchange rows 1 and 2. Then eliminate as usual: row 2 already has a 0 in the first column, subtract 2 × row 1 from row 3, then subtract 3 × row 2 from row 3. The multipliers 0, 2 and 3 go into <span class="m">L</span>.</p>
+    <div class="eq wrapok">
+      <span data-mx="0 1 0; 1 0 0; 0 0 1" data-cap="P"></span>
+      <span data-mx="0 1 1; 1 2 1; 2 7 9" data-cap="A"></span>
+      <span class="op">=</span>
+      <span data-mx="1 0 0; 0 1 0; 2 3 1" data-cap="L"></span>
+      <span data-mx="1 2 1; 0 1 1; 0 0 4" data-pivots="0.0,1.1,2.2" data-cap="U"></span>
+    </div>
+    <p>Check the bottom row of <span class="m">LU</span>: <span class="m">2 · (1, 2, 1) + 3 · (0, 1, 1) + (0, 0, 4) = (2, 7, 9)</span>, which is row 3 of <span class="m">A</span>.</p>
+  </div>
+
+  <div class="lab board" id="lab-pivot">
+    <div class="lab-head"><span class="lab-tag">LAB 5.1</span><h3>Elimination with row exchanges: P A = L U</h3><i data-ic="permute"></i></div>
+    <p class="lab-intro">Press <b>Next step</b> and watch three matrices at once: <b>P</b> collects the row exchanges, the middle matrix turns into <b>U</b>, and <b>L</b> collects the multipliers. The last step multiplies everything out to check <b>P A = L U</b>.</p>
+    <div class="lab-main stack">
+      <div class="lab-stage">
+        <div class="ctl">
+          <div class="lab-group"><span class="label">Load a matrix</span><div data-slot="presets"></div></div>
+          <div class="lab-group"><span class="label">When to exchange rows</span><div data-slot="mode"></div></div>
+        </div>
+        <div data-slot="stepper"></div>
+        <div data-slot="status"></div>
+      </div>
+      <div class="lab-side">
+        <div class="ctl">
+          <div class="lab-group"><span class="label">The matrix A · edit any entry</span><div class="lab-math" data-slot="input"></div></div>
+          <div class="lab-group"><span class="label">Undoing the exchanges: P transpose times P</span><div class="lab-math" data-slot="ptp"></div></div>
+        </div>
+        <div data-slot="readouts"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Step through <b>Zero pivot</b> to the end. One exchange, three pivots (1, 1, 4), and the check holds. Elimination was never stuck, only out of order.</li>
+        <li>Load <b>Singular</b>. After one exchange the last column has nothing left to offer. No ordering of the rows can make a pivot out of zeros, which is why the rule says "every invertible A".</li>
+        <li>Load <b>General matrix</b> and switch to <b>Partial pivoting</b>. Rows now move even though no pivot is zero. Section 5.2 explains why software prefers this.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="chip"></i>Robotics link<em>ordering and labelling</em></div>
+    <div class="robolink-body">
+      <h3>A permutation is a re-labelling, and robots re-label all the time</h3>
+      <p>Each row of a robot's system comes from somewhere: one sensor reading, or one balance of forces. Exchanging rows means choosing which sensor's equation the solver deals with first. Nothing about the robot changes. Only the order of the paperwork does.</p>
+      <p>The same matrix describes wiring. Suppose three wheel encoders are plugged into the wrong ports, so the computer receives the readings in the order (2, 3, 1). That scrambling is a permutation matrix <span class="m">P</span> applied to the true readings. To put them right the software multiplies by <span class="m">P<sup class="u">T</sup></span>. It never has to compute an inverse, because for a permutation the transpose is the inverse.</p>
+    </div>
+  </div>
+
+  <div class="note idea">
+    <i data-ic="idea"></i>
+    <span class="note-title">Key idea</span>
+    <div class="note-body"><p>A permutation changes the order of the equations and nothing else. With the right order in hand, every invertible matrix factors as PA = LU.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 5.2 -->
+<section class="concept" id="pivoting" data-toc="Why software pivots">
+  <header class="concept-head">
+    <span class="concept-no">5.2</span>
+    <h2>Why software pivots even when it does not have to</h2>
+    <p class="concept-sub">A pivot that is tiny is almost as dangerous as a pivot that is zero.</p>
+  </header>
+  <div class="prose">
+    <p>On paper a row exchange is needed only for a zero pivot. Strang points out that software such as Matlab exchanges rows far more often than that. It does so whenever the pivot is small compared with the entries below it.</p>
+    <p>The reason is that a computer does not keep every digit. It stores a fixed number of <span class="term">significant digits</span>, which are the digits of a number counted from its first non-zero digit. So 0.000123 and 123000 both have three. After every multiplication and subtraction the result is rounded to fit.</p>
+    <p>Now think about the <span class="term">multiplier</span>, the number that elimination multiplies the pivot row by before subtracting it. The multiplier is an entry divided by the pivot. Divide by a tiny pivot and the multiplier is huge. The row being changed is then swamped by a huge multiple of the pivot row, and its own numbers are pushed past the last digit the computer keeps.</p>
+    <p>The cure is a habit called <span class="term">partial pivoting</span>: before clearing a column, look down it, find the entry that is largest in size, and exchange that row into the pivot position. Every multiplier is then 1 or smaller in size, and nothing gets swamped.</p>
+  </div>
+  <div class="work">
+    <span class="label">A small pivot, worked with three significant digits</span>
+    <div class="eq wrapok"><span class="m">0.0001x + y = 1</span><span class="op">&nbsp;&nbsp;and&nbsp;&nbsp;</span><span class="m">x + y = 2</span></div>
+    <p>The true answer is <span class="m">x = 1.0001</span>, <span class="m">y = 0.9999</span>, to four decimals. Now pretend the computer keeps only three significant digits after every step.</p>
+    <p><strong>Without an exchange</strong> the pivot is 0.0001 and the multiplier is <span class="m">1 ÷ 0.0001 = 10000</span>. Row 2 becomes <span class="m">1 − 10000 = −9999</span>, which three digits store as <span class="m">−10000</span>. Its right side becomes <span class="m">2 − 10000 = −9998</span>, also stored as <span class="m">−10000</span>. So <span class="m">y = 1</span>, and then <span class="m">x = (1 − 1) ÷ 0.0001 = 0</span>. The computed answer is <span class="m">(0, 1)</span>. The value of <span class="m">x</span> is completely wrong.</p>
+    <p><strong>With the rows exchanged</strong> the pivot is 1 and the multiplier is 0.0001. Row 2 becomes <span class="m">1 − 0.0001 = 0.9999</span>, stored as 1, with right side <span class="m">1 − 0.0002 = 0.9998</span>, stored as 1. So <span class="m">y = 1</span> and <span class="m">x = (2 − 1) ÷ 1 = 1</span>. The computed answer is <span class="m">(1, 1)</span>, which is right to three digits.</p>
+  </div>
+  <div class="prose">
+    <p>Look at what the rounding threw away in the first run. The 1 and the 2 were row 2's own numbers. They were everything the equation <span class="m">x + y = 2</span> had to say. Next to 10000 they sat in the fifth digit, and the computer kept three. After the rounding, row 2 reads <span class="m">−10000y = −10000</span>, which is only a copy of row 1. The second equation had been wiped out.</p>
+  </div>
+
+  <div class="lab board" id="lab-digits">
+    <div class="lab-head"><span class="lab-tag">LAB 5.1 · PART 2</span><h3>A three-digit computer meets a small pivot</h3><i data-ic="pivot"></i></div>
+    <p class="lab-intro">Both columns solve the same two equations and round every result to three significant digits. The left column uses the small number as its pivot. The right column exchanges the rows first. Slide the pivot smaller and watch the left answer.</p>
+    <div class="lab-main stack">
+      <div class="lab-stage">
+        <div class="dig-cols" data-slot="cols"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group" data-slot="slider"></div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Start at <b>0.0001</b>, the worked example. Amber marks every place where digits were lost. On the left, the lost digits were the whole second equation.</li>
+        <li>Slide left to <b>0.1</b>. The multiplier is only 10 and both columns agree. A pivot does not need to be large, only large enough that the multiplier stays modest.</li>
+        <li>Step right one notch at a time. The left answer holds until the multiplier passes 1000, then collapses to x = 0 and stays there. The right column never moves away from the truth.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="ruler"></i>Robotics link<em>numerical care</em></div>
+    <div class="robolink-body">
+      <h3>Do not divide by your weakest measurement</h3>
+      <p>Read the two equations as two sensors measuring the same pair of unknowns. In the first equation <span class="m">x</span> has the coefficient 0.0001: that sensor barely responds to <span class="m">x</span>. The second sensor responds to <span class="m">x</span> at full strength. Using the first row as the pivot row means working out <span class="m">x</span> from the sensor that can hardly see it, by dividing a small leftover by 0.0001. Any rounding in that leftover is multiplied by ten thousand.</p>
+      <p>Partial pivoting is the software version of common sense: to pin down a quantity, use the equation that sees it best. A robot's controller solves systems like this a thousand times a second with numbers that come from real sensors, so its solver always pivots.</p>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <i data-ic="warn"></i>
+    <span class="note-title">Watch out</span>
+    <div class="note-body"><p>This failure is different from the nearly parallel lines of Lecture 1. Here the two lines cross at a healthy 45° and the problem itself is easy. Only the order of the rows was bad, and an exchange cures it completely. When the lines really are nearly parallel, no exchange can help, because the trouble is in the problem and not in the method.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 5.3 -->
+<section class="concept" id="transposes" data-toc="Transposes">
+  <header class="concept-head">
+    <span class="concept-no">5.3</span>
+    <h2>Transposes: rows become columns</h2>
+    <p class="concept-sub">One flip over the diagonal.</p>
+  </header>
+  <div class="prose">
+    <p>To transpose a matrix, write its first row as the first column, its second row as the second column, and so on. The result is written <span class="m">A<sup class="u">T</sup></span> and read "A transpose".</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's example</span>
+    <div class="eq wrapok">
+      <span data-mx="1 3; 2 3; 4 1" data-cols="0:h1,1:h2" data-cap="A · 3 by 2"></span>
+      <span class="op">has the transpose</span>
+      <span data-mx="1 2 4; 3 3 1" data-rows="0:h1,1:h2" data-cap="A transpose · 2 by 3"></span>
+    </div>
+    <p>The <span class="hl1">red</span> column (1, 2, 4) has become the red row. The <span class="hl2">blue</span> column (3, 3, 1) has become the blue row. A matrix with 3 rows and 2 columns turns into one with 2 rows and 3 columns.</p>
+  </div>
+  <div class="prose">
+    <p>In symbols the rule is short. The entry in row <span class="m">i</span>, column <span class="m">j</span> of the transpose is the entry in row <span class="m">j</span>, column <span class="m">i</span> of the original:</p>
+  </div>
+  <div class="work">
+    <div class="eq"><span class="m">(A<sup class="u">T</sup>)<sub>ij</sub> = A<sub>ji</sub></span></div>
+    <p>For example the 4 sits in row 3, column 1 of <span class="m">A</span> and in row 1, column 3 of <span class="m">A<sup class="u">T</sup></span>.</p>
+  </div>
+  <div class="prose">
+    <p>Picture the <span class="term">main diagonal</span>, the line of entries running from the top left corner down to the right. Transposing is a flip across that line. Entries on the diagonal stay where they are. Every other entry trades places with its mirror image. Flip twice and you are back where you started: <span class="m">(A<sup class="u">T</sup>)<sup class="u">T</sup> = A</span>.</p>
+    <p>One rule about products will be needed in the next section. <strong>The transpose of a product is the product of the transposes in reverse order:</strong> <span class="m">(AB)<sup class="u">T</sup> = B<sup class="u">T</sup>A<sup class="u">T</sup></span>. The order reverses for the same reason it does for inverses. If you put on socks and then shoes, undoing it means shoes first.</p>
+  </div>
+
+  <div class="lab board" id="lab-transpose">
+    <div class="lab-head"><span class="lab-tag">LAB 5.2</span><h3>Flip a matrix, then multiply it by its own transpose</h3><i data-ic="transpose"></i></div>
+    <p class="lab-intro">Press <b>Flip</b> and every entry slides across the dashed diagonal. You can type new numbers into any entry. Below, the matrix is multiplied by its transpose. Look for the mirror pattern in the answer before you read section 5.4.</p>
+    <div class="lab-main stack">
+      <div class="lab-stage">
+        <div class="tr-top">
+          <div class="flipbox" data-slot="flip"></div>
+          <div class="tr-info">
+            <div class="tr-cap" data-slot="flipcap"></div>
+            <div class="lab-row" data-slot="buttons"></div>
+            <div data-slot="status"></div>
+          </div>
+        </div>
+        <div class="lab-group"><span class="label">Multiply by the transpose</span><div data-slot="order"></div></div>
+        <div class="lab-math" data-slot="prod"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Light up a mirrored pair (or tap an entry of the product)</span><div data-slot="pair"></div></div>
+        <div data-slot="why"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Flip, and follow the 4. It travels from the bottom left to the top right. The two entries on the dashed line do not move at all.</li>
+        <li>Light up each mirrored pair of the product in turn. The two entries of a pair are always equal: 11 and 11, 7 and 7, 11 and 11. These are the lecture's numbers.</li>
+        <li>Type any numbers you like into the matrix. The entries of the product change, but each mirrored pair stays equal. Switch to the other order and it is still true, in a 2 by 2 answer.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="frame"></i>Robotics link<em>frames and forces</em></div>
+    <div class="robolink-body">
+      <h3>A robot transposes whenever it changes point of view</h3>
+      <p>A robot keeps a <strong>rotation matrix</strong> <span class="m">R</span> that turns directions measured in its own body frame into directions in the world frame. To go the other way, from world to body, it needs the inverse of <span class="m">R</span>. For a rotation matrix, as for a permutation matrix, the inverse is the transpose. So the robot never solves anything. It flips the matrix.</p>
+      <div class="eq left wrapok">
+        <span data-mx="0.866 -0.5; 0.5 0.866" data-cls="sm" data-cap="R · turn by 30°"></span>
+        <span data-mx="0.866 0.5; -0.5 0.866" data-cls="sm" data-cap="R transpose · turn back"></span>
+      </div>
+      <p>The second use is deeper and gets its own section. Motion flows from the joints out to the hand through a matrix <span class="m">J</span>. Force flows from the hand back to the joints through <span class="m">J<sup class="u">T</sup></span>. Section 5.5 shows why.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 5.4 -->
+<section class="concept" id="symmetric" data-toc="Symmetric matrices">
+  <header class="concept-head">
+    <span class="concept-no">5.4</span>
+    <h2>Symmetric matrices and R<sup>T</sup>R</h2>
+    <p class="concept-sub">Matrices that do not change when you flip them.</p>
+  </header>
+  <div class="prose">
+    <p>A matrix is <span class="term">symmetric</span> when transposing leaves it unchanged: <span class="m">A<sup class="u">T</sup> = A</span>. Such a matrix must be square, and the entries on either side of the diagonal mirror each other.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's symmetric matrix</span>
+    <div class="eq"><span data-mx="3 1 7; 1 2 9; 7 9 4" data-cells="0.1:h1,1.0:h1,0.2:h2,2.0:h2,1.2:h4,2.1:h4"></span></div>
+    <p>The two 1s mirror each other, the two 7s mirror each other and the two 9s mirror each other. The diagonal entries 3, 2 and 4 can be anything.</p>
+  </div>
+  <div class="prose">
+    <h3>A factory for symmetric matrices</h3>
+    <p>Take any matrix <span class="m">R</span> at all. It can even be rectangular. Multiply its transpose by it. <strong>The product <span class="m">R<sup class="u">T</sup>R</span> is always symmetric.</strong></p>
+    <p>The proof is one line, using the reverse-order rule from section 5.3. Transpose the product and see what comes back:</p>
+  </div>
+  <div class="work">
+    <div class="eq"><span class="m">(R<sup class="u">T</sup>R)<sup class="u">T</sup> = R<sup class="u">T</sup>(R<sup class="u">T</sup>)<sup class="u">T</sup> = R<sup class="u">T</sup>R</span></div>
+    <p>Transposing gave back the same matrix, and that is the definition of symmetric.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's numbers</span>
+    <div class="eq wrapok">
+      <span data-mx="1 3; 2 3; 4 1"></span>
+      <span data-mx="1 2 4; 3 3 1"></span>
+      <span class="op">=</span>
+      <span data-mx="10 11 7; 11 13 11; 7 11 17" data-cells="0.1:h1,1.0:h1,0.2:h2,2.0:h2,1.2:h4,2.1:h4"></span>
+    </div>
+    <p>The lecture multiplies the 3 by 2 matrix by its transpose and gets a 3 by 3 symmetric matrix. Here <span class="m">R</span> is the wide matrix on the right and <span class="m">R<sup class="u">T</sup></span> is the tall one on the left. Multiply in the other order and the answer is 2 by 2, and symmetric again:</p>
+    <div class="eq wrapok">
+      <span data-mx="1 2 4; 3 3 1"></span>
+      <span data-mx="1 3; 2 3; 4 1"></span>
+      <span class="op">=</span>
+      <span data-mx="21 13; 13 19" data-cells="0.1:h1,1.0:h1"></span>
+    </div>
+  </div>
+  <div class="prose">
+    <p>Lab 5.2 showed the plain reason behind the proof. The entry in row 1, column 2 of the product is one row of numbers multiplied into another: <span class="m">1 · 2 + 3 · 3 = 11</span>. The entry in row 2, column 1 uses the same two lists the other way round: <span class="m">2 · 1 + 3 · 3 = 11</span>. Multiplying two lists entry by entry and adding is a <span class="term">dot product</span>, and a dot product does not care which list comes first.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="blocks"></i>Robotics link<em>where they turn up</em></div>
+    <div class="robolink-body">
+      <h3>Symmetric matrices are everywhere in a robot</h3>
+      <p>Whenever robot software multiplies a matrix by its own transpose, the result is symmetric. An arm's <span class="term">Jacobian</span> <span class="m">J</span> is the matrix from Lecture 1 whose columns say how each joint moves the hand. Both <span class="m">J<sup class="u">T</sup>J</span> and <span class="m">JJ<sup class="u">T</sup></span> appear in arm control, and both are symmetric for every pose. Here is <span class="m">JJ<sup class="u">T</sup></span> for the arm pose used in the next section:</p>
+      <div class="eq left wrapok">
+        <span data-mx="-0.5 0; 0.4 0.4" data-cls="sm" data-cap="J"></span>
+        <span data-mx="-0.5 0.4; 0 0.4" data-cls="sm" data-cap="J transpose"></span>
+        <span class="op">=</span>
+        <span data-mx="0.25 -0.2; -0.2 0.32" data-cls="sm" data-cells="0.1:h1,1.0:h1" data-cap="symmetric"></span>
+      </div>
+      <p>The two mirrored entries are both −0.2. Two more symmetric matrices sit at the heart of every robot:</p>
+      <ul>
+        <li>The <strong>inertia matrix</strong> (or mass matrix) says how hard each joint is to speed up. Entry (1, 2) is how much joint 2's motion loads joint 1, and that coupling is the same in both directions.</li>
+        <li>The <strong>covariance matrix</strong> of sensor noise says how the errors of two sensors rise and fall together. The link between sensor 1 and sensor 2 is the same as the link between sensor 2 and sensor 1.</li>
+      </ul>
+      <p>A practical use: if a program prints one of these matrices and two mirrored entries differ, there is a bug.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 5.5 -->
+<section class="concept" id="torque" data-toc="Robot: forces and the transpose">
+  <header class="concept-head">
+    <span class="concept-no">5.5</span>
+    <h2>The robot: forces travel through the transpose</h2>
+    <p class="concept-sub">The lecture's small tool, doing a large job.</p>
+  </header>
+  <div class="prose">
+    <p><a href="01-geometry-of-linear-equations.html#column-picture">Lecture 1</a> met the two-link arm. Turn the shoulder at speed <span class="m">q̇<sub>1</sub></span> and the elbow at speed <span class="m">q̇<sub>2</sub></span>, and the hand moves with a velocity that is a mix of the two columns of the Jacobian: <span class="m"><b>v</b> = J<b>q̇</b></span>. That was a question about motion.</p>
+    <p>Here is a question about force. The hand has to push on something: hold up a load, or press a tool against a surface. Call the push <span class="m"><b>F</b></span>. What twist must each motor supply to hold it? The twist of a motor is its <span class="term">torque</span>, written <span class="m">τ</span> and measured in newton metres. A positive torque turns its joint counter-clockwise.</p>
+    <h3>The argument, from energy</h3>
+    <p><span class="term">Power</span> is energy delivered per second. For a push it is force times speed in the direction of the push. For a motor it is torque times turning speed. The arm has no engine in the hand, so whatever power the hand delivers has to come from the motors:</p>
+  </div>
+  <div class="work">
+    <span class="label">Power in equals power out, for every possible motion</span>
+    <div class="eq wrapok"><span class="m">τ<sub>1</sub>q̇<sub>1</sub> + τ<sub>2</sub>q̇<sub>2</sub></span><span class="op">=</span><span class="m"><b>F</b> · <b>v</b></span><span class="op">=</span><span class="m"><b>F</b> · (q̇<sub>1</sub> <b>c</b><sub>1</sub> + q̇<sub>2</sub> <b>c</b><sub>2</sub>)</span><span class="op">=</span><span class="m">q̇<sub>1</sub>(<b>c</b><sub>1</sub> · <b>F</b>) + q̇<sub>2</sub>(<b>c</b><sub>2</sub> · <b>F</b>)</span></div>
+    <p>Here <span class="m"><b>c</b><sub>1</sub></span> and <span class="m"><b>c</b><sub>2</sub></span> are the two columns of <span class="m">J</span>. The two ends must agree whatever the joint speeds are, so the amounts multiplying <span class="m">q̇<sub>1</sub></span> must match, and so must the amounts multiplying <span class="m">q̇<sub>2</sub></span>:</p>
+    <div class="eq wrapok"><span class="m">τ<sub>1</sub> = <b>c</b><sub>1</sub> · <b>F</b></span><span class="op">&nbsp;&nbsp;and&nbsp;&nbsp;</span><span class="m">τ<sub>2</sub> = <b>c</b><sub>2</sub> · <b>F</b></span><span class="op">&nbsp;&nbsp;which together say&nbsp;&nbsp;</span><span class="m"><b>τ</b> = J<sup class="u">T</sup><b>F</b></span></div>
+    <p>Each torque is one <em>column</em> of <span class="m">J</span> dotted with the force. Lay those columns down as rows and you have <span class="m">J<sup class="u">T</sup></span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">Worked numbers</span>
+    <p>The arm has an upper link of 0.5 m and a forearm of 0.4 m. The upper link points straight up and the forearm is level, like a waiter's arm under a tray. The elbow is at (0, 0.5) and the hand at (0.4, 0.5). The hand pushes straight up with 10 N, enough to carry about one kilogram.</p>
+    <div class="eq wrapok">
+      <span data-mx="-0.5 0; 0.4 0.4" data-cols="0:h1,1:h2" data-cap="J · by columns"></span>
+      <span class="op">&nbsp;</span>
+      <span data-mx="τ₁; τ₂" data-rows="0:h1,1:h2"></span>
+      <span class="op">=</span>
+      <span data-mx="-0.5 0.4; 0 0.4" data-rows="0:h1,1:h2" data-cap="J transpose"></span>
+      <span data-mx="0; 10" data-cols="0:h3" data-cap="F"></span>
+      <span class="op">=</span>
+      <span data-mx="4; 4" data-rows="0:h1,1:h2" data-cap="N·m"></span>
+    </div>
+    <p>Shoulder: <span class="m">(−0.5)(0) + (0.4)(10) = 4</span>. Elbow: <span class="m">(0)(0) + (0.4)(10) = 4</span>. Each motor must twist counter-clockwise with 4 N·m.</p>
+  </div>
+  <div class="prose">
+    <h3>What the numbers mean: force times lever arm</h3>
+    <p>Column <span class="m">i</span> of <span class="m">J</span> is the arrow from joint <span class="m">i</span> to the hand, turned a quarter turn. Dotting it with the force gives the force multiplied by its <span class="term">lever arm</span>: the distance from the joint to the line along which the force acts. That is the turning effect a wrench has on a bolt. In the example both joints are 0.4 m to the side of the upward push, so both carry <span class="m">10 × 0.4 = 4</span> N·m.</p>
+    <p>Two consequences follow, and you can see both in the lab.</p>
+    <ul>
+      <li><strong>A force aimed through a joint costs that joint nothing.</strong> Its lever arm there is zero.</li>
+      <li><strong>A force along a straight arm costs both joints nothing.</strong> The line of the force runs through the elbow and the shoulder, so the links carry the load and the motors rest. A weightlifter does this by locking the arms out overhead.</li>
+    </ul>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="bolt"></i>Robotics link<em>force and motion duality</em></div>
+    <div class="robolink-body">
+      <h3>One matrix, two jobs</h3>
+      <p>Velocity goes outward through <span class="m">J</span>: joint speeds in, hand velocity out. Force comes inward through <span class="m">J<sup class="u">T</sup></span>: hand force in, joint torques out. Roboticists call the pair <strong>dual</strong>. The same four numbers serve both, read by columns for motion and by rows for force. This is how a robot arm pushes with a chosen force when it has no force sensor in the hand: the controller computes <span class="m">J<sup class="u">T</sup><b>F</b></span> and commands those torques.</p>
+      <p>The duality also explains the straight arm. Lecture 1 found that a straight arm cannot move its hand along its own length. Now you can see the other face of that fact: along that same direction it can resist any force for free. The direction an arm cannot move in is the direction it holds without effort.</p>
+      <p>The model here is the simplest honest one: a flat arm, held still, with no friction and no weight in the links. A real controller adds the torque that holds up the arm itself.</p>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-torque">
+    <div class="lab-head"><span class="lab-tag">LAB 5.3</span><h3>Hold a force at the hand: τ = J<sup>T</sup>F</h3><i data-ic="torque"></i></div>
+    <p class="lab-intro">Drag the amber handle to choose the force the hand pushes with. The arcs at the joints show the torque each motor must supply: <b>longer arc, more torque</b>, with the arrow showing which way it twists. The dotted red and blue lines are the two lever arms.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="wide" aria-label="Two-link arm with a force at the hand and torque arcs at the joints"></canvas>
+        <div class="lab-caption"><span class="key k3">force at the hand</span><span class="key k1">shoulder torque and lever arm</span><span class="key k2">elbow torque and lever arm</span><span><i data-ic="drag"></i> drag the handle</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Load a case</span><div data-slot="presets"></div></div>
+        <div class="lab-group" data-slot="sliders"></div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Start with the <b>Worked example</b>: 4 N·m at each joint, as computed above. Now load <b>Force through the elbow</b>. The blue arc vanishes, because the push runs along the forearm and has no lever arm at the elbow.</li>
+        <li>Load <b>Straight arm, force along it</b>. Both arcs vanish. Then load <b>force across it</b>: the same 10 N now costs 9 N·m at the shoulder. Direction matters as much as size.</li>
+        <li>Go back to the straight arm with the force along it and bend the elbow slowly. The torques grow from nothing. That is why standing with locked knees is restful and a half squat is not.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="note idea">
+    <i data-ic="idea"></i>
+    <span class="note-title">Key idea</span>
+    <div class="note-body"><p>Velocity uses the columns of J. Force uses the same numbers read as rows. That is the whole meaning of the transpose in robotics.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 5.6 -->
+<section class="concept" id="vector-spaces" data-toc="Vector spaces">
+  <header class="concept-head">
+    <span class="concept-no">5.6</span>
+    <h2>Vector spaces: R<sup>2</sup>, R<sup>3</sup>, R<sup>n</sup></h2>
+    <p class="concept-sub">The second half of the lecture begins here.</p>
+  </header>
+  <div class="prose">
+    <p class="big">There are two things you can do with vectors: add two of them, and multiply one by a number. A <span class="term">vector space</span> is a set of vectors in which you can do both, as much as you like, and never leave the set.</p>
+    <p>Said the other way round: take any vectors from the set, stretch each by any number and add the results. That mix is a <span class="term">linear combination</span>, the central operation from Lecture 1. In a vector space every linear combination of its members is again a member. Mathematicians say the set is <span class="term">closed</span> under adding and scaling.</p>
+    <p>The most important vector spaces have short names:</p>
+    <ul>
+      <li><span class="m"><b class="u">R</b><sup>2</sup></span> is the set of all vectors with two real components, such as (3, 2), (0, 0) or (π, e). You can picture it as the whole <span class="m">x</span>-<span class="m">y</span> plane.</li>
+      <li><span class="m"><b class="u">R</b><sup>3</sup></span> is the set of all vectors with three real components: all of three-dimensional space.</li>
+      <li><span class="m"><b class="u">R</b><sup>n</sup></span> is the set of all vectors with <span class="m">n</span> real components. Nobody can draw it beyond <span class="m">n = 3</span>, but the two operations work in exactly the same way.</li>
+    </ul>
+    <p><strong>The zero vector is in every vector space.</strong> The <span class="term">zero vector</span> <span class="m"><b>0</b></span> has every component equal to 0. It has to be a member, because you are allowed to multiply any member by the number 0.</p>
+    <p>The full textbook definition also lists eight rules of arithmetic, such as <span class="m"><b>v</b> + <b>w</b> = <b>w</b> + <b>v</b></span>. For ordinary vectors of numbers those rules hold automatically, so the working test is the one above: add, scale, and check you are still inside.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's example of a set that fails</span>
+    <p>Take only the <strong>first quadrant</strong> of the plane: every vector whose two components are both zero or positive. Add two such vectors and both components are still zero or positive, so adding is safe. Now multiply by a negative number:</p>
+    <div class="eq wrapok"><span class="m">(−1)</span><span data-mx="2; 1"></span><span class="op">=</span><span data-mx="-2; -1"></span><span class="op">&nbsp;&nbsp;which has left the quadrant</span></div>
+    <p>One failure is enough. The first quadrant is not a vector space.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="omni"></i>Robotics link<em>the space of motions</em></div>
+    <div class="robolink-body">
+      <h3>Every motion of a robot on a floor is one vector in R<sup>3</sup></h3>
+      <p>A robot driving on a flat floor is doing three things at any instant: moving forward at some speed <span class="m">v<sub>x</sub></span>, sliding sideways at some speed <span class="m">v<sub>y</sub></span>, and turning at some rate <span class="m">ω</span>. Stack them and the motion is a single vector <span class="m">(v<sub>x</sub>, v<sub>y</sub>, ω)</span>, called the <strong>body velocity</strong>.</p>
+      <p>Two motions can be added: drive forward while turning. A motion can be scaled: the same thing faster, slower, or backwards. So the set of all body velocities is the vector space <span class="m"><b class="u">R</b><sup>3</sup></span>. A robot on omni wheels can produce every vector in it and so owns the whole space.</p>
+      <p>The zero vector has a plain meaning too. "Every vector space contains the zero vector" says that standing still is always one of the robot's options.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 5.7 -->
+<section class="concept" id="subspaces" data-toc="Subspaces and the two tests">
+  <header class="concept-head">
+    <span class="concept-no">5.7</span>
+    <h2>Subspaces and the two tests</h2>
+    <p class="concept-sub">A vector space living inside a bigger one.</p>
+  </header>
+  <div class="prose">
+    <p>A <span class="term">subspace</span> is a part of a vector space that is a vector space in its own right. To check a candidate set, run two tests:</p>
+    <ul>
+      <li><strong>Adding.</strong> For any <span class="m"><b>v</b></span> and <span class="m"><b>w</b></span> in the set, is <span class="m"><b>v</b> + <b>w</b></span> in the set?</li>
+      <li><strong>Scaling.</strong> For any <span class="m"><b>v</b></span> in the set and any number <span class="m">c</span>, is <span class="m">c<b>v</b></span> in the set?</li>
+    </ul>
+    <p>Both must pass for every choice. A quick first check saves time: <strong>is the zero vector in the set?</strong> If it is missing, stop. The set cannot be a subspace.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's two lines</span>
+    <p><strong>A line through the origin is a subspace of <span class="m"><b class="u">R</b><sup>2</sup></span>.</strong> Every vector on it is a multiple of one direction. Add two multiples of a direction and you get a multiple of it. Scale one and you get another.</p>
+    <p><strong>A line that misses the origin is not.</strong> The zero vector is not on it. Scaling fails as well: doubling a vector on the line carries it off the line.</p>
+  </div>
+
+  <div class="lab board" id="lab-subspace">
+    <div class="lab-head"><span class="lab-tag">LAB 5.4</span><h3>Is it a subspace?</h3><i data-ic="plane"></i></div>
+    <p class="lab-intro">Pick a set. Drag <b>v</b> and <b>w</b>: they are held inside the set. The lab draws <b>v + w</b> and <b>c·v</b> and tells you whether each one stayed inside. A filled dot is inside. A crossed ring is outside.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="sq" aria-label="A set of vectors in the plane with two draggable members, their sum and a multiple"></canvas>
+        <div class="lab-caption"><span class="key k1">v</span><span class="key k2">w</span><span class="key k3">v + w</span><span class="key k4">c·v</span><span>the pale region is the set</span><span><i data-ic="drag"></i> drag v and w</span></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">The set</span><div data-slot="sets"></div></div>
+        <div class="lab-group" data-slot="slider"></div>
+        <div data-slot="readouts"></div>
+        <div data-slot="status"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>On <b>Line through origin</b>, try to push v + w or c·v off the line. You cannot. Then switch to <b>Line missing the origin</b>: both results leave at once, and no choice of v and w rescues the sum.</li>
+        <li>On <b>First quadrant</b>, slide c above zero. Everything looks fine, and that is the trap. The scaling test has to hold for every number, including the negative ones.</li>
+        <li>On <b>Disc</b>, shorten v and w until both results are inside. Passing for some vectors proves nothing. A subspace has to pass for all of them.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="thruster"></i>Robotics link<em>limits are not subspaces</em></div>
+    <div class="robolink-body">
+      <h3>The sets that fail are the limits of real hardware</h3>
+      <p>Each failing set in the lab is something a real robot lives with.</p>
+      <ul>
+        <li><strong>One-way thrusters.</strong> A thruster can push but cannot pull, so its thrust is zero or positive. Two of them reach a set shaped like the first quadrant. The scaling test fails for negative numbers, which is the mathematics of "there is no reverse".</li>
+        <li><strong>A speed limit.</strong> Every velocity up to top speed is a disc. Scaling fails: twice an allowed velocity may be too fast.</li>
+        <li><strong>Joint limits.</strong> Each joint speed is allowed a range, so the allowed set is a box. It fails for the same reason as the disc.</li>
+        <li><strong>A fixed, non-zero target.</strong> The set of all motor speeds that produce one particular motion, such as exactly 1 m/s forward, is a line or plane that misses the origin. Standing still is not in it.</li>
+      </ul>
+      <p>This is why the subject is organised the way it is. Linear algebra gives clean, complete answers for the subspace, the set of motions the mechanism allows. A real controller then lays the limits on top as a second step.</p>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <i data-ic="warn"></i>
+    <span class="note-title">Watch out</span>
+    <div class="note-body"><p>Containing the zero vector is necessary but not enough. The first quadrant and the disc both contain it, and neither is a subspace. Use the zero test to throw sets out quickly, and the two tests to let sets in.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 5.8 -->
+<section class="concept" id="all-subspaces" data-toc="Every subspace of R² and R³">
+  <header class="concept-head">
+    <span class="concept-no">5.8</span>
+    <h2>Every subspace of R<sup>2</sup> and R<sup>3</sup></h2>
+    <p class="concept-sub">The complete list is short.</p>
+  </header>
+  <div class="prose">
+    <p>The two tests are strict, and very few shapes pass them. Strang lists every subspace there is.</p>
+  </div>
+  <div class="work">
+    <span class="label">All the subspaces of R²</span>
+    <ol>
+      <li>The whole plane <span class="m"><b class="u">R</b><sup>2</sup></span> itself.</li>
+      <li>Any line through the origin (0, 0). There are infinitely many, one for each direction.</li>
+      <li>The zero vector alone. Strang calls this smallest subspace <span class="m"><b class="u">Z</b></span>.</li>
+    </ol>
+  </div>
+  <div class="work">
+    <span class="label">All the subspaces of R³</span>
+    <ol>
+      <li>All of <span class="m"><b class="u">R</b><sup>3</sup></span>.</li>
+      <li>Any plane through the origin.</li>
+      <li>Any line through the origin.</li>
+      <li>The zero vector alone.</li>
+    </ol>
+  </div>
+  <div class="prose">
+    <p>Notice what is missing. A plane that does not pass through the origin, a curved surface, a half-line, a box, a ball: none of them is a subspace. Every subspace is flat, runs on for ever in every direction it contains, and passes through the origin.</p>
+    <p>A line through the origin inside <span class="m"><b class="u">R</b><sup>3</sup></span> is a subspace of <span class="m"><b class="u">R</b><sup>3</sup></span>, but it is not the same thing as <span class="m"><b class="u">R</b><sup>1</sup></span>. Its vectors still have three components.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="wheel"></i>Robotics link<em>four kinds of machine</em></div>
+    <div class="robolink-body">
+      <h3>The list of subspaces is a catalogue of mobile robots</h3>
+      <p>Take the space of body velocities <span class="m">(v<sub>x</sub>, v<sub>y</sub>, ω)</span> and ask what set of motions a wheeled machine can produce. If its motion is a matrix times its wheel speeds, the answer is always one of the four shapes on Strang's list:</p>
+      <ul>
+        <li><strong>The zero vector alone:</strong> a parked machine with its brakes on.</li>
+        <li><strong>A line through the origin:</strong> a cart on a straight rail. It can go forward and backward at any speed and do nothing else.</li>
+        <li><strong>A plane through the origin:</strong> a two-wheel rover. It can drive and turn in any mix, but it can never slide sideways.</li>
+        <li><strong>All of <span class="m"><b class="u">R</b><sup>3</sup></span>:</strong> a robot on omni wheels, which can do everything.</li>
+      </ul>
+      <p>So a designer can describe what a mechanism is able to do with one word: a point, a line, a plane or the whole space.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 5.9 -->
+<section class="concept" id="column-space" data-toc="The column space">
+  <header class="concept-head">
+    <span class="concept-no">5.9</span>
+    <h2>The column space: a subspace built from a matrix</h2>
+    <p class="concept-sub">Where the lecture ends, and where the next one starts.</p>
+  </header>
+  <div class="prose">
+    <p>Where do subspaces come from in practice? Strang closes the lecture with the most important source: the columns of a matrix.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's example</span>
+    <div class="eq"><span class="m">A</span><span class="op">=</span><span data-mx="1 3; 2 3; 4 1" data-cols="0:h1,1:h2"></span></div>
+    <p>The two columns <span class="hl1">(1, 2, 4)</span> and <span class="hl2">(3, 3, 1)</span> are vectors in <span class="m"><b class="u">R</b><sup>3</sup></span>. On their own, two vectors are not a subspace. So take them and <strong>all their linear combinations</strong>: every vector of the form <span class="m">x<sub>1</sub>(1, 2, 4) + x<sub>2</sub>(3, 3, 1)</span>.</p>
+  </div>
+  <div class="prose">
+    <p>That set is a subspace. Add two combinations of the columns and you get a combination of the columns. Scale a combination and you get a combination. It is called the <span class="term">column space</span> of <span class="m">A</span>, written <span class="m">C(A)</span>.</p>
+    <p>What does it look like? The two columns do not lie along the same line, so their combinations spread out into a flat sheet: <strong>a plane through the origin</strong> of <span class="m"><b class="u">R</b><sup>3</sup></span>. With a little arithmetic you can name the plane. It is <span class="m">10x − 11y + 3z = 0</span>, and both columns satisfy it: <span class="m">10 − 22 + 12 = 0</span> and <span class="m">30 − 33 + 3 = 0</span>.</p>
+    <p>This ties back to the question that closed Lecture 1: can <span class="m">A<b>x</b> = <b>b</b></span> be solved? The left side <span class="m">A<b>x</b></span> is a combination of the columns, so the system can be solved exactly when <span class="m"><b>b</b></span> lies in the column space. For this matrix, most right-hand sides in <span class="m"><b class="u">R</b><sup>3</sup></span> are off the plane and have no solution. <a href="06-column-space-and-nullspace.html">Lecture 6</a> starts from here.</p>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="rover"></i>Robotics link<em>what the wheels can do</em></div>
+    <div class="robolink-body">
+      <h3>A rover's possible motions are the column space of its wheel matrix</h3>
+      <p>A <span class="term">differential-drive</span> rover has two powered wheels side by side, a distance <span class="m">W</span> apart (the <span class="term">track width</span>), each of radius <span class="m">r</span>. The left wheel turns at <span class="m">ω<sub>L</sub></span> and the right at <span class="m">ω<sub>R</sub></span>, so their rims roll over the ground at <span class="m">rω<sub>L</sub></span> and <span class="m">rω<sub>R</sub></span>.</p>
+      <ul>
+        <li>The body moves forward at the average of the two: <span class="m">v<sub>x</sub> = r(ω<sub>L</sub> + ω<sub>R</sub>)/2</span>.</li>
+        <li>It turns when the right side outruns the left: <span class="m">ω = r(ω<sub>R</sub> − ω<sub>L</sub>)/W</span>.</li>
+        <li>Wheels roll forward and do not slide along their axle, so the sideways speed is <span class="m">v<sub>y</sub> = 0</span>.</li>
+      </ul>
+      <p>With <span class="m">r = 0.1</span> m and <span class="m">W = 0.5</span> m those three lines are one matrix equation:</p>
+      <div class="eq left wrapok">
+        <span data-mx="vx; vy; ω" data-cols="0:h3"></span><span class="op">=</span>
+        <span data-mx="0.05 0.05; 0 0; -0.2 0.2" data-cols="0:h1,1:h2" data-cap="A"></span>
+        <span data-mx="ωL; ωR" data-rows="0:h1,1:h2"></span>
+      </div>
+      <p>Wheel speeds of 8 and 12 rad/s give <span class="m">(1.0, 0, 0.8)</span>: one metre per second forward while turning left. Every body velocity the rover can produce is a combination of the two columns, so the set of achievable velocities is <span class="m">C(A)</span>. The middle row of <span class="m">A</span> is all zeros, so that column space is the plane <span class="m">v<sub>y</sub> = 0</span>: a subspace of <span class="m"><b class="u">R</b><sup>3</sup></span>, and a picture of the fact that the rover cannot slide sideways. The model assumes ideal wheels that never slip.</p>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-velspace">
+    <div class="lab-head"><span class="lab-tag">LAB 5.5</span><h3>The rover's velocity subspace</h3><i data-ic="rover"></i></div>
+    <p class="lab-intro">The picture is the space of body velocities, with axes v<sub>x</sub>, v<sub>y</sub> and ω. Set the two wheel speeds. The red and blue arrows are the wheels' shares, and the amber dot is the velocity that results. It never leaves the pale plane. The small picture shows the rover driving with that velocity.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="sq" aria-label="Three-dimensional picture of the velocities a rover can reach"></canvas>
+        <div class="lab-caption" data-slot="keys"></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Which matrix</span><div data-slot="mode"></div></div>
+        <div class="lab-group" data-slot="wheels"></div>
+        <div class="lab-group" data-slot="lect"></div>
+        <div class="lab-group" data-slot="drive">
+          <canvas class="pano" aria-label="Top view of the rover driving"></canvas>
+          <div class="lab-row" data-slot="buttons"></div>
+        </div>
+        <div data-slot="status"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Move the two wheel sliders anywhere and turn the picture. The amber dot slides over the plane and never lifts off it. Press <b>Stop the wheels</b>: the dot sits at the origin, the zero vector.</li>
+        <li>Switch to <b>Omni robot</b>. A third, sideways wheel adds a green column that points out of the plane, and the dot lifts off. Three independent columns reach every point of the space.</li>
+        <li>Switch to <b>Lecture's matrix</b>. These are Strang's columns (1, 2, 4) and (3, 3, 1). Different numbers, the same picture: two columns in three dimensions span a plane through the origin.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="note idea">
+    <i data-ic="idea"></i>
+    <span class="note-title">Key idea</span>
+    <div class="note-body"><p>The column space of a robot's matrix is the set of everything the robot can do. Asking whether a motion is possible is asking whether a vector lies in that subspace.</p></div>
+  </div>
+
+  <div class="tablewrap">
+    <table class="t">
+      <thead><tr><th>Lecture idea</th><th>In plain words</th><th>What it is in a robot</th></tr></thead>
+      <tbody>
+        <tr><td>Permutation matrix P</td><td>The identity with its rows re-ordered; it re-orders the rows of whatever it multiplies</td><td>Choosing which sensor's equation comes first; re-labelling motors or encoder ports</td></tr>
+        <tr><td>P⁻¹ = Pᵀ</td><td>Undo a re-ordering by transposing</td><td>Putting scrambled channels back in order with no inverse to compute</td></tr>
+        <tr><td>PA = LU</td><td>Order the rows well, then factor; works for every invertible A</td><td>A solver that never stalls on a zero in the wrong place</td></tr>
+        <tr><td>Partial pivoting</td><td>Use the largest entry in the column as the pivot</td><td>Do not divide by the weakest measurement</td></tr>
+        <tr><td>Transpose</td><td>Rows become columns</td><td>Hand force to joint torques, τ = JᵀF; undoing a rotation</td></tr>
+        <tr><td>Symmetric matrix</td><td>Unchanged by transposing; mirrored across the diagonal</td><td>Inertia matrices, covariance of sensor noise</td></tr>
+        <tr><td>RᵀR</td><td>Any matrix times its own transpose is symmetric</td><td>JᵀJ and JJᵀ in arm control; a quick bug check</td></tr>
+        <tr><td>Vector space</td><td>A set you can add and scale inside without leaving</td><td>All body velocities (vx, vy, ω): the space R³</td></tr>
+        <tr><td>Zero vector</td><td>In every vector space and every subspace</td><td>Standing still is always an option</td></tr>
+        <tr><td>Subspace</td><td>A vector space inside a bigger one</td><td>The motions one particular mechanism can make</td></tr>
+        <tr><td>Not a subspace</td><td>A quadrant, a disc, a box, a line off the origin</td><td>One-way thrusters, speed limits, joint limits, a fixed non-zero target</td></tr>
+        <tr><td>Column space C(A)</td><td>All combinations of the columns of A</td><td>Every velocity the wheels can produce between them</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ practice -->
+<section class="concept" id="practice" data-toc="Practice problems">
+  <header class="concept-head">
+    <span class="concept-no">5.10</span>
+    <h2>Practice problems</h2>
+    <p class="concept-sub">Ten problems, from first steps to robot design. Work each on paper, then open the solution. Every answer has been checked by the code for this lecture.</p>
+  </header>
+  <div class="quiz problems">
+    <details><summary><span class="q">P1</span><span>Write the permutation matrix <span class="m">P</span> that re-orders the rows of a 3-row matrix into the order (row 3, row 1, row 2). Find its inverse. How many permutation matrices of size 5 are there?<em class="tag">permutations</em></span></summary>
+      <div class="a">
+        <p>Take the identity and put its rows in the order 3, 1, 2. The inverse is the transpose: flip <span class="m">P</span> over its diagonal.</p>
+        <div class="eq"><span class="m">P</span><span class="op">=</span><span data-mx="0 0 1; 1 0 0; 0 1 0"></span><span class="op">&nbsp;&nbsp;</span><span class="m">P<sup>−1</sup> = P<sup class="u">T</sup></span><span class="op">=</span><span data-mx="0 1 0; 0 0 1; 1 0 0"></span></div>
+        <p>Check on a column of labels: <span class="m">P</span> sends (1, 2, 3) to (3, 1, 2), and <span class="m">P<sup class="u">T</sup></span> sends (3, 1, 2) back to (1, 2, 3).</p>
+        <p><strong>Answer:</strong> the two matrices above, and <span class="m">5! = 5 · 4 · 3 · 2 · 1 = 120</span> permutation matrices of size 5.</p>
+      </div></details>
+    <details><summary><span class="q">P2</span><span>Factor <span data-mx="1 1 1; 2 2 5; 4 6 8" data-cls="sm"></span> as <span class="m">PA = LU</span>.<em class="tag">PA = LU</em></span></summary>
+      <div class="a">
+        <p>The first pivot is 1. Subtract 2 × row 1 from row 2 to get (0, 0, 3), and 4 × row 1 from row 3 to get (0, 2, 4).</p>
+        <p>The second pivot position now holds 0, and row 3 has a 2 below it. Exchange rows 2 and 3. The matrix is then upper triangular with pivots 1, 2, 3, so the last multiplier is 0.</p>
+        <p>The multipliers travel with their rows: the row that ends up second was built with multiplier 4, and the row that ends up third with multiplier 2.</p>
+        <div class="eq"><span data-mx="1 0 0; 0 0 1; 0 1 0" data-cls="sm" data-cap="P"></span><span data-mx="1 1 1; 2 2 5; 4 6 8" data-cls="sm" data-cap="A"></span><span class="op">=</span><span data-mx="1 0 0; 4 1 0; 2 0 1" data-cls="sm" data-cap="L"></span><span data-mx="1 1 1; 0 2 4; 0 0 3" data-cls="sm" data-cap="U"></span></div>
+        <p><strong>Answer:</strong> as shown. Check the last row of <span class="m">LU</span>: <span class="m">2 · (1, 1, 1) + (0, 0, 3) = (2, 2, 5)</span>, which is row 2 of <span class="m">A</span>, now sitting third.</p>
+        <p>Follow-up: change the 5 to a 2. Then row 2 is twice row 1, the last pivot is 0, and no exchange helps. The matrix is singular.</p>
+      </div></details>
+    <details><summary><span class="q">P3</span><span>For <span data-mx="1 2 0; 0 1 1" data-cls="sm"></span> <span class="m">= R</span>, compute <span class="m">R<sup class="u">T</sup>R</span> and <span class="m">RR<sup class="u">T</sup></span>. What sizes are they, and what do they have in common?<em class="tag">symmetric</em></span></summary>
+      <div class="a">
+        <p>Each entry of <span class="m">R<sup class="u">T</sup>R</span> is one column of <span class="m">R</span> dotted with another. The columns are (1, 0), (2, 1) and (0, 1). Each entry of <span class="m">RR<sup class="u">T</sup></span> is one row dotted with another. The rows are (1, 2, 0) and (0, 1, 1).</p>
+        <div class="eq"><span class="m">R<sup class="u">T</sup>R</span><span class="op">=</span><span data-mx="1 2 0; 2 5 1; 0 1 1" data-cells="0.1:h1,1.0:h1,0.2:h2,2.0:h2,1.2:h4,2.1:h4"></span><span class="op">&nbsp;&nbsp;</span><span class="m">RR<sup class="u">T</sup></span><span class="op">=</span><span data-mx="5 2; 2 2" data-cells="0.1:h1,1.0:h1"></span></div>
+        <p><strong>Answer:</strong> a 3 by 3 and a 2 by 2. Both are symmetric, as they must be.</p>
+        <p>Follow-up: a program prints the second product as [5 2; 3 2]. Without redoing the sums you know it is wrong, because the mirrored entries 2 and 3 differ.</p>
+      </div></details>
+    <details><summary><span class="q">P4</span><span>Which of these sets are subspaces? (a) all <span class="m">(x, y)</span> with <span class="m">y = 3x</span>; (b) all <span class="m">(x, y)</span> with <span class="m">y = 3x + 1</span>; (c) all <span class="m">(x, y)</span> with <span class="m">xy = 0</span>, which is the two axes together; (d) all <span class="m">(x, y, z)</span> with <span class="m">x + y + z = 0</span>; (e) all <span class="m">(x, y, z)</span> with <span class="m">x + y + z = 1</span>.<em class="tag">subspaces</em></span></summary>
+      <div class="a">
+        <ol type="a">
+          <li><strong>Yes.</strong> A line through the origin.</li>
+          <li><strong>No.</strong> (0, 0) gives 0 = 1, so the zero vector is missing.</li>
+          <li><strong>No.</strong> It contains the zero vector and passes the scaling test, but (1, 0) + (0, 1) = (1, 1), and <span class="m">1 · 1 ≠ 0</span>. Adding fails.</li>
+          <li><strong>Yes.</strong> A plane through the origin. If two vectors each have components adding to 0, so do their sum and any multiple.</li>
+          <li><strong>No.</strong> The zero vector is missing. Also (1, 0, 0) + (0, 1, 0) = (1, 1, 0), whose components add to 2.</li>
+        </ol>
+        <p><strong>Answer:</strong> (a) and (d) only. Compare (c) with the first quadrant: the quadrant passes adding and fails scaling, and the two axes do the opposite. Both tests are needed.</p>
+      </div></details>
+    <details><summary><span class="q">P5</span><span>Let <span data-mx="1 0; 2 1; 3 1" data-cls="sm"></span> <span class="m">= A</span>. Describe its column space. Is (2, 5, 7) in it? Is (1, 1, 1)?<em class="tag">column space</em></span></summary>
+      <div class="a">
+        <p>The columns (1, 2, 3) and (0, 1, 1) do not lie on one line, so <span class="m">C(A)</span> is a plane through the origin. In both columns the third component is the sum of the first two, and that stays true for every combination. So the plane is <span class="m">z = x + y</span>.</p>
+        <p>(2, 5, 7): <span class="m">2 + 5 = 7</span>, so it is on the plane. The first component needs 2 of column 1, and then <span class="m">5 = 2 · 2 + 1</span> needs 1 of column 2.</p>
+        <p>(1, 1, 1): <span class="m">1 + 1 ≠ 1</span>, so it is off the plane.</p>
+        <p><strong>Answer:</strong> <span class="m">C(A)</span> is the plane <span class="m">z = x + y</span>. (2, 5, 7) = 2 × column 1 + 1 × column 2 is in it. (1, 1, 1) is not, so <span class="m">A<b>x</b> = (1, 1, 1)</span> has no solution.</p>
+        <p>Follow-up: replace the second column by (2, 4, 6). It is now twice the first, and the column space shrinks to a line.</p>
+      </div></details>
+    <details><summary><span class="q">P6</span><span>A computer keeps only <strong>two</strong> significant digits. Solve <span class="m">0.001x + y = 1</span>, <span class="m">x + y = 2</span> on it, first with no row exchange and then with the rows exchanged. The true answer is close to (1, 1).<em class="tag">pivoting</em></span></summary>
+      <div class="a">
+        <p><strong>No exchange.</strong> Multiplier <span class="m">1 ÷ 0.001 = 1000</span>. Row 2: <span class="m">1 − 1000 = −999</span>, kept as −1000. Right side: <span class="m">2 − 1000 = −998</span>, kept as −1000. So <span class="m">y = 1</span> and <span class="m">x = (1 − 1) ÷ 0.001 = 0</span>.</p>
+        <p><strong>Rows exchanged.</strong> Multiplier 0.001. Row 2: <span class="m">1 − 0.001 = 0.999</span>, kept as 1. Right side: <span class="m">1 − 0.002 = 0.998</span>, kept as 1. So <span class="m">y = 1</span> and <span class="m">x = (2 − 1) ÷ 1 = 1</span>.</p>
+        <p><strong>Answer:</strong> (0, 1) without the exchange and (1, 1) with it. The true answer is (1.001, 0.999) to three decimals, so only the second is acceptable.</p>
+      </div></details>
+    <details><summary><span class="q">P7</span><span>Three wheel encoders are plugged into the wrong ports. The computer receives the readings in the order (encoder 2, encoder 3, encoder 1) and sees (5, 7, 2). Write the matrix that did the scrambling, the matrix that undoes it, and the true readings.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>Scrambled = <span class="m">P</span> × true, where row 1 of <span class="m">P</span> picks entry 2, row 2 picks entry 3 and row 3 picks entry 1. The matrix that undoes it is the transpose.</p>
+        <div class="eq"><span class="m">P</span><span class="op">=</span><span data-mx="0 1 0; 0 0 1; 1 0 0"></span><span class="op">&nbsp;&nbsp;</span><span data-mx="0 0 1; 1 0 0; 0 1 0" data-cap="P transpose"></span><span data-mx="5; 7; 2"></span><span class="op">=</span><span data-mx="2; 5; 7" data-cols="0:h3"></span></div>
+        <p><strong>Answer:</strong> the true readings are (2, 5, 7). No inverse was computed. The software only had to read the scrambling matrix sideways.</p>
+      </div></details>
+    <details><summary><span class="q">P8</span><span>An arm has two links of length 1 m. The first link lies along the <span class="m">x</span> axis and the elbow is bent 90°, so the elbow is at (1, 0) and the hand at (1, 1). Its Jacobian is <span data-mx="-1 -1; 1 0" data-cls="sm"></span>. Find the joint torques when the hand pushes straight down with 6 N, and when it pushes along <span class="m">+x</span> with 4 N.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>Use <span class="m"><b>τ</b> = J<sup class="u">T</sup><b>F</b></span>. The transpose is <span data-mx="-1 1; -1 0" data-cls="sm"></span>.</p>
+        <p>Pushing down, <span class="m"><b>F</b> = (0, −6)</span>: <span class="m">τ<sub>1</sub> = (−1)(0) + (1)(−6) = −6</span> and <span class="m">τ<sub>2</sub> = (−1)(0) + (0)(−6) = 0</span>.</p>
+        <p>Pushing along <span class="m">+x</span>, <span class="m"><b>F</b> = (4, 0)</span>: <span class="m">τ<sub>1</sub> = −4</span> and <span class="m">τ<sub>2</sub> = −4</span>.</p>
+        <p><strong>Answer:</strong> (−6, 0) N·m, then (−4, −4) N·m. In the first case the elbow motor does nothing. The forearm is vertical and so is the force, so the push runs straight through the elbow and has no lever arm there. The shoulder is 1 m to the side of it and carries 6 × 1 = 6 N·m, clockwise.</p>
+        <p>Follow-up: straighten the arm along the <span class="m">x</span> axis. The Jacobian becomes [0 0; 2 1], and a push of any size along <span class="m">+x</span> gives torques (0, 0).</p>
+      </div></details>
+    <details><summary><span class="q">P9</span><span>A rover has wheel radius 0.2 m and track width 0.4 m. Write its matrix <span class="m">A</span>. Find the wheel speeds that give 1 m/s forward while turning at 1 rad/s. Can it produce the velocity (0, 0.5, 0)?<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>From <span class="m">v<sub>x</sub> = r(ω<sub>L</sub> + ω<sub>R</sub>)/2</span> and <span class="m">ω = r(ω<sub>R</sub> − ω<sub>L</sub>)/W</span>, with <span class="m">r/2 = 0.1</span> and <span class="m">r/W = 0.5</span>:</p>
+        <div class="eq"><span class="m">A</span><span class="op">=</span><span data-mx="0.1 0.1; 0 0; -0.5 0.5" data-cols="0:h1,1:h2"></span></div>
+        <p>Row 1: <span class="m">0.1(ω<sub>L</sub> + ω<sub>R</sub>) = 1</span>, so the speeds add to 10. Row 3: <span class="m">0.5(ω<sub>R</sub> − ω<sub>L</sub>) = 1</span>, so they differ by 2.</p>
+        <p><strong>Answer:</strong> <span class="m">ω<sub>L</sub> = 4</span> rad/s and <span class="m">ω<sub>R</sub> = 6</span> rad/s. The velocity (0, 0.5, 0) is impossible. The middle row of <span class="m">A</span> is all zeros, so every combination of the columns has <span class="m">v<sub>y</sub> = 0</span>. A pure sideways slide is outside the column space.</p>
+      </div></details>
+    <details><summary><span class="q">P10</span><span>A small boat has two one-way thrusters, each with thrust zero or positive. One pushes the boat along (1, 0) and the other along (0, 1). (a) Which forces can it produce, and is that set a subspace? (b) A third one-way thruster is added, pushing along (−1, −1). Which forces can it produce now? Find thrusts that give the force (−2, 1).<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>(a) The force is <span class="m">t<sub>1</sub>(1, 0) + t<sub>2</sub>(0, 1) = (t<sub>1</sub>, t<sub>2</sub>)</span> with both thrusts zero or positive. That is the first quadrant. It is not a subspace: (1, 1) is in it and (−1)(1, 1) is not. The boat cannot push backwards.</p>
+        <p>(b) Fire the third thruster with thrust <span class="m">t<sub>3</sub></span>. It contributes <span class="m">(−t<sub>3</sub>, −t<sub>3</sub>)</span>, which can make both components as negative as you like. The first two thrusters then add back whatever is needed. For (−2, 1): take <span class="m">t<sub>3</sub> = 2</span> to get (−2, −2), then <span class="m">t<sub>2</sub> = 3</span> to lift the second component to 1.</p>
+        <p><strong>Answer:</strong> (a) the first quadrant, not a subspace. (b) Every force in the plane, which is the subspace <span class="m"><b class="u">R</b><sup>2</sup></span>. Thrusts (0, 3, 2) give (−2, 1).</p>
+        <p>The design lesson: actuators that work in one direction only need one more than the number of directions to be covered. Three one-way thrusters do the job that two reversible ones would do.</p>
+      </div></details>
+  </div>
+</section>
+
+<!-- ============================================================ check -->
+<section class="concept" id="check" data-toc="Check yourself">
+  <header class="concept-head">
+    <span class="concept-no">5.11</span>
+    <h2>Check yourself</h2>
+    <p class="concept-sub">Answer in your head first, then open each one.</p>
+  </header>
+  <div class="quiz">
+    <details><summary><span class="q">Q1</span><span>What is a permutation matrix, how many are there of size 4, and what is the inverse of one?</span></summary>
+      <div class="a"><p>It is the identity matrix with its rows re-ordered. There are <span class="m">4! = 24</span> of size 4. The inverse is the transpose, <span class="m">P<sup>−1</sup> = P<sup class="u">T</sup></span>.</p></div></details>
+    <details><summary><span class="q">Q2</span><span>Why is the factorization written <span class="m">PA = LU</span> instead of <span class="m">A = LU</span>, and for which matrices does it work?</span></summary>
+      <div class="a"><p><span class="m">A = LU</span> fails when a zero turns up in a pivot position. <span class="m">P</span> re-orders the rows so that every pivot is non-zero, and then ordinary elimination gives <span class="m">L</span> and <span class="m">U</span>. It works for every invertible matrix.</p></div></details>
+    <details><summary><span class="q">Q3</span><span>The pivot is 0.0001, which is not zero. Why does software exchange rows anyway?</span></summary>
+      <div class="a"><p>Dividing by a tiny pivot gives a huge multiplier. The row being changed is swamped by a huge multiple of the pivot row, and its own numbers are rounded away. Choosing the largest entry in the column as the pivot (partial pivoting) keeps every multiplier at 1 or below in size. In the worked example three-digit arithmetic gave <span class="m">x = 0</span> without the exchange and <span class="m">x = 1</span> with it.</p></div></details>
+    <details><summary><span class="q">Q4</span><span>What is the transpose of <span data-mx="1 3; 2 3; 4 1" data-cls="sm"></span>, and why is a matrix times its own transpose always symmetric?</span></summary>
+      <div class="a"><p>The transpose is <span data-mx="1 2 4; 3 3 1" data-cls="sm"></span>: rows become columns. Transposing <span class="m">R<sup class="u">T</sup>R</span> gives <span class="m">R<sup class="u">T</sup>(R<sup class="u">T</sup>)<sup class="u">T</sup> = R<sup class="u">T</sup>R</span>, the same matrix again. In plain terms, entries (i, j) and (j, i) are the same two lists of numbers dotted together in opposite orders.</p></div></details>
+    <details><summary><span class="q">Q5</span><span>An arm is stretched out straight and the hand pushes along the line of the arm. What torques do the motors need, and why?</span></summary>
+      <div class="a"><p>None. Each torque is the force times its lever arm about that joint, and the line of the force passes through both joints, so both lever arms are zero. In matrix terms, both columns of <span class="m">J</span> are at right angles to the arm, so <span class="m">J<sup class="u">T</sup><b>F</b> = <b>0</b></span>. The links carry the load.</p></div></details>
+    <details><summary><span class="q">Q6</span><span>Is the first quadrant of the plane a subspace? Which test does it fail?</span></summary>
+      <div class="a"><p>No. Adding two of its vectors stays inside, but multiplying by a negative number leaves. A set of one-way thrusters behaves the same way: more push is available, the opposite push is not.</p></div></details>
+    <details><summary><span class="q">Q7</span><span>List every kind of subspace of three-dimensional space, and name a wheeled machine for each.</span></summary>
+      <div class="a"><p>The zero vector alone (a parked machine), a line through the origin (a cart on a rail), a plane through the origin (a two-wheel rover, which cannot slide sideways), and all of <span class="m"><b class="u">R</b><sup>3</sup></span> (a robot on omni wheels).</p></div></details>
+  </div>
+
+  <div class="note say">
+    <i data-ic="pen"></i>
+    <span class="note-title">For your article</span>
+    <div class="note-body">
+      <p><strong>One-line summary:</strong> the lecture finishes elimination with one re-ordering matrix and one flip, then changes the question from "what is the answer?" to "what is the set of all possible answers?".</p>
+      <p><strong>A robot sentence you can reuse:</strong> motion goes out through J, force comes back through its transpose, and a subspace is everything a mechanism can do before its limits are counted.</p>
+      <p><strong>Good figures to capture:</strong> Lab 5.3 with the arm bent next to the arm straight under the same force, and Lab 5.5 with the rover's dot on the plane next to the omni robot's dot off it.</p>
+      <p>The full notes, worked numbers and references for this lecture are in <a href="article/05-transposes-permutations-spaces.md">article/05-transposes-permutations-spaces.md</a>, and runnable code is in <a href="code/l05_transposes_spaces.py">code/l05_transposes_spaces.py</a>.</p>
+    </div>
+  </div>
+</section>
+
+</article>
+</div>
+</main>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/la.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/plot.js"></script>
+<script src="assets/js/robots.js"></script>
+<script src="assets/js/lectures/l5.js"></script>
+</body>
+</html>

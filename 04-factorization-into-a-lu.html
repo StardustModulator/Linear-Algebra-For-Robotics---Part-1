@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lecture 4 · Factorization into A = LU</title>
+<meta name="description" content="A = LU, A = LDU, the inverse of a product, the cost of elimination and permutations, taught from scratch with a rover that must undo its moves, a control loop that factors once, and a smooth path through waypoints.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
+<link rel="stylesheet" href="assets/css/mit.css">
+<style>
+/* Lecture 4 only: small pieces built from the shared design tokens */
+.board b.c1 { color: var(--s1); } .board b.c2 { color: var(--s2); } .board b.c3 { color: var(--s3); }
+.steps { display: grid; gap: 6px; padding-left: 1.3em; font-size: 15.5px; color: var(--ink-2); max-width: 66ch; }
+
+/* Lab 4.1 */
+#lab-lu .stepper-view { min-height: 25em; }
+.lu-rows { list-style: none; padding: 0; margin: 0; display: grid; gap: 5px; font-family: var(--font-mono); font-size: 13px; line-height: 1.45; color: var(--chalk-2); }
+.eq .op.gap { width: 1.4em; padding: 0; }
+
+/* Lab 4.3 */
+.costbars { display: grid; gap: 22px; padding: 4px 0 8px; }
+.costrow { display: grid; gap: 6px; min-width: 0; }
+.costrow-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .03em; color: var(--chalk-2); }
+.costrow-top b { color: var(--chalk); font-weight: 500; font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.costbar { display: flex; height: 36px; background: var(--board-2); border: 1px solid var(--board-rule); overflow: hidden; }
+.costbar i { display: block; height: 100%; min-width: 2px; transition: width .3s ease; }
+.costbar .e1 { background: var(--s1); }
+.costbar .e2 { background: var(--s2); }
+.costrow-sub { font-family: var(--font-mono); font-size: 11.5px; line-height: 1.4; color: var(--chalk-3); }
+.cost-tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--chalk-3); min-width: 8.4em; }
+#lab-cost .lab-math .eq { padding: .35em 0; }
+
+/* Lab 4.4 */
+.dotrow { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 10px; }
+.dotrow .op { font-family: var(--font-math); font-size: 1.1em; align-self: flex-start; padding-top: .9em; }
+.dotmx { display: inline-grid; grid-template-columns: repeat(var(--n), 9px); gap: 4px; padding: 7px 10px; position: relative; }
+.dotmx::before, .dotmx::after { content: ""; position: absolute; top: 0; bottom: 0; width: 5px; border: 1.4px solid var(--chalk-2); }
+.dotmx::before { left: 0; border-right: 0; }
+.dotmx::after { right: 0; border-left: 0; }
+.dotmx i { width: 9px; height: 9px; border-radius: 50%; background: var(--board-3); }
+.dotmx i.on { background: var(--chalk); }
+.dotmx i.pv { background: var(--s1); }
+.dotmx i.mu { background: var(--s3); }
+.pivline { display: grid; grid-template-columns: 7.4em minmax(0, 1fr); gap: 8px; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--chalk-3); }
+.pivline b { font-weight: 500; color: var(--chalk-2); white-space: pre-wrap; font-variant-numeric: tabular-nums; }
+
+/* Lab 4.5 */
+#lab-perms .lab-stage { gap: 12px; }
+.permgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 1000px) { .permgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 460px) { .permgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.permcard { border: 1px solid var(--board-rule); background: var(--board-2); padding: 12px 6px 8px; display: grid; gap: 6px; justify-items: center; align-content: start; min-width: 0; transition: border-color .2s; }
+.permcard.hit { border-color: var(--s3); }
+.pname { font-size: 17px; color: var(--chalk); }
+.psay { font-family: var(--font-mono); font-size: 10.5px; line-height: 1.35; color: var(--chalk-3); text-align: center; min-height: 2.7em; }
+.ppick { display: inline-flex; border: 1px solid var(--board-rule); }
+.ppick button { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .04em; padding: 8px 9px; background: var(--board); color: var(--chalk-2); border: 0; cursor: pointer; line-height: 1; }
+.ppick button + button { border-left: 1px solid var(--board-rule); }
+.ppick button:hover { color: var(--chalk); }
+.ppick button[aria-pressed="true"] { background: var(--chalk); color: var(--board); }
+.ptag { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; color: var(--s3); min-height: 1.4em; white-space: pre; }
+.permout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 720px) { .permout { grid-template-columns: minmax(0, 1fr); } }
+.permpanel { border: 1px solid var(--board-rule); padding: 10px 12px; display: grid; gap: 6px; min-width: 0; align-content: start; }
+.permpanel > .label { color: var(--chalk-3); }
+.permpanel .eq { justify-content: flex-start; padding: .3em 0; }
+.permnote { font-size: 14px; color: var(--chalk-2); }
+.wire { display: block; width: 100%; max-width: 360px; height: auto; }
+.wire text { font-family: var(--font-mono); font-size: 9.5px; fill: var(--chalk-3); }
+.wire text.in { fill: var(--board); font-weight: 600; font-size: 10.5px; }
+.wire text.mt { fill: var(--chalk); font-size: 10px; }
+.wire path { fill: none; stroke-width: 2.4; stroke-linecap: round; }
+.wire .w0 { stroke: var(--s1); } .wire .w1 { stroke: var(--s2); } .wire .w2 { stroke: var(--s4); }
+.wire .f0 { fill: var(--s1); } .wire .f1 { fill: var(--s2); } .wire .f2 { fill: var(--s4); }
+.wire .mot { fill: var(--board-2); stroke: var(--chalk-2); stroke-width: 1.2; }
+.ptable { border-collapse: collapse; font-size: 14px; }
+.ptable th, .ptable td { border: 1px solid var(--board-rule); padding: 0; text-align: center; }
+.ptable th { padding: 6px 4px; min-width: 2.7em; color: var(--chalk-2); font-weight: 400; background: var(--board-2); }
+.ptable td button { display: block; width: 100%; min-width: 2.7em; padding: 7px 4px; background: transparent; border: 0; color: var(--chalk); cursor: pointer; font: inherit; }
+.ptable td button:hover { background: var(--board-3); }
+.ptable td button.cur { background: var(--s3); color: var(--board); }
+.ptable td button.mirror { box-shadow: inset 0 0 0 1.5px var(--s3); }
+.pcorner { font-family: var(--font-mono); font-size: 10.5px; color: var(--chalk-3); white-space: nowrap; }
+@media (min-width: 821px) { #lab-perms .lab-side { grid-template-columns: minmax(0, 1fr) auto; column-gap: 24px; } }
+</style>
+</head>
+<body>
+<main data-lecture="4">
+
+<section class="lec-hero">
+  <div class="wrap">
+    <div class="lec-num">04<i>.</i></div>
+    <div class="lec-kicker label"><span class="bars"></span><span>MIT 18.06 · Lecture 4</span><span><i data-ic="clock"></i> 48:05</span></div>
+    <h1>Factorization into A = LU</h1>
+    <p class="lec-lede">Elimination, done once, can be saved as two triangular matrices, <strong>L</strong> and <strong>U</strong>. After that, every new right-hand side is cheap. A robot controller that solves the same system a thousand times a second lives on this.</p>
+    <div class="lec-meta">
+      <a class="btn primary" data-ocw="video" href="#"><i data-ic="video"></i><span>Watch the lecture on OCW</span></a>
+      <a class="btn" data-ocw="summary" href="#"><i data-ic="book"></i><span>Lecture summary</span></a>
+      <a class="btn" href="article/04-factorization-into-a-lu.md"><i data-ic="pen"></i><span>Article notes</span></a>
+    </div>
+  </div>
+</section>
+
+<div class="wrap lec-layout">
+<nav class="toc"></nav>
+<article class="lec-body">
+
+<!-- ============================================================ 4.0 -->
+<section class="concept" id="start" data-toc="Start here: save the work">
+  <header class="concept-head">
+    <span class="concept-no">4.0</span>
+    <h2>Start here: can elimination be saved?</h2>
+    <p class="concept-sub">What this lecture is for, and the four ideas from earlier lectures that it leans on.</p>
+  </header>
+  <div class="prose">
+    <p class="big">Lecture 2 solved <span class="m">A<b>x</b> = <b>b</b></span> by elimination: subtract multiples of one equation from the equations below it until the system is easy to finish. Elimination is real work. This lecture asks a practical question: can we do that work once and keep it?</p>
+    <p>The answer is yes. The record of elimination is two matrices, called <span class="m">L</span> and <span class="m">U</span>, and multiplied together they give back <span class="m">A</span>. Writing a matrix as a product of simpler matrices is called a <span class="term">factorization</span>, in the same way that 12 = 3 × 4 factors a number.</p>
+    <p>You need four ideas from the earlier lectures. Here they are again in one line each.</p>
+    <ul>
+      <li>A <span class="term">system</span> <span class="m">A<b>x</b> = <b>b</b></span> has a matrix <span class="m">A</span> of known coefficients, a vector <span class="m"><b>x</b></span> of unknowns and a <span class="term">right-hand side</span> <span class="m"><b>b</b></span> of known numbers.</li>
+      <li>A <span class="term">pivot</span> is the entry on the diagonal that elimination uses to clear the entries below it. A <span class="term">multiplier</span> says how many times the pivot row is subtracted from a lower row: the entry to be cleared, divided by the pivot.</li>
+      <li>An <span class="term">elimination matrix</span> such as <span class="m">E<sub>21</sub></span> carries out one of those subtractions when it multiplies <span class="m">A</span>. The subscript says which entry it clears: row 2, column 1.</li>
+      <li>The <span class="term">inverse</span> <span class="m">A<sup>−1</sup></span> is the matrix that undoes <span class="m">A</span>, so <span class="m">A<sup>−1</sup>A = I</span>. Here <span class="m">I</span> is the <span class="term">identity matrix</span>, with ones on the diagonal and zeros elsewhere. Multiplying by it changes nothing.</li>
+    </ul>
+    <p>Strang's lecture has four parts, and this page follows them: how to undo a product of matrices, elimination rewritten as <span class="m">A = LU</span>, what elimination costs, and what to do when rows have to be exchanged.</p>
+  </div>
+  <div class="work">
+    <span class="label">Where the lecture is heading</span>
+    <div class="eq">
+      <span data-mx="2 1; 8 7" data-cap="A"></span><span class="op">=</span>
+      <span data-mx="1 0; 4 1" data-cells="1.0:h3" data-cap="L · the multiplier"></span>
+      <span data-mx="2 1; 0 3" data-pivots="0.0,1.1" data-cap="U · the pivots"></span>
+    </div>
+    <p>One matrix on the left, two triangular matrices on the right. By the end of Section 4.3 every number in this line will make sense.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="stopwatch"></i>Robotics link<em>real-time control</em></div>
+    <div class="robolink-body">
+      <h3>A controller is a loop with a deadline</h3>
+      <p>A robot's controller is a short program that repeats without end: read the sensors, work out the motor commands, send them. This is a <span class="term">control loop</span>, and one pass through it is a <span class="term">tick</span>. Arms and legged robots often run the loop about a thousand times a second, which is one kilohertz (1 kHz). Each tick then has one millisecond for all of its arithmetic.</p>
+      <p>Part of that arithmetic is usually solving <span class="m">A<b>x</b> = <b>b</b></span>. Very often the matrix stays the same from tick to tick and only the right-hand side changes, because the right-hand side carries the fresh sensor readings. Repeating elimination on the same matrix every tick would be wasted effort. The plan of this lecture is the plan of the controller: factor once before the loop starts, and leave only the cheap part inside the loop.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 4.1 -->
+<section class="concept" id="reverse-order" data-toc="Undoing a product">
+  <header class="concept-head">
+    <span class="concept-no">4.1</span>
+    <h2>Undoing a product: reverse order</h2>
+    <p class="concept-sub">The inverse of <span class="m">AB</span> is <span class="m">B<sup>−1</sup>A<sup>−1</sup></span>. The order flips.</p>
+  </header>
+  <div class="prose">
+    <p>Suppose <span class="m">A</span> and <span class="m">B</span> each have an inverse. What undoes their product <span class="m">AB</span>?</p>
+    <p>Think about what the product does. In <span class="m">AB<b>x</b></span> the matrix next to the vector acts first, so <span class="m">B</span> acts and then <span class="m">A</span> acts. To get back to <span class="m"><b>x</b></span> you take back the most recent action first: undo <span class="m">A</span>, then undo <span class="m">B</span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">The rule, and the lecture's check</span>
+    <div class="eq"><span class="m">(AB)<sup>−1</sup> = B<sup>−1</sup>A<sup>−1</sup></span></div>
+    <p>Check it by multiplying. The brackets may be moved, because matrix multiplication allows regrouping (Lecture 3). The matrices may not change places.</p>
+    <div class="eq wrapok"><span class="m">(AB)(B<sup>−1</sup>A<sup>−1</sup>)</span><span class="op">=</span><span class="m">A (B B<sup>−1</sup>) A<sup>−1</sup></span><span class="op">=</span><span class="m">A I A<sup>−1</sup></span><span class="op">=</span><span class="m">A A<sup>−1</sup></span><span class="op">=</span><span class="m">I</span></div>
+    <p>The inner pair <span class="m">B B<sup>−1</sup></span> cancels first, and then the outer pair. The same happens on the other side: <span class="m">(B<sup>−1</sup>A<sup>−1</sup>)(AB) = I</span>.</p>
+  </div>
+  <div class="prose">
+    <p>Strang's picture for this is one everybody already knows. <strong>You put on socks, then shoes. To undo that, the shoes come off first, then the socks.</strong> Nobody takes socks off through their shoes.</p>
+    <p>The rule extends to any number of factors: <span class="m">(ABC)<sup>−1</sup> = C<sup>−1</sup>B<sup>−1</sup>A<sup>−1</sup></span>. Section 4.4 uses exactly this with three elimination matrices.</p>
+  </div>
+  <div class="work">
+    <span class="label">The same rule with numbers (our own; the lecture argues with letters)</span>
+    <div class="eq wrapok">
+      <span class="m">A</span><span class="op">=</span><span data-mx="1 3; 2 7"></span>
+      <span class="m">B</span><span class="op">=</span><span data-mx="2 1; 5 3"></span>
+      <span class="m">AB</span><span class="op">=</span><span data-mx="17 10; 39 23"></span>
+    </div>
+    <div class="eq wrapok">
+      <span class="m">B<sup>−1</sup>A<sup>−1</sup></span><span class="op">=</span><span data-mx="3 -1; -5 2"></span><span data-mx="7 -3; -2 1"></span><span class="op">=</span><span data-mx="23 -10; -39 17" data-cols="0:h4,1:h4"></span>
+      <span class="m">A<sup>−1</sup>B<sup>−1</sup></span><span class="op">=</span><span data-mx="36 -13; -11 4" data-cols="0:h3,1:h3"></span>
+    </div>
+    <p>Multiply <span class="m">AB</span> by the green matrix and you get the identity: <span class="m">17·23 − 10·39 = 1</span> in the corner, and so on. Multiply <span class="m">AB</span> by the amber matrix and you get <span data-mx="502 -181; 1151 -415" data-cls="sm"></span>, which is nowhere near the identity. Both amber factors are correct inverses. Only their order is wrong.</p>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="rover"></i>Robotics link<em>undoing motion</em></div>
+    <div class="robolink-body">
+      <h3>Every move is a matrix, so undoing moves is undoing a product</h3>
+      <p>A rover on a flat floor has a position <span class="m">(x, y)</span> and a heading <span class="m">θ</span>, the direction it faces. Robotics packs all three numbers into one 3 by 3 matrix called a <span class="term">homogeneous transform</span>:</p>
+      <div class="eq left"><span data-mx="cos_θ -sin_θ x; sin_θ cos_θ y; 0 0 1" data-cls="sm"></span></div>
+      <p>A move such as "drive 3 m" or "turn 70° and drive 2.5 m" is a matrix of the same shape. Moves described from the driver's seat chain from left to right: doing move <span class="m">A</span> and then move <span class="m">B</span> is the product <span class="m">AB</span>. To return to the start the rover needs <span class="m">(AB)<sup>−1</sup> = B<sup>−1</sup>A<sup>−1</sup></span>. It must take back <span class="m">B</span>, the later move, first.</p>
+      <p>Get the order wrong and the rover ends up somewhere else, even though each undo move is correct in itself. The lab uses an ideal rover on a flat floor with no wheel slip, so that the only thing that can go wrong is the order.</p>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-socks">
+    <div class="lab-head"><span class="lab-tag">LAB 4.2</span><h3>Undo two moves: which order brings the rover home?</h3><i data-ic="rover"></i></div>
+    <p class="lab-intro">The rover has done move <b>A</b> (drive) and then move <b>B</b> (turn, then drive). Press one of the two undo buttons and watch where it finishes. The sliders change the two moves.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="wide" aria-label="Top view of a rover: move A, move B and the path of the undo"></canvas>
+        <div class="lab-caption"><span class="key k1">move A</span><span class="key k2">move B</span><span class="key kd">undo path, in the colour of the move it undoes</span><span class="key k4">home again</span><span class="key k3">where a wrong undo ends</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group" data-slot="sliders"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Press <b>Undo B first, then A</b>. The rover backs along B, turns back, then backs along A. It is home, and the product under the picture is the identity. That is <b>B<sup>−1</sup>A<sup>−1</sup></b>.</li>
+        <li>Press <b>Undo A first, then B</b>. Each undo move is still correct, yet the rover finishes metres away. The order is part of the inverse.</li>
+        <li>Set the turn to <b>0°</b> and try the wrong order again. Now it works. Two drives along one straight line can be swapped freely, and when two matrices can be swapped the order of their inverses stops mattering.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="note idea">
+    <i data-ic="idea"></i>
+    <span class="note-title">Key idea</span>
+    <div class="note-body"><p>The inverse of a product is the product of the inverses in reverse order. Last on, first off.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 4.2 -->
+<section class="concept" id="transposes" data-toc="Transposes and inverses">
+  <header class="concept-head">
+    <span class="concept-no">4.2</span>
+    <h2>Transposes and inverses</h2>
+    <p class="concept-sub">Invert and transpose in either order. The result is the same.</p>
+  </header>
+  <div class="prose">
+    <p>The <span class="term">transpose</span> of a matrix, written <span class="m">A<sup class="u">T</sup></span>, turns its rows into columns: row 1 of <span class="m">A</span> becomes column 1 of <span class="m">A<sup class="u">T</sup></span>, row 2 becomes column 2, and so on. Lecture 5 treats transposes in full. Today the lecture needs a single fact about them.</p>
+  </div>
+  <div class="work">
+    <span class="label">The rule, and the lecture's reason</span>
+    <div class="eq"><span class="m">(A<sup class="u">T</sup>)<sup>−1</sup> = (A<sup>−1</sup>)<sup class="u">T</sup></span></div>
+    <p>Start from the definition of the inverse, <span class="m">A A<sup>−1</sup> = I</span>, and transpose both sides. Transposing a product reverses its order, just as inverting does, and the identity is its own transpose:</p>
+    <div class="eq"><span class="m">(A<sup>−1</sup>)<sup class="u">T</sup> A<sup class="u">T</sup> = I</span></div>
+    <p>Read that line aloud: the matrix <span class="m">(A<sup>−1</sup>)<sup class="u">T</sup></span>, multiplied by <span class="m">A<sup class="u">T</sup></span>, gives the identity. So it is the inverse of <span class="m">A<sup class="u">T</sup></span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">Checked on the lecture's matrix</span>
+    <div class="eq wrapok">
+      <span data-mx="2 1; 8 7" data-cap="A"></span>
+      <span data-mx="7/6 -1/6; -4/3 1/3" data-cap="A inverse"></span>
+      <span data-mx="2 8; 1 7" data-cap="A transpose"></span>
+      <span data-mx="7/6 -4/3; -1/6 1/3" data-cols="0:h3,1:h3" data-cap="inverse of the transpose"></span>
+    </div>
+    <p>The amber matrix was found by inverting <span class="m">A<sup class="u">T</sup></span> directly. It is also the second matrix with its rows turned into columns. Two routes, one answer.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="torque"></i>Robotics link<em>motion and force</em></div>
+    <div class="robolink-body">
+      <h3>One factorization serves velocities and forces</h3>
+      <p>In Lecture 1 the arm's Jacobian <span class="m">J</span> turned joint speeds into hand velocity. Lecture 5 will show that its transpose <span class="m">J<sup class="u">T</sup></span> turns a force at the hand into torques at the joints. A controller often has to solve a system with <span class="m">J</span> and a system with <span class="m">J<sup class="u">T</sup></span> in the same tick.</p>
+      <p>The rule says these are one job. Whatever undoes <span class="m">J</span>, transposed, undoes <span class="m">J<sup class="u">T</sup></span>. In practice the controller factors <span class="m">J = LU</span> once and reuses the same two factors for <span class="m">J<sup class="u">T</sup> = U<sup class="u">T</sup>L<sup class="u">T</sup></span>. For the arm pose of Lecture 1 the script for this page finds the joint speeds (−0.37, 0.90) rad/s for a wanted hand velocity, and the hand force (−0.068, 0.320) N for joint torques of (1.0, 0.5) N·m, from one factorization.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 4.3 -->
+<section class="concept" id="lu" data-toc="A = LU, then LDU">
+  <header class="concept-head">
+    <span class="concept-no">4.3</span>
+    <h2>A = LU for a 2 by 2, then A = LDU</h2>
+    <p class="concept-sub">Elimination, written as a product of two triangular matrices.</p>
+  </header>
+  <div class="prose">
+    <p>Now the main idea. Two words first. The <span class="term">diagonal</span> of a square matrix runs from its top-left entry to its bottom-right entry. A matrix is <span class="term">upper triangular</span> when every entry below the diagonal is zero, and <span class="term">lower triangular</span> when every entry above the diagonal is zero.</p>
+    <p>Take the lecture's matrix and eliminate. There is one entry to clear, the 8.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's 2 by 2 example</span>
+    <ol class="steps">
+      <li>The first pivot is 2. The entry below it is 8. The multiplier is 8 ÷ 2 = 4, so subtract 4 × row 1 from row 2.</li>
+      <li>As a matrix product, that step is <span class="m">E<sub>21</sub> A = U</span>:</li>
+    </ol>
+    <div class="eq">
+      <span data-mx="1 0; -4 1" data-cells="1.0:h2" data-cap="E21"></span>
+      <span data-mx="2 1; 8 7" data-cap="A"></span><span class="op">=</span>
+      <span data-mx="2 1; 0 3" data-pivots="0.0,1.1" data-cap="U"></span>
+    </div>
+    <p><span class="m">U</span> is upper triangular, and its diagonal holds the two pivots, 2 and 3. The letter U stands for upper.</p>
+    <ol class="steps" start="3">
+      <li>Move <span class="m">E<sub>21</sub></span> to the other side by multiplying both sides by its inverse: <span class="m">A = E<sub>21</sub><sup>−1</sup> U</span>.</li>
+      <li>The inverse of "subtract 4 × row 1 from row 2" is "add 4 × row 1 to row 2". So <span class="m">E<sub>21</sub><sup>−1</sup></span> is the same matrix with +4 in place of −4. Call it <span class="m">L</span>.</li>
+    </ol>
+    <div class="eq">
+      <span data-mx="2 1; 8 7" data-cap="A"></span><span class="op">=</span>
+      <span data-mx="1 0; 4 1" data-cells="1.0:h3" data-cap="L"></span>
+      <span data-mx="2 1; 0 3" data-pivots="0.0,1.1" data-cap="U"></span>
+    </div>
+    <p><span class="m">L</span> is lower triangular, with ones on its diagonal. Below the diagonal sits the multiplier 4, with the sign we used when we said "subtract 4 times". The letter L stands for lower. Multiply the two matrices to check: row 2 of the product is <span class="m">4·(2, 1) + (0, 3) = (8, 7)</span>.</p>
+  </div>
+  <div class="prose">
+    <h3>Pulling the pivots out: A = LDU</h3>
+    <p>Strang then tidies the picture. <span class="m">L</span> has ones on its diagonal and <span class="m">U</span> has pivots, which is lopsided. Divide each row of <span class="m">U</span> by its pivot, and keep the pivots in a matrix of their own. A matrix whose only non-zero entries are on the diagonal is a <span class="term">diagonal matrix</span>, here called <span class="m">D</span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">The same matrix as L D U</span>
+    <div class="eq">
+      <span data-mx="2 1; 8 7" data-cap="A"></span><span class="op">=</span>
+      <span data-mx="1 0; 4 1" data-cells="1.0:h3" data-cap="L"></span>
+      <span data-mx="2 0; 0 3" data-pivots="0.0,1.1" data-cap="D · pivots"></span>
+      <span data-mx="1 1/2; 0 1" data-cap="U · ones on the diagonal"></span>
+    </div>
+    <p>Row 1 of the old <span class="m">U</span> was (2, 1). Divided by its pivot 2 it is (1, 1/2). Row 2 was (0, 3). Divided by 3 it is (0, 1). Now both triangular matrices have ones on the diagonal, and the pivots stand alone in the middle.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="list"></i>Robotics link<em>a record to replay</em></div>
+    <div class="robolink-body">
+      <h3>L is the controller's logbook</h3>
+      <p>Think of elimination as a job the controller did on the matrix. <span class="m">U</span> is the finished job. <span class="m">L</span> is the logbook: every multiplier that was used, written down in the place where it was used. With the logbook saved, the controller can replay the same steps on any new right-hand side without looking at <span class="m">A</span> again. Section 4.5 shows the replay.</p>
+      <p>The <span class="m">LDU</span> form matters to robots too. A robot's mass matrix, which links joint accelerations to joint torques, is symmetric: it equals its own transpose. For such a matrix the <span class="m">U</span> in <span class="m">LDU</span> turns out to be the transpose of <span class="m">L</span>, so only <span class="m">L</span> and <span class="m">D</span> need storing. Lecture 5 introduces symmetric matrices.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 4.4 -->
+<section class="concept" id="l-beats-e" data-toc="3 by 3: why L beats E">
+  <header class="concept-head">
+    <span class="concept-no">4.4</span>
+    <h2>The 3 by 3 case: why L beats E</h2>
+    <p class="concept-sub">Two matrices describe elimination. One of them is clean.</p>
+  </header>
+  <div class="prose">
+    <p>A 3 by 3 matrix has three entries below the diagonal, so elimination takes up to three steps: clear row 2, column 1, then row 3, column 1, then row 3, column 2. Assume for now that no rows have to be exchanged.</p>
+  </div>
+  <div class="work">
+    <span class="label">Three steps, then move them across</span>
+    <div class="eq"><span class="m">E<sub>32</sub> E<sub>31</sub> E<sub>21</sub> A = U</span></div>
+    <p>Move the three matrices to the right-hand side one at a time. The last one applied, <span class="m">E<sub>32</sub></span>, is the first to be undone, so by the reverse-order rule of Section 4.1 the inverses come out in the opposite order:</p>
+    <div class="eq"><span class="m">A = E<sub>21</sub><sup>−1</sup> E<sub>31</sub><sup>−1</sup> E<sub>32</sub><sup>−1</sup> U = L U</span></div>
+  </div>
+  <div class="prose">
+    <p>So two matrices describe the whole of elimination. <span class="m">E = E<sub>32</sub>E<sub>31</sub>E<sub>21</sub></span> takes <span class="m">A</span> to <span class="m">U</span>. Its inverse <span class="m">L</span> takes <span class="m">U</span> back to <span class="m">A</span>. Strang asks which one is nicer to keep, and answers with an example.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's example</span>
+    <p>Suppose elimination needs two steps: subtract 2 × row 1 from row 2, and later subtract 5 × row 2 from row 3. Nothing is needed in row 3, column 1, so <span class="m">E<sub>31</sub> = I</span>.</p>
+    <div class="eq wrapok">
+      <span data-mx="1 0 0; 0 1 0; 0 -5 1" data-cells="2.1:h2" data-cap="E32"></span>
+      <span data-mx="1 0 0; -2 1 0; 0 0 1" data-cells="1.0:h2" data-cap="E21"></span><span class="op">=</span>
+      <span data-mx="1 0 0; -2 1 0; 10 -5 1" data-cells="2.0:h1" data-cap="E"></span>
+    </div>
+    <p>Look at the <span class="hl1">10</span>. Neither step used a 10. It appears because the second step subtracts 5 × row 2 from row 3 after row 2 has already had 2 × row 1 taken out of it. So row 3 picks up 5 × 2 = 10 of row 1, passed along through row 2. Strang says plainly that he does not like that 10.</p>
+    <p>Now the other direction. The inverses multiply in the reverse order:</p>
+    <div class="eq wrapok">
+      <span data-mx="1 0 0; 2 1 0; 0 0 1" data-cells="1.0:h3" data-cap="E21 inverse"></span>
+      <span data-mx="1 0 0; 0 1 0; 0 5 1" data-cells="2.1:h3" data-cap="E32 inverse"></span><span class="op">=</span>
+      <span data-mx="1 0 0; 2 1 0; 0 5 1" data-cells="1.0:h3,2.1:h3" data-cap="L"></span>
+    </div>
+    <p>No 10. <span class="m">L</span> holds the multipliers 2 and 5, each in its own place, and a 0 where no step was needed. Nothing has mixed.</p>
+  </div>
+  <div class="note idea">
+    <i data-ic="idea"></i>
+    <span class="note-title">Key idea</span>
+    <div class="note-body"><p>If there are no row exchanges, the multipliers go directly into L. There is nothing to compute: you write them down where you used them.</p></div>
+  </div>
+  <div class="prose">
+    <h3>Why nothing mixes in L</h3>
+    <p>Read <span class="m">A = LU</span> one row at a time. Its third row says: row 3 of <span class="m">A</span> equals <span class="m">l<sub>31</sub></span> × (row 1 of <span class="m">U</span>) plus <span class="m">l<sub>32</sub></span> × (row 2 of <span class="m">U</span>) plus row 3 of <span class="m">U</span>. That sentence is elimination read backwards. Elimination produced row 3 of <span class="m">U</span> by subtracting those same multiples from row 3 of <span class="m">A</span>, and the rows it subtracted were always finished rows of <span class="m">U</span>. Each multiplier is used once and recorded once.</p>
+    <p>The lecture gives only the two elimination matrices. To watch them at work, the lab below uses a matrix built so that elimination needs exactly those two steps:</p>
+  </div>
+  <div class="work">
+    <span class="label">A matrix that uses the multipliers 2 and 5</span>
+    <div class="eq">
+      <span data-mx="1 2 1; 2 5 5; 0 5 17" data-cap="A"></span><span class="op">=</span>
+      <span data-mx="1 0 0; 2 1 0; 0 5 1" data-cells="1.0:h3,2.0:h3,2.1:h3" data-cap="L"></span>
+      <span data-mx="1 2 1; 0 1 3; 0 0 2" data-pivots="0.0,1.1,2.2" data-cap="U"></span>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-lu">
+    <div class="lab-head"><span class="lab-tag">LAB 4.1</span><h3>Watch L fill up while A turns into U</h3><i data-ic="lu"></i></div>
+    <p class="lab-intro">Step through elimination. The matrix on the right becomes <b>U</b>, and each multiplier drops into its own place in <b>L</b>. Load an example, or type your own numbers into A.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <div data-slot="stepper"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Load a matrix</span><div data-slot="presets"></div></div>
+        <div class="lab-group"><span class="label">A · type over any entry</span><div class="lab-math" data-slot="matrix"></div></div>
+        <div class="lab-group"><span class="label">Write the answer as</span><div data-slot="form"></div></div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>With <b>Lecture 2 by 2</b> loaded, step to the end. There is one multiplier, 4, and it lands in L exactly where the zero appeared in U.</li>
+        <li>Load <b>Multipliers 2 and 5</b> and go to the last step. E contains a 10 that no step used. L contains 2, 0 and 5 and nothing else.</li>
+        <li>Switch to <b>A = L D U</b>. The pivots move into D, and U gets ones on its diagonal to match L.</li>
+        <li>Type <b>0</b> into the top-left entry of A. The first pivot is missing and a row exchange is needed. That case belongs to Lecture 5.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="chip"></i>Robotics link<em>memory on board</em></div>
+    <div class="robolink-body">
+      <h3>Software keeps L in the space the zeros left behind</h3>
+      <p>A numerical library never builds <span class="m">E</span>, and it does not set aside a separate <span class="m">L</span> either. Each time elimination turns an entry below the diagonal into zero, the library writes the multiplier into that now-unused slot. When it finishes, one <span class="m">n</span> by <span class="m">n</span> block of memory holds <span class="m">U</span> on and above the diagonal and the multipliers of <span class="m">L</span> below it. The ones on the diagonal of <span class="m">L</span> are known in advance, so they are not stored.</p>
+      <p>That only works because the multipliers go into <span class="m">L</span> unchanged. On a robot's small computer, a factorization that costs no extra memory is welcome. The timing code inside Lab 4.3 stores its factors this way.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 4.5 -->
+<section class="concept" id="two-passes" data-toc="Solving with L and U">
+  <header class="concept-head">
+    <span class="concept-no">4.5</span>
+    <h2>Solving with L and U: two triangular passes</h2>
+    <p class="concept-sub">How the saved factors are used on a new right-hand side.</p>
+  </header>
+  <div class="prose">
+    <p>Once <span class="m">A = LU</span> is known, the system <span class="m">A<b>x</b> = <b>b</b></span> reads <span class="m">L(U<b>x</b>) = <b>b</b></span>. Give the bracket a name, <span class="m"><b>y</b> = U<b>x</b></span>, and one hard system becomes two easy ones.</p>
+    <ul>
+      <li><strong>First</strong> solve <span class="m">L<b>y</b> = <b>b</b></span>. Because <span class="m">L</span> is lower triangular, its first equation has one unknown, its second has one new unknown, and so on down. Working from the top like this is <span class="term">forward substitution</span>.</li>
+      <li><strong>Then</strong> solve <span class="m">U<b>x</b> = <b>y</b></span>. Because <span class="m">U</span> is upper triangular, start with the last equation and work upward. This is the <span class="term">back-substitution</span> of Lecture 2.</li>
+    </ul>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's matrix with the right-hand side (3, 15)</span>
+    <div class="eq wrapok">
+      <span data-mx="1 0; 4 1" data-cells="1.0:h3" data-cap="L"></span><span data-mx="y₁; y₂"></span><span class="op">=</span><span data-mx="3; 15" data-cap="b"></span>
+      <span class="op">&nbsp;then&nbsp;</span>
+      <span data-mx="2 1; 0 3" data-pivots="0.0,1.1" data-cap="U"></span><span data-mx="x₁; x₂"></span><span class="op">=</span><span data-mx="3; 3" data-cap="y"></span>
+    </div>
+    <ol class="steps">
+      <li>Forward, top row: <span class="m">y<sub>1</sub> = 3</span>. Second row: <span class="m">4·3 + y<sub>2</sub> = 15</span>, so <span class="m">y<sub>2</sub> = 3</span>.</li>
+      <li>Back, bottom row: <span class="m">3x<sub>2</sub> = 3</span>, so <span class="m">x<sub>2</sub> = 1</span>. Top row: <span class="m">2x<sub>1</sub> + 1 = 3</span>, so <span class="m">x<sub>1</sub> = 1</span>.</li>
+      <li>Check in the original system: <span class="m">2·1 + 1 = 3</span> and <span class="m">8·1 + 7 = 15</span>.</li>
+    </ol>
+    <p>Now a new right-hand side arrives, (5, 23). <span class="m">L</span> and <span class="m">U</span> are not touched. Forward gives <span class="m"><b>y</b> = (5, 3)</span>, back gives <span class="m"><b>x</b> = (2, 1)</span>.</p>
+  </div>
+  <div class="prose">
+    <p>Forward substitution does to <span class="m"><b>b</b></span> exactly what elimination did to the rows of <span class="m">A</span>: the vector <span class="m"><b>y</b></span> is the one Lecture 2 called <span class="m"><b>c</b></span>. This is the logbook being replayed. Notice also what never appeared on this page of working: <span class="m">A<sup>−1</sup></span>.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="code"></i>Robotics link<em>how robot code is written</em></div>
+    <div class="robolink-body">
+      <h3>Robot software solves. It does not invert.</h3>
+      <p>Formula sheets write the answer as <span class="m"><b>x</b> = A<sup>−1</sup><b>b</b></span>. Robot code almost never computes <span class="m">A<sup>−1</sup></span>. Building the inverse costs about three times as much as finding <span class="m">L</span> and <span class="m">U</span>, and each use of it then costs the same as the two triangular passes. So the inverse is slower to get and no faster to use. It is usually less accurate as well, because every entry of <span class="m">A<sup>−1</sup></span> carries its own rounding error into the product.</p>
+      <p>The standing advice in numerical computing is therefore: factor, then solve. When you see <span class="m">A<sup>−1</sup><b>b</b></span> in a robotics paper, read it as "the solution of <span class="m">A<b>x</b> = <b>b</b></span>", found with two triangular passes.</p>
+    </div>
+  </div>
+  <div class="note idea">
+    <i data-ic="idea"></i>
+    <span class="note-title">Key idea</span>
+    <div class="note-body"><p>Factor once: A = LU. Then for every new <b>b</b>, go forward with L and back with U. No inverse is ever formed.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 4.6 -->
+<section class="concept" id="cost" data-toc="The cost of elimination">
+  <header class="concept-head">
+    <span class="concept-no">4.6</span>
+    <h2>How much does elimination cost?</h2>
+    <p class="concept-sub">About n³/3 operations for the matrix. Only n² for each right-hand side.</p>
+  </header>
+  <div class="prose">
+    <p>How long does elimination take on a big system? Strang measures it by counting <span class="term">operations</span>. One operation is the basic act of elimination on a single entry: multiply a number and subtract it.</p>
+    <p>Take the lecture's size, <span class="m">n = 100</span>: one hundred equations in one hundred unknowns. The first stage uses row 1 to clear column 1. It changes 99 rows, and about 100 entries in each, so it costs about <span class="m">100²</span> operations. The second stage does the same on what is left, a 99 by 99 block, for about <span class="m">99²</span>. Then <span class="m">98²</span>, and so on down to <span class="m">1²</span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's count</span>
+    <div class="eq wrapok"><span class="m">n² + (n − 1)² + (n − 2)² + … + 1²</span><span class="op">≈</span><span class="m">n³ / 3</span></div>
+    <p>Why a third of <span class="m">n³</span>? Strang compares the sum with the area under the curve <span class="m">x²</span> from 0 to <span class="m">n</span>, which calculus gives as <span class="m">n³/3</span>. If you have not met calculus, check it with numbers. For <span class="m">n = 100</span> the sum of squares is 338,350 and <span class="m">n³/3</span> is 333,333. So elimination on a 100 by 100 matrix costs about a third of a million operations.</p>
+    <p>The right-hand side is far cheaper. While <span class="m">A</span> is being eliminated, <span class="m"><b>b</b></span> needs one operation for each multiplier, about <span class="m">n²/2</span> in all. Back-substitution needs about <span class="m">n²/2</span> more. Together: <span class="m">n²</span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">Exact counts (counted in a real run by the script for this page)</span>
+    <div class="eq wrapok"><span class="m">factor A: (n³ − n) / 3</span><span class="op">&nbsp;&nbsp;</span><span class="m">each right-hand side: n²</span></div>
+    <p>For <span class="m">n = 100</span> these are 333,300 and 10,000. Once <span class="m">A = LU</span> is known, each extra <span class="m"><b>b</b></span> costs <span class="m">n²</span> where a fresh start would cost <span class="m">n³/3 + n²</span>: about 34 times less work. And the gap widens with size. Double <span class="m">n</span> and the factoring cost goes up 8 times, while the cost per right-hand side goes up 4 times.</p>
+  </div>
+
+  <div class="lab board" id="lab-cost">
+    <div class="lab-head"><span class="lab-tag">LAB 4.3</span><h3>Count the work: from scratch against factor once</h3><i data-ic="stopwatch"></i></div>
+    <p class="lab-intro">Choose the size <b>n</b> and how many right-hand sides <b>k</b> have to be solved. The two bars are drawn to one scale. Then press the button to time both strategies for real on your own device.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <div class="costbars" data-slot="bars"></div>
+        <div class="lab-caption"><span class="key k1">elimination on A: (n³ − n)/3 each time</span><span class="key k2">substitution for the right-hand sides: n² each</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Jump to a size</span><div data-slot="presets"></div></div>
+        <div class="lab-group" data-slot="sliders"></div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+        <div data-slot="timing"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Slide <b>k</b> down to 1. The bars match. With a single right-hand side there is nothing to reuse.</li>
+        <li>Keep <b>n = 100</b> and raise <b>k</b>. The red part of the lower bar never grows, because elimination is paid for once. The speed-up climbs toward n/3 + 1, about 34, and stays there.</li>
+        <li>Jump to <b>n = 500</b>, then press <b>Time both on this device</b>. Compare the measured speed-up with the one predicted by counting.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="stopwatch"></i>Robotics link<em>the tick budget</em></div>
+    <div class="robolink-body">
+      <h3>Factor once, solve every tick</h3>
+      <p>Put the counts against a deadline. Assume the robot's computer performs 10<sup>8</sup> simple operations a second. That is an assumption, chosen as a round number for a small embedded processor. A 1 ms tick then holds 100,000 operations.</p>
+      <div class="tablewrap">
+        <table class="t">
+          <thead><tr><th>Unknowns n</th><th>Factor once</th><th>One tick from scratch</th><th>One tick with L and U</th><th>Share of a 1 ms tick</th></tr></thead>
+          <tbody>
+            <tr><td>6, a six-joint arm</td><td>70</td><td>106</td><td>36</td><td>0.11% against 0.04%. Both are trivial.</td></tr>
+            <tr><td>50, a model with about fifty joints</td><td>41,650</td><td>44,150</td><td>2,500</td><td>44% against 2.5%. From scratch eats almost half the tick.</td></tr>
+            <tr><td>500, a long planned path</td><td>41,666,500</td><td>41,916,500</td><td>250,000</td><td>419 ticks against 2.5 ticks. That is 2.4 solves a second against 400.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>At this assumed speed the largest system that fits inside one tick is 65 unknowns from scratch and 316 with <span class="m">L</span> and <span class="m">U</span> stored. Factoring once is what makes kilohertz control affordable for anything but small systems.</p>
+      <p>One honest caveat. An arm's Jacobian changes as the arm moves, so it has to be factored again for each new pose. Even then, every right-hand side that belongs to the same pose shares the factors. The next section shows a matrix that never changes at all.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 4.7 -->
+<section class="concept" id="one-factorization" data-toc="Robot: one LU, many paths">
+  <header class="concept-head">
+    <span class="concept-no">4.7</span>
+    <h2>The robot: one factorization, many right-hand sides</h2>
+    <p class="concept-sub">A smooth path through waypoints, re-planned for almost nothing.</p>
+  </header>
+  <div class="prose">
+    <p>Here is a robot problem in which the matrix truly never changes. A planner hands the robot a list of <span class="term">waypoints</span>, points it must pass through in order. Joining them with straight lines would work, but the robot would have to stop and turn at every corner.</p>
+    <p>Robots prefer a <span class="term">spline</span>: a chain of smooth curve pieces, one for each gap, joined so that position, velocity and acceleration all match where two pieces meet. Each piece here is a cubic, the simplest kind of curve that is flexible enough to allow this.</p>
+    <p>Give the robot one second for each gap. The whole spline is then fixed by one number per waypoint and per coordinate: the acceleration <span class="m">M<sub>i</sub></span> as the robot passes waypoint <span class="m">i</span>. Asking for the velocity to match at each inner waypoint gives one linear equation per inner waypoint:</p>
+  </div>
+  <div class="work">
+    <span class="label">The spline equations (derived in the article notes)</span>
+    <div class="eq wrapok"><span class="m">M<sub>i−1</sub> + 4M<sub>i</sub> + M<sub>i+1</sub> = 6 (y<sub>i−1</sub> − 2y<sub>i</sub> + y<sub>i+1</sub>)</span></div>
+    <p>Here <span class="m">y<sub>i</sub></span> is one coordinate of waypoint <span class="m">i</span>. The path starts and ends with zero acceleration, <span class="m">M<sub>0</sub> = M<sub>n</sub> = 0</span>, a choice known as the natural spline. For seven waypoints that leaves five unknown accelerations and five equations:</p>
+    <div class="eq">
+      <span data-mx="4 1 0 0 0; 1 4 1 0 0; 0 1 4 1 0; 0 0 1 4 1; 0 0 0 1 4" data-cls="sm" data-cap="T"></span>
+      <span data-mx="M₁; M₂; M₃; M₄; M₅" data-cls="sm" data-cols="0:h2" data-cap="accelerations"></span><span class="op">=</span>
+      <span data-mx="r₁; r₂; r₃; r₄; r₅" data-cls="sm" data-cols="0:h3" data-cap="from the waypoints"></span>
+    </div>
+    <p>Look at what <span class="m">T</span> contains: fours and ones. No waypoint coordinate appears in it. The coordinates are all on the right-hand side.</p>
+  </div>
+  <div class="prose">
+    <p>So <span class="m">T</span> depends only on how many waypoints there are. One factorization <span class="m">T = LU</span> serves the <span class="m">x</span> coordinates, the <span class="m">y</span> coordinates, and every later edit of the path. Moving a waypoint changes three entries of the right-hand side and nothing else.</p>
+    <p>There is a second gift. <span class="m">T</span> is <span class="term">tridiagonal</span>: its only non-zero entries are on the diagonal and its two neighbours. Elimination on such a matrix never creates a new non-zero, so <span class="m">L</span> and <span class="m">U</span> have just two diagonals each. A matrix whose non-zeros hug the diagonal like this is called <span class="term">banded</span>, and for a banded matrix the two passes cost about <span class="m">3n</span> operations where a full matrix needs <span class="m">n²</span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">The factors of T, and where the pivots go</span>
+    <div class="eq wrapok">
+      <span class="m">pivots: 4,&nbsp; 15/4 = 3.75,&nbsp; 56/15 ≈ 3.7333,&nbsp; 209/56 ≈ 3.7321,&nbsp; 780/209 ≈ 3.7321</span>
+    </div>
+    <p>Each pivot is 4 minus 1 over the pivot before it, and the multipliers are 1 over each pivot: 1/4, 4/15, 15/56, 56/209. The pivots settle almost at once on the number that reproduces itself under that rule, <span class="m">p = 4 − 1/p</span>, which is <span class="m">p = 2 + √3 ≈ 3.7321</span>.</p>
+    <p>Counts for 500 waypoint unknowns: a full solve costs 250,000 operations after a 41,666,500-operation factorization. The banded solve costs 1,498 after a 998-operation factorization. That is 1.5% of a 1 ms tick at the speed assumed in Section 4.6.</p>
+  </div>
+
+  <div class="lab board" id="lab-spline">
+    <div class="lab-head"><span class="lab-tag">LAB 4.4</span><h3>A smooth path through waypoints: one LU, endless edits</h3><i data-ic="spline"></i></div>
+    <p class="lab-intro">Drag any <b>waypoint</b>. The rover's path is a natural cubic spline, found by solving one small system for x and one for y. Watch the two counters: the solves keep climbing and the factorizations do not.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="wide" aria-label="Spline path through draggable waypoints, with a rover driving along it"></canvas>
+        <div class="lab-caption"><span class="key k3">waypoints</span><span class="key">spline path</span><span class="key k2">acceleration at each waypoint</span><span class="key kd">straight-line route</span><span><i data-ic="drag"></i> drag the handles</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Number of waypoints</span><div data-slot="count"></div></div>
+        <div class="lab-group"><span class="label">T and its two factors, as dot patterns</span><div data-slot="dots"></div><div data-slot="pivots"></div></div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Drag a waypoint in the middle. The whole path adjusts, the amber right-hand side changes, and <b>T</b> does not. The factorization count stays at 1.</li>
+        <li>Look at the dot patterns. T has three diagonals, L and U have two each. Elimination made no new non-zeros, which is why a solve costs about <b>3n</b> operations.</li>
+        <li>Change the <b>number of waypoints</b>. Now the matrix changes size, so it is factored again. The pivots still head for 2 + √3.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="map"></i>Robotics link<em>trajectory planning</em></div>
+    <div class="robolink-body">
+      <h3>Re-planning inside a single tick</h3>
+      <p>Planners edit waypoints all the time: an obstacle appears, a goal moves, a person steps into the aisle. Each edit changes the right-hand side only. With <span class="m">L</span> and <span class="m">U</span> in hand, a new path costs a few operations per waypoint, so the robot can re-plan between two motor commands.</p>
+      <p>The unknowns are useful in themselves. <span class="m">M<sub>i</sub></span> is the acceleration the path demands at waypoint <span class="m">i</span>, in metres per second squared, so comparing it with what the motors can deliver is a free safety check. For the default path in the lab the largest is 5.09 m/s². A real planner would also slow the timing down where that number is too high. This lab keeps one second per gap to keep the matrix simple.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 4.8 -->
+<section class="concept" id="permutations" data-toc="Permutations">
+  <header class="concept-head">
+    <span class="concept-no">4.8</span>
+    <h2>Permutations: when rows must be exchanged</h2>
+    <p class="concept-sub">The last few minutes of the lecture, and the bridge to Lecture 5.</p>
+  </header>
+  <div class="prose">
+    <p>Everything so far assumed that no rows had to be exchanged. When a zero lands in a pivot position, elimination has to swap two rows before it can continue. Lecture 2 did that with a <span class="term">permutation matrix</span>: the identity matrix with its rows put in a different order. Multiplying by it puts the rows of any matrix into that same order.</p>
+    <p>Strang closes the lecture by listing every permutation matrix of size 3. There are six.</p>
+  </div>
+  <div class="work">
+    <span class="label">All six 3 by 3 permutation matrices</span>
+    <div class="eq wrapok">
+      <span data-mx="1 0 0; 0 1 0; 0 0 1" data-cls="sm" data-cap="I"></span>
+      <span data-mx="0 1 0; 1 0 0; 0 0 1" data-cls="sm" data-cap="exchange 1, 2"></span>
+      <span data-mx="0 0 1; 0 1 0; 1 0 0" data-cls="sm" data-cap="exchange 1, 3"></span>
+      <span data-mx="1 0 0; 0 0 1; 0 1 0" data-cls="sm" data-cap="exchange 2, 3"></span>
+      <span data-mx="0 1 0; 0 0 1; 1 0 0" data-cls="sm" data-cap="cycle"></span>
+      <span data-mx="0 0 1; 1 0 0; 0 1 0" data-cls="sm" data-cap="cycle twice"></span>
+    </div>
+    <p>The identity, which exchanges nothing. Three matrices that exchange two rows. Two that move all three rows round in a cycle.</p>
+  </div>
+  <div class="prose">
+    <p>Three facts about this family, all from the lecture:</p>
+    <ul>
+      <li><strong>Multiply any two and the result is in the list.</strong> Re-ordering twice is still a re-ordering.</li>
+      <li><strong>Invert any one and the result is in the list.</strong> Putting the rows back is a re-ordering too. A family of matrices that is closed under multiplying and inverting in this way is called a <span class="term">group</span>.</li>
+      <li><strong>The inverse is the transpose:</strong> <span class="m">P<sup>−1</sup> = P<sup class="u">T</sup></span>. Each row of <span class="m">P</span> has a single 1. Multiply a row by itself and you get 1. Multiply it by a different row and the ones miss each other, giving 0. That is the statement <span class="m">P P<sup class="u">T</sup> = I</span>.</li>
+    </ul>
+    <p>How many are there? For size 3, the first row can go to any of 3 places, the second to either of the 2 left, and the last has 1 choice: 3 × 2 × 1 = 6. For size 4 the count is 4 × 3 × 2 × 1 = 24. For size <span class="m">n</span> it is <span class="m">n × (n − 1) × … × 1</span>, written <span class="m">n!</span> and read "<span class="term">n factorial</span>".</p>
+    <p>Lecture 5 puts these matrices to work. When exchanges are needed, the factorization becomes <span class="m">PA = LU</span>.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="motor"></i>Robotics link<em>wiring and numbering</em></div>
+    <div class="robolink-body">
+      <h3>Plugging three motors into three outputs is a permutation</h3>
+      <p>A controller board has three outputs and the robot has three motors. There are six ways to plug them together, one for each matrix above. If a technician crosses the cables, the commands arrive re-ordered: the motors receive <span class="m">P<b>c</b></span> where the software meant <span class="m"><b>c</b></span>.</p>
+      <p>The repair needs no rewiring. Send <span class="m">P<sup class="u">T</sup><b>c</b></span>, and the cables turn it into <span class="m">P P<sup class="u">T</sup><b>c</b> = <b>c</b></span>. With the commands (10, 20, 30) and the cycle wiring, the motors receive (20, 30, 10). Send (30, 10, 20) and they receive (10, 20, 30). The same trick renumbers joints between the order of a robot's hardware and the order its mathematical model uses.</p>
+    </div>
+  </div>
+
+  <div class="lab board" id="lab-perms">
+    <div class="lab-head"><span class="lab-tag">LAB 4.5</span><h3>All six permutations, and what they do to three motors</h3><i data-ic="permute"></i></div>
+    <p class="lab-intro">Choose one matrix <b>as P</b> and one <b>as Q</b>. The lab multiplies them in both orders, marks which of the six each product is, and draws the wiring: three signals passing through the two re-orderings on their way to three motors. Row 1 of a matrix says which signal motor 1 receives.</p>
+    <div class="lab-main stack">
+      <div class="lab-stage">
+        <div class="permgrid" data-slot="grid"></div>
+        <div class="lab-caption"><span class="key k1">signal 1</span><span class="key k2">signal 2</span><span class="key k4">signal 3</span><span class="key k3">the two products</span></div>
+        <div class="permout"><div data-slot="pq"></div><div data-slot="qp"></div></div>
+        <div class="permout" data-slot="inv"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><div data-slot="status"></div><div data-slot="readouts"></div></div>
+        <div class="lab-group"><span class="label">All 36 products · row P, column Q, entry P Q</span><div class="lab-math" data-slot="table"></div></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>The lab opens with an exchange as P and a cycle as Q. The two orders give <b>different</b> wirings. Order matters for permutations, as it did for the rover.</li>
+        <li>Make P and Q the two cycles. Their product is the identity: each one undoes the other, and each is the <b>transpose</b> of the other.</li>
+        <li>Read the table of 36 products. Every entry is one of the six, and every row contains each of the six exactly once. That is what being a <b>group</b> looks like.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="prose">
+    <h3>The whole lecture in one table</h3>
+  </div>
+  <div class="tablewrap">
+    <table class="t">
+      <thead><tr><th>Lecture idea</th><th>In plain words</th><th>What it is in a robot</th></tr></thead>
+      <tbody>
+        <tr><td>(AB)⁻¹ = B⁻¹A⁻¹</td><td>Undo the last action first: shoes off before socks</td><td>Retracing a chain of moves; undoing a chain of coordinate transforms</td></tr>
+        <tr><td>(Aᵀ)⁻¹ = (A⁻¹)ᵀ</td><td>Invert and transpose in either order</td><td>One factorization of the Jacobian serves velocities (J) and forces (Jᵀ)</td></tr>
+        <tr><td>A = LU</td><td>Elimination saved as a lower and an upper triangular matrix</td><td>Work done once before the control loop starts</td></tr>
+        <tr><td>L</td><td>The multipliers, each where it was used</td><td>A logbook the controller replays on every new right-hand side</td></tr>
+        <tr><td>U</td><td>What elimination leaves, with the pivots on the diagonal</td><td>The system the controller back-substitutes each tick</td></tr>
+        <tr><td>A = LDU</td><td>Pivots pulled out into a diagonal matrix</td><td>For a symmetric mass matrix U is Lᵀ, so half the storage is saved</td></tr>
+        <tr><td>L against E</td><td>E mixes multipliers (the stray 10), L does not</td><td>Libraries store the multipliers in place of the zeros and never build E</td></tr>
+        <tr><td>Two triangular passes</td><td>L y = b going down, U x = y coming back up</td><td>Solving without ever forming an inverse</td></tr>
+        <tr><td>Cost n³/3 and n²</td><td>Factoring is expensive, each extra right-hand side is cheap</td><td>Whether the solve fits inside a 1 ms tick</td></tr>
+        <tr><td>Banded matrix</td><td>Non-zeros only near the diagonal, so L and U stay thin</td><td>Splines through waypoints, solved in about 3n operations</td></tr>
+        <tr><td>Permutation matrix</td><td>The identity with its rows re-ordered; inverse = transpose</td><td>Motor wiring and joint numbering, repaired with a transpose</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ practice -->
+<section class="concept" id="practice" data-toc="Practice problems">
+  <header class="concept-head">
+    <span class="concept-no">4.9</span>
+    <h2>Practice problems</h2>
+    <p class="concept-sub">Ten problems, from first steps to robot design. Work each on paper, then open the solution. Every answer has been checked by the code for this lecture.</p>
+  </header>
+  <div class="quiz problems">
+    <details><summary><span class="q">P1</span><span>You are told that <span class="m">A<sup>−1</sup></span> is <span data-mx="1 2; 0 1" data-cls="sm"></span> and <span class="m">B<sup>−1</sup></span> is <span data-mx="1 0; 3 1" data-cls="sm"></span>. Without finding <span class="m">A</span> or <span class="m">B</span>, write down <span class="m">(AB)<sup>−1</sup></span> and <span class="m">(A<sup class="u">T</sup>)<sup>−1</sup></span>.<em class="tag">inverses</em></span></summary>
+      <div class="a">
+        <p>Reverse the order: <span class="m">(AB)<sup>−1</sup> = B<sup>−1</sup>A<sup>−1</sup></span>.</p>
+        <div class="eq"><span data-mx="1 0; 3 1"></span><span data-mx="1 2; 0 1"></span><span class="op">=</span><span data-mx="1 2; 3 7"></span></div>
+        <p>Row 2 of the product is <span class="m">3·(1, 2) + 1·(0, 1) = (3, 7)</span>. For the transpose, invert first and then turn rows into columns: <span class="m">(A<sup class="u">T</sup>)<sup>−1</sup> = (A<sup>−1</sup>)<sup class="u">T</sup></span>.</p>
+        <p><strong>Answer:</strong> <span class="m">(AB)<sup>−1</sup></span> is <span data-mx="1 2; 3 7" data-cls="sm"></span> and <span class="m">(A<sup class="u">T</sup>)<sup>−1</sup></span> is <span data-mx="1 0; 2 1" data-cls="sm"></span>.</p>
+        <p>Follow-up: in the other order, <span class="m">A<sup>−1</sup>B<sup>−1</sup></span> is <span data-mx="7 2; 3 1" data-cls="sm"></span>, a different matrix. It is the inverse of <span class="m">BA</span>.</p>
+      </div></details>
+    <details><summary><span class="q">P2</span><span>Factor <span data-mx="3 1; 6 5" data-cls="sm"></span> into <span class="m">LU</span>, and then into <span class="m">LDU</span>.<em class="tag">A = LU</em></span></summary>
+      <div class="a">
+        <p>The pivot is 3 and the entry below it is 6, so the multiplier is 6 ÷ 3 = 2. Subtract 2 × row 1 from row 2: <span class="m">(6, 5) − 2·(3, 1) = (0, 3)</span>.</p>
+        <div class="eq"><span data-mx="3 1; 6 5"></span><span class="op">=</span><span data-mx="1 0; 2 1" data-cells="1.0:h3"></span><span data-mx="3 1; 0 3" data-pivots="0.0,1.1"></span><span class="op">=</span><span data-mx="1 0; 2 1" data-cells="1.0:h3"></span><span data-mx="3 0; 0 3" data-pivots="0.0,1.1"></span><span data-mx="1 1/3; 0 1"></span></div>
+        <p><strong>Answer:</strong> <span class="m">L</span> has the multiplier 2, <span class="m">U</span> has the pivots 3 and 3, and for <span class="m">LDU</span> each row of <span class="m">U</span> is divided by its pivot. Check row 2: <span class="m">2·(3, 1) + (0, 3) = (6, 5)</span>.</p>
+      </div></details>
+    <details><summary><span class="q">P3</span><span>Eliminate on <span data-mx="1 1 1; 2 4 5; 1 5 10" data-cls="sm"></span>. Write <span class="m">L</span> and <span class="m">U</span>. Then say what the entry in row 3, column 1 of <span class="m">E = E<sub>32</sub>E<sub>31</sub>E<sub>21</sub></span> is, and why it differs from the one in <span class="m">L</span>.<em class="tag">L against E</em></span></summary>
+      <div class="a">
+        <ol>
+          <li>Multiplier 2: row 2 − 2 × row 1 = (0, 2, 3).</li>
+          <li>Multiplier 1: row 3 − 1 × row 1 = (0, 4, 9).</li>
+          <li>Second pivot 2, multiplier 4 ÷ 2 = 2: row 3 − 2 × row 2 = (0, 0, 3).</li>
+        </ol>
+        <div class="eq"><span data-mx="1 0 0; 2 1 0; 1 2 1" data-cells="1.0:h3,2.0:h3,2.1:h3" data-cap="L"></span><span data-mx="1 1 1; 0 2 3; 0 0 3" data-pivots="0.0,1.1,2.2" data-cap="U"></span><span class="op">&nbsp;&nbsp;</span><span data-mx="1 0 0; -2 1 0; 3 -2 1" data-cells="2.0:h1" data-cap="E"></span></div>
+        <p><strong>Answer:</strong> <span class="m">L</span> holds the multipliers 2, 1, 2 as they were used. In <span class="m">E</span> the corner entry is <span class="m">l<sub>32</sub>·l<sub>21</sub> − l<sub>31</sub> = 2·2 − 1 = 3</span>, a number no step used. Row 3 lost 1 × row 1 directly and then gained 2 × 2 of it back through row 2.</p>
+      </div></details>
+    <details><summary><span class="q">P4</span><span>Use the <span class="m">L</span> and <span class="m">U</span> of P3 to solve <span class="m">A<b>x</b> = <b>b</b></span> for <span class="m"><b>b</b> = (3, 11, 16)</span>, and then for <span class="m"><b>b</b> = (1, 2, 1)</span>.<em class="tag">two passes</em></span></summary>
+      <div class="a">
+        <p><strong>First b.</strong> Forward with <span class="m">L</span>: <span class="m">y<sub>1</sub> = 3</span>; <span class="m">y<sub>2</sub> = 11 − 2·3 = 5</span>; <span class="m">y<sub>3</sub> = 16 − 1·3 − 2·5 = 3</span>. Back with <span class="m">U</span>: <span class="m">3x<sub>3</sub> = 3</span>, so <span class="m">x<sub>3</sub> = 1</span>; <span class="m">2x<sub>2</sub> + 3 = 5</span>, so <span class="m">x<sub>2</sub> = 1</span>; <span class="m">x<sub>1</sub> + 1 + 1 = 3</span>, so <span class="m">x<sub>1</sub> = 1</span>.</p>
+        <p><strong>Second b.</strong> Forward: <span class="m">y<sub>1</sub> = 1</span>; <span class="m">y<sub>2</sub> = 2 − 2 = 0</span>; <span class="m">y<sub>3</sub> = 1 − 1 − 0 = 0</span>. Back: <span class="m">x<sub>3</sub> = 0</span>, <span class="m">x<sub>2</sub> = 0</span>, <span class="m">x<sub>1</sub> = 1</span>.</p>
+        <p><strong>Answer:</strong> <span class="m"><b>x</b> = (1, 1, 1)</span> and then <span class="m"><b>x</b> = (1, 0, 0)</span>. The second could have been seen at once: that <span class="m"><b>b</b></span> is the first column of <span class="m">A</span>. No elimination was repeated for either.</p>
+      </div></details>
+    <details><summary><span class="q">P5</span><span>A system has <span class="m">n = 30</span> unknowns. Using the exact counts <span class="m">(n³ − n)/3</span> and <span class="m">n²</span>, how many operations does it take to solve it for 100 different right-hand sides, from scratch each time and with one factorization? What happens to the two counts when <span class="m">n</span> doubles to 60?<em class="tag">cost</em></span></summary>
+      <div class="a">
+        <p>Factor: <span class="m">(27,000 − 30)/3 = 8,990</span>. One right-hand side: <span class="m">30² = 900</span>.</p>
+        <p>From scratch: <span class="m">100 × (8,990 + 900) = 989,000</span>. Factor once: <span class="m">8,990 + 100 × 900 = 98,990</span>.</p>
+        <p><strong>Answer:</strong> 989,000 against 98,990, which is 10 times less work. At <span class="m">n = 60</span> the factoring costs 71,980, eight times as much, and each right-hand side costs 3,600, four times as much.</p>
+        <p>Follow-up: however many right-hand sides there are, the saving at <span class="m">n = 30</span> can never pass <span class="m">(8,990 + 900)/900</span>, about 11 times.</p>
+      </div></details>
+    <details><summary><span class="q">P6</span><span>Let <span class="m">P</span> be the cycle <span data-mx="0 1 0; 0 0 1; 1 0 0" data-cls="sm"></span>. Find <span class="m">P²</span>, <span class="m">P³</span> and <span class="m">P<sup>−1</sup></span>. How many 5 by 5 permutation matrices are there?<em class="tag">permutations</em></span></summary>
+      <div class="a">
+        <p><span class="m">P</span> puts the old rows in the order 2, 3, 1. Doing it twice gives the order 3, 1, 2. Doing it three times brings back 1, 2, 3.</p>
+        <div class="eq"><span class="m">P²</span><span class="op">=</span><span data-mx="0 0 1; 1 0 0; 0 1 0"></span><span class="op">&nbsp;&nbsp;</span><span class="m">P³ = I</span></div>
+        <p><strong>Answer:</strong> since <span class="m">P·P² = I</span>, the inverse of <span class="m">P</span> is <span class="m">P²</span>. Turn the rows of <span class="m">P</span> into columns and you get the same matrix, as the rule <span class="m">P<sup>−1</sup> = P<sup class="u">T</sup></span> promises. There are 5 × 4 × 3 × 2 × 1 = 120 permutation matrices of size 5.</p>
+      </div></details>
+    <details><summary><span class="q">P7</span><span>A rover starts at the origin facing along the x axis. Move A: drive 2 m forward. Move B: turn 90° to the left, then drive 1 m. Where is it? Then follow both undo orders and say where each one leaves it.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>After A it is at (2, 0). After B it has turned to face up the y axis and driven to <strong>(2, 1)</strong>.</p>
+        <p><strong>Undo B, then A.</strong> Back up 1 m to (2, 0), turn 90° right to face along x again, back up 2 m to (0, 0). Home.</p>
+        <p><strong>Undo A, then B.</strong> Back up 2 m, but the rover is still facing up the y axis, so it reaches (2, −1). Then undo B: back up 1 m to (2, −2) and turn 90° right.</p>
+        <p><strong>Answer:</strong> the right order ends at (0, 0). The wrong order ends at (2, −2), which is 2.83 m from home, with the correct heading and the wrong position.</p>
+        <p>Follow-up: without the turn in B, both moves are drives along the x axis and either order ends at home.</p>
+      </div></details>
+    <details><summary><span class="q">P8</span><span>A controller may spend 20,000 operations per tick on solving <span class="m">A<b>x</b> = <b>b</b></span>, and the matrix is fixed. The system has <span class="m">n = 60</span>. Does the solve fit if elimination is repeated every tick? Does it fit with stored factors? What is the largest <span class="m">n</span> each way?<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>From scratch: <span class="m">(60³ − 60)/3 + 60² = 71,980 + 3,600 = 75,580</span>. That is almost four ticks' worth, so it does not fit.</p>
+        <p>With <span class="m">L</span> and <span class="m">U</span> stored: <span class="m">60² = 3,600</span>, which is 18% of the budget. It fits easily.</p>
+        <p><strong>Answer:</strong> only the factored solve fits. With stored factors the limit is <span class="m">n² ≤ 20,000</span>, so <span class="m">n = 141</span>. From scratch the limit is <span class="m">n = 38</span>, where the cost is 19,722. At <span class="m">n = 39</span> it is 21,281.</p>
+        <p>Follow-up: the 71,980 operations of factoring still have to be done once, before the loop starts, when there is no deadline.</p>
+      </div></details>
+    <details><summary><span class="q">P9</span><span>A lifting axis must pass through the heights 0, 5, 5, 0 at one-second intervals, starting and ending with zero acceleration. Find the accelerations <span class="m">M<sub>1</sub></span>, <span class="m">M<sub>2</sub></span> at the two inner waypoints. Then the third height is changed to 10. Find them again with as little work as possible.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>Two inner waypoints give two equations, <span class="m">4M<sub>1</sub> + M<sub>2</sub> = r<sub>1</sub></span> and <span class="m">M<sub>1</sub> + 4M<sub>2</sub> = r<sub>2</sub></span>. Factor the matrix once: the multiplier is 1/4 and the second pivot is <span class="m">4 − 1/4 = 15/4</span>.</p>
+        <div class="eq"><span data-mx="4 1; 1 4"></span><span class="op">=</span><span data-mx="1 0; 1/4 1" data-cells="1.0:h3"></span><span data-mx="4 1; 0 15/4" data-pivots="0.0,1.1"></span></div>
+        <p><strong>Heights 0, 5, 5, 0.</strong> Right-hand side: <span class="m">6(0 − 10 + 5) = −30</span> and <span class="m">6(5 − 10 + 0) = −30</span>. Forward: <span class="m">y<sub>1</sub> = −30</span>, <span class="m">y<sub>2</sub> = −30 + 30/4 = −22.5</span>. Back: <span class="m">M<sub>2</sub> = −22.5 ÷ 3.75 = −6</span>, <span class="m">M<sub>1</sub> = (−30 + 6)/4 = −6</span>.</p>
+        <p><strong>Heights 0, 5, 10, 0.</strong> Only the right-hand side changes: <span class="m">6(0 − 10 + 10) = 0</span> and <span class="m">6(5 − 20 + 0) = −90</span>. Forward: <span class="m">y<sub>1</sub> = 0</span>, <span class="m">y<sub>2</sub> = −90</span>. Back: <span class="m">M<sub>2</sub> = −90 ÷ 3.75 = −24</span>, <span class="m">M<sub>1</sub> = (0 + 24)/4 = 6</span>.</p>
+        <p><strong>Answer:</strong> (−6, −6), then (6, −24). The second solve reused <span class="m">L</span> and <span class="m">U</span> untouched. Raising one waypoint quadrupled the acceleration demanded there, which is the kind of thing a planner must check against the motor's limit.</p>
+      </div></details>
+    <details><summary><span class="q">P10</span><span>A controller sends the commands (5, 7, 9) on outputs 1, 2, 3, meant for motors 1, 2, 3. A cabling mistake gives motor 1 the signal from output 3, motor 2 the signal from output 1, and motor 3 the signal from output 2. Write the matrix <span class="m">P</span> of the mistake. What do the motors receive, and what should the software send to cancel the mistake?<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>Row 1 of <span class="m">P</span> picks out signal 3, row 2 picks out signal 1, row 3 picks out signal 2:</p>
+        <div class="eq"><span class="m">P</span><span class="op">=</span><span data-mx="0 0 1; 1 0 0; 0 1 0"></span><span class="op">&nbsp;&nbsp;</span><span class="m">P<sup class="u">T</sup></span><span class="op">=</span><span data-mx="0 1 0; 0 0 1; 1 0 0"></span></div>
+        <p>The motors receive <span class="m">P(5, 7, 9) = (9, 5, 7)</span>. To cancel the cables, send the commands through the inverse first, and the inverse of a permutation is its transpose: <span class="m">P<sup class="u">T</sup>(5, 7, 9) = (7, 9, 5)</span>.</p>
+        <p><strong>Answer:</strong> send (7, 9, 5). The cables turn it into <span class="m">P(7, 9, 5) = (5, 7, 9)</span>, which is what was meant.</p>
+        <p>Follow-up: if the mistake had been a plain exchange of two cables, the repair matrix would be the mistake itself, because an exchange is its own inverse.</p>
+      </div></details>
+  </div>
+</section>
+
+<!-- ============================================================ check -->
+<section class="concept" id="check" data-toc="Check yourself">
+  <header class="concept-head">
+    <span class="concept-no">4.10</span>
+    <h2>Check yourself</h2>
+    <p class="concept-sub">Answer in your head first, then open each one.</p>
+  </header>
+  <div class="quiz">
+    <details><summary><span class="q">Q1</span><span>What is <span class="m">(ABC)<sup>−1</sup></span>, and what everyday picture does Strang use for the rule?</span></summary>
+      <div class="a"><p><span class="m">C<sup>−1</sup>B<sup>−1</sup>A<sup>−1</sup></span>: the inverses in reverse order. Socks go on before shoes, so shoes come off before socks.</p></div></details>
+    <details><summary><span class="q">Q2</span><span>In <span class="m">A = LU</span>, what is on the diagonal of <span class="m">L</span>, what is below it, and what is on the diagonal of <span class="m">U</span>?</span></summary>
+      <div class="a"><p>Ones on the diagonal of <span class="m">L</span>. The multipliers below it, each in the position of the entry it cleared. The pivots on the diagonal of <span class="m">U</span>. In <span class="m">A = LDU</span> the pivots move into <span class="m">D</span> and <span class="m">U</span> gets ones as well.</p></div></details>
+    <details><summary><span class="q">Q3</span><span>Elimination on a 3 by 3 matrix used the multipliers <span class="m">l<sub>21</sub> = 3</span>, <span class="m">l<sub>31</sub> = 0</span>, <span class="m">l<sub>32</sub> = 2</span> and no row exchanges. Write <span class="m">L</span> without any calculation.</span></summary>
+      <div class="a"><p>Put each multiplier where it was used: <span data-mx="1 0 0; 3 1 0; 0 2 1" data-cls="sm"></span>. This is the matrix of Lecture 2's example. The matrix <span class="m">E</span> for the same steps has a 6 in its corner, which is 2 × 3.</p></div></details>
+    <details><summary><span class="q">Q4</span><span>Why does <span class="m">E</span> contain a number that no elimination step used, while <span class="m">L</span> does not?</span></summary>
+      <div class="a"><p><span class="m">E</span> applies the steps in the order they happen, so a later step acts on a row that an earlier step has already changed, and the multipliers get multiplied together. <span class="m">L</span> rebuilds each row of <span class="m">A</span> from finished rows of <span class="m">U</span>, so each multiplier is used once, on its own.</p></div></details>
+    <details><summary><span class="q">Q5</span><span>A matrix doubles in size. By what factor does the cost of factoring grow, and the cost of solving for one more right-hand side?</span></summary>
+      <div class="a"><p>Factoring costs about <span class="m">n³/3</span>, so it grows 8 times. Each right-hand side costs <span class="m">n²</span>, so it grows 4 times. The bigger the system, the more it pays to factor once.</p></div></details>
+    <details><summary><span class="q">Q6</span><span>A colleague's control code computes <span class="m">A<sup>−1</sup></span> once and multiplies it by <span class="m"><b>b</b></span> every tick. What would you change, and why?</span></summary>
+      <div class="a"><p>Store <span class="m">L</span> and <span class="m">U</span> in place of the inverse and do the two triangular passes each tick. The inverse costs about three times as much to build, each tick costs the same <span class="m">n²</span> either way, and the two passes are usually more accurate.</p></div></details>
+    <details><summary><span class="q">Q7</span><span>In Lab 4.4, why does dragging a waypoint never cause a new factorization?</span></summary>
+      <div class="a"><p>The spline matrix contains only fours and ones. It depends on how many waypoints there are and on nothing else. The waypoint positions appear only on the right-hand side, so a drag changes the right-hand side and the stored <span class="m">L</span> and <span class="m">U</span> still apply.</p></div></details>
+  </div>
+
+  <div class="note say">
+    <i data-ic="pen"></i>
+    <span class="note-title">For your article</span>
+    <div class="note-body">
+      <p><strong>One-line summary:</strong> elimination is work you can keep. Stored as L and U, it turns every later solve into two quick triangular passes.</p>
+      <p><strong>A robot sentence you can reuse:</strong> a controller factors its matrix once, before the loop starts, and after that each tick only replays the logbook on fresh sensor readings.</p>
+      <p><strong>Good figures to capture:</strong> Lab 4.2 after the wrong undo, with the rover stranded away from home; Lab 4.3 at n = 100 and k = 1,000; Lab 4.4 with the dot patterns of T, L and U beside the path.</p>
+      <p>The full notes, worked numbers and references for this lecture are in <a href="article/04-factorization-into-a-lu.md">article/04-factorization-into-a-lu.md</a>, and runnable code is in <a href="code/l04_lu.py">code/l04_lu.py</a>.</p>
+    </div>
+  </div>
+</section>
+
+</article>
+</div>
+</main>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/la.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/plot.js"></script>
+<script src="assets/js/robots.js"></script>
+<script src="assets/js/lectures/l4.js"></script>
+</body>
+</html>

@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lecture 6 · Column Space and Nullspace</title>
+<meta name="description" content="Subspaces, the column space and the nullspace, taught from scratch with a three-link robot arm: what the hand can do, and how the joints can move while the hand stays still.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
+<link rel="stylesheet" href="assets/css/mit.css">
+<style>
+/* page-specific pieces for Lecture 6; every colour comes from the shared tokens */
+.dep { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .03em; color: var(--chalk-2); }
+.dep span { display: inline-flex; align-items: center; gap: 7px; padding: 6px 9px; border: 1px solid var(--board-rule); background: var(--board-2); line-height: 1.2; }
+.dep span::before { content: ""; flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--k, var(--chalk)); }
+.dep .k1 { --k: var(--s1); } .dep .k2 { --k: var(--s2); } .dep .k4 { --k: var(--s4); }
+.dep b { color: var(--chalk); font-weight: 500; }
+.bvec { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: 1.14em; color: var(--s3); }
+.bvec .num-in { width: 2.9em; }
+.eqg { display: inline-flex; align-items: center; gap: .35em; margin: 0 .5em; }
+.lab-math .step-text { margin-top: 2px; }
+.robolink-body ul { display: grid; gap: 6px; }
+</style>
+</head>
+<body>
+<main data-lecture="6">
+
+<section class="lec-hero">
+  <div class="wrap">
+    <div class="lec-num">06<i>.</i></div>
+    <div class="lec-kicker label"><span class="bars"></span><span>MIT 18.06 · Lecture 6</span><span><i data-ic="clock"></i> 46:01</span></div>
+    <h1>Column Space and Nullspace</h1>
+    <p class="lec-lede">Every matrix carries two subspaces, and they answer the two questions an engineer asks. The <strong>column space</strong> says what the matrix can produce. The <strong>nullspace</strong> says what it cannot see. For a robot arm they are "what the hand can do" and "how the joints can move while the hand stays still". The robot of this lecture is a three-link arm, which has one joint more than it needs.</p>
+    <div class="lec-meta">
+      <a class="btn primary" data-ocw="video" href="#"><i data-ic="video"></i><span>Watch the lecture on OCW</span></a>
+      <a class="btn" data-ocw="summary" href="#"><i data-ic="book"></i><span>Lecture summary</span></a>
+      <a class="btn" href="article/06-column-space-and-nullspace.md"><i data-ic="pen"></i><span>Article notes</span></a>
+    </div>
+  </div>
+</section>
+
+<div class="wrap lec-layout">
+<nav class="toc"></nav>
+<article class="lec-body">
+
+<!-- ============================================================ 6.0 -->
+<section class="concept" id="start" data-toc="Start here: one matrix, two questions">
+  <header class="concept-head">
+    <span class="concept-no">6.0</span>
+    <h2>Start here: one matrix, two questions</h2>
+    <p class="concept-sub">What this lecture is for, and the four ideas you need to bring with you.</p>
+  </header>
+  <div class="prose">
+    <p class="big">Lecture 1 ended by asking whether <span class="m">A<b>x</b> = <b>b</b></span> can be solved for every right-hand side <span class="m"><b>b</b></span>. This lecture builds the tool that answers it. Every matrix comes with two special sets of vectors. One holds every <span class="m"><b>b</b></span> the matrix can produce. The other holds every <span class="m"><b>x</b></span> the matrix wipes out to zero.</p>
+    <p>The two sets are called the column space and the nullspace. Both are subspaces, a word from the end of Lecture 5 that section 6.1 reviews. Here is everything else you need:</p>
+    <ul>
+      <li>A <span class="term">vector</span> is a list of numbers, such as (1, 2, 3, 4). Picture it as an arrow that starts at the <span class="term">origin</span>, the point where every number is zero.</li>
+      <li><span class="m"><b class="u">R</b><sup>n</sup></span> means "all vectors with <span class="m">n</span> numbers in them". <span class="m"><b class="u">R</b><sup>2</sup></span> is a flat sheet of paper. <span class="m"><b class="u">R</b><sup>3</sup></span> is the room you are sitting in. <span class="m"><b class="u">R</b><sup>4</sup></span> has four numbers in each vector. Nobody can draw it, but the arithmetic is the same.</li>
+      <li>A <span class="term">linear combination</span> of two vectors <span class="m"><b>v</b></span> and <span class="m"><b>w</b></span> is <span class="m">c<b>v</b> + d<b>w</b></span>: stretch each one by a number, then add the results.</li>
+      <li>Multiplying a matrix by a vector gives a linear combination of the matrix's columns. The entries of <span class="m"><b>x</b></span> say how much of each column to take. That was the column picture of Lecture 1.</li>
+    </ul>
+    <p>The whole lecture runs on one matrix. It has four rows and three columns, so <span class="m">A<b>x</b> = <b>b</b></span> is four equations in three unknowns.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's matrix</span>
+    <div class="eq">
+      <span class="m">A<b>x</b> =</span>
+      <span data-mx="1 1 2; 2 1 3; 3 1 4; 4 1 5" data-cols="0:h1,1:h2,2:h4" data-cap="A"></span>
+      <span data-mx="x₁; x₂; x₃" data-cap="x"></span>
+      <span class="op">=</span>
+      <span class="m">x<sub>1</sub></span><span data-mx="1; 2; 3; 4" data-cols="0:h1"></span><span class="op">+</span>
+      <span class="m">x<sub>2</sub></span><span data-mx="1; 1; 1; 1" data-cols="0:h2"></span><span class="op">+</span>
+      <span class="m">x<sub>3</sub></span><span data-mx="2; 3; 4; 5" data-cols="0:h4"></span>
+    </div>
+    <p>Three columns, each with four entries. Keep an eye on the <span class="hl4">third column</span>. It is hiding something, and section 6.5 finds it.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="robot"></i>Robotics link<em>why a robot cares</em></div>
+    <div class="robolink-body">
+      <h3>Every robot matrix raises the same two questions</h3>
+      <p>A robot's matrix turns motor commands into motion, or positions into sensor readings. An engineer asks two things about it. <em>What can come out?</em> That set is the column space. <em>What can go in and leave no trace on the output?</em> That set is the nullspace.</p>
+      <p>The robot of this lecture is an arm with three joints that works in a flat plane. Two numbers are enough to say how its hand is moving, so the arm has one joint more than the job needs. Its column space is everything the hand can do. Its nullspace is every way the joints can move while the hand stays exactly where it is.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 6.1 -->
+<section class="concept" id="subspace" data-toc="What makes a subspace">
+  <header class="concept-head">
+    <span class="concept-no">6.1</span>
+    <h2>What makes a subspace</h2>
+    <p class="concept-sub">A short review of the idea Lecture 5 ended on.</p>
+  </header>
+  <div class="prose">
+    <p>A <span class="term">vector space</span> is a set of vectors you cannot escape from by adding or stretching. Two rules must both hold.</p>
+    <ul>
+      <li><strong>Closed under addition.</strong> If <span class="m"><b>v</b></span> and <span class="m"><b>w</b></span> are in the set, then <span class="m"><b>v</b> + <b>w</b></span> is in the set.</li>
+      <li><strong>Closed under multiplication by a number.</strong> If <span class="m"><b>v</b></span> is in the set, then <span class="m">c<b>v</b></span> is in the set for every number <span class="m">c</span>.</li>
+    </ul>
+    <p>The two rules fold into one test. Take any <span class="m"><b>v</b></span> and <span class="m"><b>w</b></span> from the set and any two numbers <span class="m">c</span> and <span class="m">d</span>. The combination <span class="m">c<b>v</b> + d<b>w</b></span> must still be in the set. In short: <strong>every linear combination stays inside</strong>.</p>
+    <p>A <span class="term">subspace</span> is a vector space that sits inside a bigger one. Strang works inside <span class="m"><b class="u">R</b><sup>3</sup></span>, where the subspaces are easy to list:</p>
+    <ul>
+      <li>all of <span class="m"><b class="u">R</b><sup>3</sup></span>;</li>
+      <li>any <span class="term">plane</span> through the origin, which the lecture calls <span class="m">P</span>;</li>
+      <li>any <span class="term">line</span> through the origin, which the lecture calls <span class="m">L</span>;</li>
+      <li>the zero vector on its own.</li>
+    </ul>
+    <p>Why "through the origin" every time? Put <span class="m">c = 0</span> and <span class="m">d = 0</span> in the test. The combination is the zero vector, so the zero vector has to be in the set. A plane that misses the origin fails before you have tried anything else.</p>
+  </div>
+  <div class="work">
+    <span class="label">Trying the test on a plane and a line</span>
+    <p>The lecture draws <span class="m">P</span> and <span class="m">L</span> without numbers. This page picks a definite pair so that everything can be checked: <span class="m">P</span> is every vector of the form <span class="m">(x, y, 0)</span>, and <span class="m">L</span> is every multiple of <span class="m">(1, 1, 1)</span>.</p>
+    <div class="eq wrapok">
+      <span class="m">3 (2, −1, 0) − 2 (−1, 3, 0) = (8, −9, 0)</span><span class="op">&nbsp;&nbsp;&nbsp;</span><span class="m">3 (1, 1, 1) − 5 (1, 1, 1) = (−2, −2, −2)</span>
+    </div>
+    <p>The first result still ends in 0, so it is still in <span class="m">P</span>. The second is still a multiple of <span class="m">(1, 1, 1)</span>, so it is still in <span class="m">L</span>. No choice of numbers can break out of either set.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="vector"></i>Robotics link<em>sets of motions</em></div>
+    <div class="robolink-body">
+      <h3>The velocities a robot can produce form a subspace</h3>
+      <p>Suppose a robot can move with velocity <span class="m"><b>v</b></span> and can also move with velocity <span class="m"><b>w</b></span>. Run the motors for the first at <span class="m">c</span> times their speed and the motors for the second at <span class="m">d</span> times theirs, and the robot moves with velocity <span class="m">c<b>v</b> + d<b>w</b></span>. Switch everything off and you get the zero vector. So the set of velocities open to a robot at one moment passes the test. It is a subspace.</p>
+      <p>One honest limit: a subspace has no edges, and a real motor has a top speed. The subspace records which <em>directions</em> of motion exist. How far along them the robot can go is a separate question.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 6.2 -->
+<section class="concept" id="union-intersection" data-toc="Union and intersection">
+  <header class="concept-head">
+    <span class="concept-no">6.2</span>
+    <h2>Union and intersection</h2>
+    <p class="concept-sub">Two ways to make one set out of a plane and a line. Only one of them gives a subspace.</p>
+  </header>
+  <div class="prose">
+    <p>Take the plane <span class="m">P</span> and the line <span class="m">L</span>. There are two natural ways to combine them into a single set.</p>
+    <ul>
+      <li>The <span class="term">union</span>, written <span class="m">P ∪ L</span>: every vector that is in <span class="m">P</span>, or in <span class="m">L</span>, or in both.</li>
+      <li>The <span class="term">intersection</span>, written <span class="m">P ∩ L</span>: only the vectors that are in both at once.</li>
+    </ul>
+    <p>Strang asks the same question of each. Is it a subspace?</p>
+    <h3>The union fails</h3>
+    <p>Pick a vector <span class="m"><b>v</b></span> from the plane and a vector <span class="m"><b>w</b></span> from the line. Both belong to the union. Now add them. The sum usually lies in neither the plane nor the line, so it has left the union. The first rule is broken, and one broken rule is enough.</p>
+  </div>
+  <div class="work">
+    <span class="label">One sum that escapes</span>
+    <div class="eq">
+      <span data-mx="2; -1; 0" data-cols="0:h1" data-cap="v, in P"></span><span class="op">+</span>
+      <span data-mx="1; 1; 1" data-cols="0:h2" data-cap="w, in L"></span><span class="op">=</span>
+      <span data-mx="3; 0; 1" data-cols="0:h3" data-cap="in neither"></span>
+    </div>
+    <p>The third entry of the sum is 1, so it is off the plane. Its three entries are not equal, so it is off the line.</p>
+  </div>
+  <div class="prose">
+    <h3>The intersection passes, for any two subspaces</h3>
+    <p>Call the two subspaces <span class="m">S</span> and <span class="m">T</span>. Suppose <span class="m"><b>v</b></span> and <span class="m"><b>w</b></span> are both in <span class="m">S ∩ T</span>. Then:</p>
+    <ul>
+      <li><span class="m"><b>v</b> + <b>w</b></span> is in <span class="m">S</span>, because <span class="m"><b>v</b></span> and <span class="m"><b>w</b></span> are in <span class="m">S</span> and <span class="m">S</span> is a subspace;</li>
+      <li><span class="m"><b>v</b> + <b>w</b></span> is in <span class="m">T</span>, for the same reason;</li>
+      <li>so <span class="m"><b>v</b> + <b>w</b></span> is in both, which is what being in <span class="m">S ∩ T</span> means.</li>
+    </ul>
+    <p>Swap <span class="m"><b>v</b> + <b>w</b></span> for <span class="m">c<b>v</b></span> and the same three lines prove the second rule. The argument never asked what <span class="m">S</span> and <span class="m">T</span> look like. That is why it holds for every pair of subspaces, in any number of dimensions.</p>
+    <p>For a plane and a line the intersection is usually tiny: the zero vector alone. If the line happens to lie inside the plane, the intersection is the whole line. Either way it is a subspace.</p>
+  </div>
+
+  <div class="lab board" id="lab-union">
+    <div class="lab-head"><span class="lab-tag">LAB 6.1</span><h3>Add a vector from the plane to a vector from the line</h3><i data-ic="plane"></i></div>
+    <p class="lab-intro">The red sheet is the plane <b>P</b> and the blue line is <b>L</b>. Slide <b>v</b> around inside the plane and <b>w</b> along the line, and watch where the amber sum lands. Drag the picture to turn it.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="sq" aria-label="A plane and a line through the origin, with one vector from each and their sum"></canvas>
+        <div class="lab-caption"><span class="key k1">v, in the plane P</span><span class="key k2">w, on the line L</span><span class="key k3">v + w</span><span><i data-ic="drag"></i> drag to turn</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Where is the line?</span><div data-slot="tilt"></div></div>
+        <div class="lab-group" data-slot="sliders"></div>
+        <div data-slot="readouts"></div>
+        <div data-slot="union"></div>
+        <div data-slot="inter"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Leave the line sticking out of the plane and move all three sliders. Unless <b>v</b> or <b>w</b> is zero, the sum is off the plane and off the line. <b>The union is not closed under addition.</b></li>
+        <li>Set <b>w</b> to 0, then set <b>v</b> to (0, 0) instead. Those are the only ways to keep the sum inside the union, and they show what the plane and line share: the zero vector, and nothing else.</li>
+        <li>Choose <b>L lies inside P</b>. The line swings down into the plane, every sum stays in the plane, and the intersection grows from one point to the whole line.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="gear"></i>Robotics link<em>two machines</em></div>
+    <div class="robolink-body">
+      <h3>The motions two machines share, and the motions they do not</h3>
+      <p>A table-top stage can slide a part along <span class="m">x</span> and along <span class="m">y</span>. A wall-mounted gantry can slide it along <span class="m">x</span> and along <span class="m">z</span>. Each machine's set of motions is a plane through the origin, so each is a subspace.</p>
+      <p><strong>Intersection: the motions both can make.</strong> Only sliding along <span class="m">x</span>, which is every multiple of <span class="m">(1, 0, 0)</span>. A line through the origin, and a subspace. If a job has to be handed from one machine to the other in mid-move, this is the set of moves that survive the handover.</p>
+      <p><strong>Union: the motions at least one of them can make.</strong> Take <span class="m">(0, 1, 0)</span> from the table and <span class="m">(0, 0, 1)</span> from the gantry. Their sum is <span class="m">(0, 1, 1)</span>, and neither machine can do that. You cannot add a motion of one robot to a motion of another and expect either robot to perform the sum.</p>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <i data-ic="warn"></i>
+    <span class="note-title">Watch out</span>
+    <div class="note-body"><p>Two subspaces always share at least the zero vector, so their intersection is never empty. And a union of two subspaces is a subspace only in the dull case where one of them already contains the other.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 6.3 -->
+<section class="concept" id="column-space" data-toc="The column space">
+  <header class="concept-head">
+    <span class="concept-no">6.3</span>
+    <h2>The column space</h2>
+    <p class="concept-sub">Everything a matrix can produce.</p>
+  </header>
+  <div class="prose">
+    <p>Now the first of the two subspaces that belong to a matrix. Take the columns of <span class="m">A</span>. Form every linear combination of them. The set of all the results is the <span class="term">column space</span> of <span class="m">A</span>, written <span class="m">C(A)</span>. People also say that the columns <span class="term">span</span> the column space.</p>
+  </div>
+  <div class="work">
+    <span class="label">The column space of the lecture's matrix</span>
+    <div class="eq">
+      <span class="m">C(A) = every vector of the form</span>
+      <span class="m">x<sub>1</sub></span><span data-mx="1; 2; 3; 4" data-cols="0:h1"></span><span class="op">+</span>
+      <span class="m">x<sub>2</sub></span><span data-mx="1; 1; 1; 1" data-cols="0:h2"></span><span class="op">+</span>
+      <span class="m">x<sub>3</sub></span><span data-mx="2; 3; 4; 5" data-cols="0:h4"></span>
+    </div>
+    <p>Here <span class="m">x<sub>1</sub></span>, <span class="m">x<sub>2</sub></span> and <span class="m">x<sub>3</sub></span> run over all numbers. Each choice gives one vector of the column space.</p>
+  </div>
+  <div class="prose">
+    <p><strong>It is a subspace</strong>, and the reason is built into the definition. Add two mixes of the columns and you get another mix of the columns. Stretch a mix and you get another mix. Nothing can leave.</p>
+    <p><strong>Where does it live?</strong> Each column has four entries, so each column is a vector in <span class="m"><b class="u">R</b><sup>4</sup></span>. The column space is therefore a subspace of <span class="m"><b class="u">R</b><sup>4</sup></span>.</p>
+    <p><strong>How much of <span class="m"><b class="u">R</b><sup>4</sup></span> does it cover?</strong> There are only three columns. Three arrows cannot fill a four-dimensional space, in the same way that two arrows cannot fill the room you are sitting in. So <span class="m">C(A)</span> is some smaller subspace inside <span class="m"><b class="u">R</b><sup>4</sup></span>. Section 6.5 finds out exactly how small.</p>
+  </div>
+
+  <div class="lab board" id="lab-colspace">
+    <div class="lab-head"><span class="lab-tag">LAB 6.2</span><h3>Is b in the column space?</h3><i data-ic="columns"></i></div>
+    <p class="lab-intro">First <b>build</b>: slide the three numbers in <b>x</b> and make <b>b</b> = A<b>x</b> out of the columns. Then <b>test</b>: type any <b>b</b> and let elimination decide whether a solution exists. Four dimensions cannot be drawn, so the picture keeps only the first three entries of every vector. Drag it to turn it.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="sq" aria-label="The three columns of A, cut to three entries, lying in one plane, with the vector b"></canvas>
+        <div class="lab-caption"><span class="key k1">column 1</span><span class="key k2">column 2</span><span class="key k4">column 3</span><span class="key k3">b</span><span>entries 1 to 3 only</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+        <div class="dep" aria-label="Facts about the columns of A"><span class="k1"><b>column 1</b> pivot column</span><span class="k2"><b>column 2</b> pivot column</span><span class="k4"><b>column 3</b> = column 1 + column 2</span></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">What to do</span><div data-slot="mode"></div></div>
+        <div class="lab-group" data-slot="build"></div>
+        <div class="lab-group" data-slot="test" hidden>
+          <span class="label">Right-hand side to test</span>
+          <div data-slot="presets"></div>
+          <div class="bvec" data-slot="bvec"></div>
+          <div data-slot="lift"></div>
+        </div>
+        <div data-slot="status"></div>
+        <div data-slot="readouts"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>In <b>Build b from x</b>, move the sliders anywhere you like. The amber point never leaves the plane. Every mix of the columns is in the column space, because that is how the column space is defined.</li>
+        <li>Switch to <b>Test any b</b> and load (1, 2, 3, 4), then (1, 1, 1, 1), then (2, 3, 4, 5). Each one is a column of A, so each is reachable and the solution can be read off without any algebra.</li>
+        <li>Load (1, 0, 0, 0). Elimination ends with the row 0 = 1. Now load (1, 2, 3, 4) again and push the lift slider. You are raising <b>b</b> off the plane, and the number that appears in row 3 is exactly how far you have raised it.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="arm"></i>Robotics link<em>what the hand can do</em></div>
+    <div class="robolink-body">
+      <h3>C(J) is every hand velocity the arm can produce right now</h3>
+      <p>The three-link arm has a matrix called the <span class="term">Jacobian</span>, written <span class="m">J</span>. It has two rows and three columns. Column 1 is the velocity of the hand when only the shoulder turns, at one radian per second. Column 2 is the same for the elbow, and column 3 for the wrist. Joint speeds go in, a hand velocity comes out:</p>
+      <div class="eq left"><span data-mx="hand_velocity" data-cols="0:h3" data-cls="sm"></span><span class="op">=</span><span class="m">q̇<sub>1</sub></span><span data-mx="column_1" data-cols="0:h1" data-cls="sm"></span><span class="op">+</span><span class="m">q̇<sub>2</sub></span><span data-mx="column_2" data-cols="0:h2" data-cls="sm"></span><span class="op">+</span><span class="m">q̇<sub>3</sub></span><span data-mx="column_3" data-cols="0:h4" data-cls="sm"></span></div>
+      <p>So <span class="m">C(J)</span> is the set of all hand velocities the arm can make in its present pose. Usually that is all of <span class="m"><b class="u">R</b><sup>2</sup></span>: any direction, any speed. Stretch the arm out straight and it shrinks to a single line, because then the hand can only move sideways. Lab 6.3 shows both cases.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 6.4 -->
+<section class="concept" id="which-b" data-toc="Which b can be reached?">
+  <header class="concept-head">
+    <span class="concept-no">6.4</span>
+    <h2>Which <b>b</b> can be reached?</h2>
+    <p class="concept-sub">The question Lecture 1 ended on, answered in one sentence.</p>
+  </header>
+  <div class="prose">
+    <p><strong>Does <span class="m">A<b>x</b> = <b>b</b></span> have a solution for every <span class="m"><b>b</b></span>?</strong> For this matrix, no. There are four equations and only three unknowns. Three columns cannot fill four-dimensional space, so most right-hand sides are out of reach.</p>
+    <p><strong>Which right-hand sides do allow a solution?</strong> Read the equation from left to right. The left side, <span class="m">A<b>x</b></span>, <em>is</em> a combination of the columns of <span class="m">A</span>. So the equation says "some combination of the columns equals <span class="m"><b>b</b></span>". That is true exactly when <span class="m"><b>b</b></span> is in the column space.</p>
+  </div>
+  <div class="work">
+    <span class="label">Right-hand sides that work, from the lecture</span>
+    <div class="eq wrapok">
+      <span class="eqg"><span class="m"><b>b</b> =</span><span data-mx="1; 2; 3; 4" data-cols="0:h1" data-cls="sm"></span><span class="m">gives <b>x</b> =</span><span data-mx="1; 0; 0" data-cls="sm"></span></span>
+      <span class="eqg"><span class="m"><b>b</b> =</span><span data-mx="1; 1; 1; 1" data-cols="0:h2" data-cls="sm"></span><span class="m">gives <b>x</b> =</span><span data-mx="0; 1; 0" data-cls="sm"></span></span>
+      <span class="eqg"><span class="m"><b>b</b> =</span><span data-mx="0; 0; 0; 0" data-cls="sm"></span><span class="m">gives <b>x</b> =</span><span data-mx="0; 0; 0" data-cls="sm"></span></span>
+    </div>
+    <p>The first <span class="m"><b>b</b></span> is column 1 itself, so take one of column 1 and none of the others. The second is column 2. The third is the zero vector, which is always reachable: take none of anything. Beyond these, pick any <span class="m"><b>x</b></span> you like and compute <span class="m">A<b>x</b></span>. Whatever comes out is a <span class="m"><b>b</b></span> that can be reached, because you have just reached it.</p>
+  </div>
+  <div class="work">
+    <span class="label">One that fails (this page's example)</span>
+    <div class="eq">
+      <span data-mx="1 1 2 1; 2 1 3 0; 3 1 4 0; 4 1 5 0" data-aug="1" data-cols="3:h3" data-cap="A beside b = (1, 0, 0, 0)"></span><span class="op">→</span>
+      <span data-mx="1 1 2 1; 0 -1 -1 -2; 0 0 0 1; 0 0 0 2" data-aug="1" data-pivots="0.0,1.1" data-rows="2:h1,3:h1" data-cap="after elimination"></span>
+    </div>
+    <p>Elimination, the method of Lecture 2, turns the last two equations into <span class="m">0 = 1</span> and <span class="m">0 = 2</span>. No <span class="m"><b>x</b></span> can satisfy those, so <span class="m">(1, 0, 0, 0)</span> is outside the column space. For a general <span class="m"><b>b</b></span> the same two rows read <span class="m">0 = b<sub>1</sub> − 2b<sub>2</sub> + b<sub>3</sub></span> and <span class="m">0 = 2b<sub>1</sub> − 3b<sub>2</sub> + b<sub>4</sub></span>. The vector <span class="m"><b>b</b></span> is in <span class="m">C(A)</span> exactly when both of those numbers are zero. Lab 6.2 runs this test for any <span class="m"><b>b</b></span> you type.</p>
+  </div>
+  <div class="note idea">
+    <i data-ic="idea"></i>
+    <span class="note-title">Key idea</span>
+    <div class="note-body"><p>A<b>x</b> = <b>b</b> can be solved exactly when <b>b</b> is in the column space of A. "Solvable" and "in the column space" are the same statement.</p></div>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="lidar"></i>Robotics link<em>more sensors than unknowns</em></div>
+    <div class="robolink-body">
+      <h3>Four readings for three unknowns: the readings have to agree</h3>
+      <p>The lecture's matrix is taller than it is wide. In a robot that shape appears whenever there are more sensor readings than quantities to work out. Here is one case. A robot stands in a room 6 m by 4 m, square to the walls, with one range sensor facing each wall. Every sensor sits the same unknown distance <span class="m">d</span> out from the robot's centre. The unknowns are <span class="m">x</span>, <span class="m">y</span> and <span class="m">d</span>: three numbers. The readings are four numbers.</p>
+      <div class="eq left">
+        <span data-mx="1 0 -1; -1 0 -1; 0 1 -1; 0 -1 -1" data-cls="sm" data-cap="S"></span>
+        <span data-mx="x; y; d" data-cls="sm"></span><span class="op">=</span>
+        <span data-mx="west; east_−_6; south; north_−_4" data-cols="0:h3" data-cls="sm" data-cap="b, from the readings"></span>
+      </div>
+      <p>An exact answer exists only if <span class="m"><b>b</b></span> lies in the column space of <span class="m">S</span>. For this matrix that comes down to one condition, <span class="m">b<sub>1</sub> + b<sub>2</sub> = b<sub>3</sub> + b<sub>4</sub></span>: the east-west pair of sensors and the north-south pair must tell the same story about <span class="m">d</span>. Perfect readings of 2.3, 3.3, 1.3 and 2.3 m pass, and give <span class="m">x = 2.5</span>, <span class="m">y = 1.5</span>, <span class="m">d = 0.2</span>. Let the north sensor read 5 cm long and the condition fails. The readings now contradict each other and no exact solution exists.</p>
+      <p>Real sensors are always a little off, so real readings almost never land in the column space. Least squares, much later in the course, deals with that by finding the nearest <span class="m"><b>b</b></span> that does.</p>
+      <p>For the arm, the same sentence reads: a commanded hand velocity can be produced exactly when it lies in <span class="m">C(J)</span>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 6.5 -->
+<section class="concept" id="pivot-columns" data-toc="Independent and pivot columns">
+  <header class="concept-head">
+    <span class="concept-no">6.5</span>
+    <h2>Independent columns and pivot columns</h2>
+    <p class="concept-sub">Does every column pull its weight?</p>
+  </header>
+  <div class="prose">
+    <p>Three columns went into <span class="m">C(A)</span>. Did all three contribute something? A set of columns is <span class="term">independent</span> when none of them is a combination of the others, so each one brings a direction the others cannot make. The lecture's columns fail that test:</p>
+  </div>
+  <div class="work">
+    <span class="label">The hidden relation</span>
+    <div class="eq">
+      <span data-mx="1; 2; 3; 4" data-cols="0:h1" data-cap="column 1"></span><span class="op">+</span>
+      <span data-mx="1; 1; 1; 1" data-cols="0:h2" data-cap="column 2"></span><span class="op">=</span>
+      <span data-mx="2; 3; 4; 5" data-cols="0:h4" data-cap="column 3"></span>
+    </div>
+    <p>Column 3 is already a combination of columns 1 and 2. Anything you can build with all three, you can build with the first two alone.</p>
+  </div>
+  <div class="prose">
+    <p>So column 3 adds nothing new. Throw it away and the column space does not shrink at all. Strang keeps columns 1 and 2 and calls them the <span class="term">pivot columns</span>: reading from left to right, they are the ones that bring a new direction. He points out that the choice is a convention. Columns 1 and 3 would do equally well, and so would columns 2 and 3. Any two of these three columns produce the same plane.</p>
+    <p>The name comes from elimination, which finds the pivot columns automatically. Lab 6.2 circles the two pivots in red, and Lecture 7 turns the idea into a method.</p>
+    <p>That settles the size of the column space. It is every combination of two independent vectors, <span class="m">(1, 2, 3, 4)</span> and <span class="m">(1, 1, 1, 1)</span>. Two independent directions make a plane. The number of independent directions is called the <span class="term">dimension</span>, so <span class="m">C(A)</span> is a <strong>two-dimensional subspace of <span class="m"><b class="u">R</b><sup>4</sup></span></strong>: a flat plane through the origin, sitting inside four-dimensional space.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="joint"></i>Robotics link<em>does every joint help?</em></div>
+    <div class="robolink-body">
+      <h3>A dependent column is a joint that gives the hand nothing new</h3>
+      <p>Take the three-link arm with its joints at 70°, −60° and −70° (section 6.8 works out its Jacobian). In that pose</p>
+      <div class="eq left"><span class="m"><span class="c4">column 3</span> = −0.40 × <span class="c1">column 1</span> + 0.81 × <span class="c2">column 2</span></span></div>
+      <p>Whatever hand velocity the wrist can make, the shoulder and elbow could have made together. For the job of moving the hand, joint 3 gives nothing that joints 1 and 2 could not already give.</p>
+      <p>This is no accident of the pose. The three columns of <span class="m">J</span> are arrows in a flat plane, and a flat plane has room for only two independent directions. A matrix with two rows and three columns always has a dependent column. The spare joint is far from wasted, though. The next section shows what it buys.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 6.6 -->
+<section class="concept" id="nullspace" data-toc="The nullspace">
+  <header class="concept-head">
+    <span class="concept-no">6.6</span>
+    <h2>The nullspace</h2>
+    <p class="concept-sub">Everything a matrix sends to zero.</p>
+  </header>
+  <div class="prose">
+    <p>The second subspace asks the opposite question. Forget <span class="m"><b>b</b></span>. Which vectors <span class="m"><b>x</b></span> does the matrix turn into the zero vector? The set of all solutions of <span class="m">A<b>x</b> = <b>0</b></span> is the <span class="term">nullspace</span> of <span class="m">A</span>, written <span class="m">N(A)</span>.</p>
+    <p><strong>Where does it live?</strong> The vector <span class="m"><b>x</b></span> has one entry for each column of <span class="m">A</span>, which makes three. So the nullspace is a set of vectors in <span class="m"><b class="u">R</b><sup>3</sup></span>. The column space was in <span class="m"><b class="u">R</b><sup>4</sup></span>. The two subspaces of one matrix live in different spaces, and it is the first thing to get straight. For a matrix with <span class="m">m</span> rows and <span class="m">n</span> columns, <span class="m">C(A)</span> is inside <span class="m"><b class="u">R</b><sup>m</sup></span> and <span class="m">N(A)</span> is inside <span class="m"><b class="u">R</b><sup>n</sup></span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">Finding the nullspace of the lecture's matrix</span>
+    <div class="eq">
+      <span data-mx="1 1 2; 2 1 3; 3 1 4; 4 1 5" data-cols="0:h1,1:h2,2:h4"></span>
+      <span data-mx="1; 1; -1" data-rows="0:h1,1:h2,2:h4"></span><span class="op">=</span>
+      <span data-mx="1; 2; 3; 4" data-cols="0:h1" data-cls="sm"></span><span class="op">+</span>
+      <span data-mx="1; 1; 1; 1" data-cols="0:h2" data-cls="sm"></span><span class="op">−</span>
+      <span data-mx="2; 3; 4; 5" data-cols="0:h4" data-cls="sm"></span><span class="op">=</span>
+      <span data-mx="0; 0; 0; 0"></span>
+    </div>
+    <p>The zero vector <span class="m">(0, 0, 0)</span> always solves <span class="m">A<b>x</b> = <b>0</b></span>. Is there anything else? Yes, and section 6.5 already found it. Column 1 plus column 2 minus column 3 is zero, so <span class="m"><b>x</b> = (1, 1, −1)</span> is a solution. So is <span class="m">(2, 2, −2)</span>, and <span class="m">(−5, −5, 5)</span>, and every multiple <span class="m">c (1, 1, −1)</span>.</p>
+  </div>
+  <div class="prose">
+    <p>The nullspace of this matrix is every multiple of <span class="m">(1, 1, −1)</span>. That is <strong>a line through the origin in <span class="m"><b class="u">R</b><sup>3</sup></span></strong>.</p>
+    <p>Notice that nothing new had to be computed. "Column 3 equals column 1 plus column 2" and "<span class="m">(1, 1, −1)</span> is in the nullspace" are one fact written twice. A relation between the columns <em>is</em> a non-zero vector in the nullspace. If the columns were independent, the nullspace would hold the zero vector and nothing more.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="nullspace"></i>Robotics link<em>self-motion</em></div>
+    <div class="robolink-body">
+      <h3>N(J) is every joint motion the hand cannot feel</h3>
+      <p>For the arm, <span class="m">J q̇ = <b>0</b></span> asks for joint speeds that add up to zero hand velocity. The joints turn, the elbow swings, and the hand stays exactly where it is. Roboticists call this <span class="term">self-motion</span>.</p>
+      <p>A three-joint arm doing a two-dimensional job always has at least a line of self-motions, because its Jacobian always has a dependent column. That is what the word <span class="term">redundant</span> means in robotics: more joints than the task needs.</p>
+      <p>You own a redundant arm. Put a fingertip on the table and keep it there. Your elbow is still free to swing up and down. That swing is a walk along a nullspace.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 6.7 -->
+<section class="concept" id="nullspace-proof" data-toc="Why N(A) is always a subspace">
+  <header class="concept-head">
+    <span class="concept-no">6.7</span>
+    <h2>Why the nullspace is always a subspace</h2>
+    <p class="concept-sub">A two-line proof that works for every matrix.</p>
+  </header>
+  <div class="prose">
+    <p>The name "nullspace" promises a subspace, so the two rules have to be checked. Suppose <span class="m"><b>v</b></span> and <span class="m"><b>w</b></span> are both in the nullspace. That means <span class="m">A<b>v</b> = <b>0</b></span> and <span class="m">A<b>w</b> = <b>0</b></span>.</p>
+  </div>
+  <div class="work">
+    <span class="label">The proof</span>
+    <div class="eq wrapok">
+      <span class="m">A(<b>v</b> + <b>w</b>) = A<b>v</b> + A<b>w</b> = <b>0</b> + <b>0</b> = <b>0</b></span><span class="op">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="m">A(c<b>v</b>) = c (A<b>v</b>) = c <b>0</b> = <b>0</b></span>
+    </div>
+    <p>The first line says the sum <span class="m"><b>v</b> + <b>w</b></span> is in the nullspace. The second says every multiple <span class="m">c<b>v</b></span> is in the nullspace. Both rules hold, so the nullspace is a subspace.</p>
+    <p>With the lecture's numbers: <span class="m"><b>v</b> = (2, 2, −2)</span> and <span class="m"><b>w</b> = (−5, −5, 5)</span> are both in <span class="m">N(A)</span>. Their sum is <span class="m">(−3, −3, 3)</span>, which is <span class="m">−3 (1, 1, −1)</span>, and <span class="m">A</span> sends it to <span class="m">(0, 0, 0, 0)</span>.</p>
+  </div>
+  <div class="prose">
+    <p>Each line leans on one property of matrix multiplication. A matrix times a sum is the sum of the products, and a matrix times a stretched vector is the stretched product. Those two properties are what the word "linear" in linear algebra refers to.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="loop"></i>Robotics link<em>mixing self-motions</em></div>
+    <div class="robolink-body">
+      <h3>Self-motions can be scaled, reversed and blended</h3>
+      <p>Because <span class="m">N(J)</span> is a subspace, a self-motion run at twice the speed is still a self-motion. Run it backwards, which is <span class="m">c = −1</span>, and it is still a self-motion. Add two self-motions together and the hand still does not move.</p>
+      <p>The practical consequence is large. A controller can add <em>any amount</em> of self-motion on top of <em>any</em> joint command, and the hand will not notice. That is how a redundant arm steers its elbow away from an obstacle while its hand carries on with the job.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 6.8 -->
+<section class="concept" id="robot" data-toc="The robot: a redundant arm">
+  <header class="concept-head">
+    <span class="concept-no">6.8</span>
+    <h2>The robot: what the hand can do, and the motion it cannot feel</h2>
+    <p class="concept-sub">One three-link arm, one Jacobian, both subspaces at once.</p>
+  </header>
+  <div class="prose">
+    <p>Now put both subspaces to work on one machine. The arm has three links, 1.6 m, 1.3 m and 1.0 m long, joined by a shoulder, an elbow and a wrist. It moves in a flat plane, and we care only about where the hand is. That takes two numbers, so the hand's velocity is a vector in <span class="m"><b class="u">R</b><sup>2</sup></span>. One simplification to keep in mind: a real arm works in three dimensions and usually has to aim its hand as well as place it.</p>
+    <h3>Where the Jacobian comes from</h3>
+    <p>Turn one joint a little and hold the others still. Everything beyond that joint swings round it like a door on its hinge. The hand moves at right angles to the line from that joint to the hand, and it moves faster the longer that line is. So column <span class="m">i</span> of <span class="m">J</span> is the arrow from joint <span class="m">i</span> to the hand, turned through a quarter of a circle. Three joints give three columns. A hand velocity has two components, so there are two rows.</p>
+  </div>
+  <div class="work">
+    <span class="label">One pose, worked out</span>
+    <p>Joint angles 70°, −60° and −70° put the hand at <span class="m">(2.327, 0.863)</span>. Each angle is measured from the link before it.</p>
+    <div class="eq">
+      <span data-mx="-0.863 0.640 0.866; 2.327 1.780 0.500" data-cols="0:h1,1:h2,2:h4" data-cap="J"></span>
+      <span data-mx="-0.299; 0.600; -0.742" data-rows="0:h1,1:h2,2:h4" data-cap="a vector in N(J)"></span><span class="op">=</span>
+      <span data-mx="0; 0" data-cols="0:h3" data-cap="hand velocity"></span>
+    </div>
+    <p>The entries of <span class="m">J</span> are in metres. Joint speeds in radians per second go in, and a hand velocity in metres per second comes out. Check the first row:</p>
+    <div class="eq wrapok"><span class="m">(−0.863)(−0.299)</span><span class="op">+</span><span class="m">(0.640)(0.600)</span><span class="op">+</span><span class="m">(0.866)(−0.742)</span><span class="op">=</span><span class="m">0.258 + 0.384 − 0.642</span><span class="op">=</span><span class="m">0</span></div>
+  </div>
+  <div class="prose">
+    <h3>Counting directions</h3>
+    <p>The number of independent columns of a matrix is called its <span class="term">rank</span>. Lecture 7 makes rank a central idea. For now it is a head count of the columns that matter.</p>
+    <ul>
+      <li>In this pose the rank is 2. Two independent arrows in a plane reach everywhere in it, so <span class="m">C(J)</span> is all of <span class="m"><b class="u">R</b><sup>2</sup></span> and has dimension 2. The hand can move in any direction.</li>
+      <li>There are three joints. Two directions of joint space are used up moving the hand, which leaves <span class="m">3 − 2 = 1</span>. So <span class="m">N(J)</span> has dimension 1: a line through the origin of joint-speed space. Every multiple of <span class="m">(−0.299, 0.600, −0.742)</span> moves the joints and leaves the hand alone.</li>
+    </ul>
+  </div>
+
+  <div class="lab board" id="lab-redundant">
+    <div class="lab-head"><span class="lab-tag">LAB 6.3</span><h3>The redundant arm: move the joints, keep the hand still</h3><i data-ic="arm"></i></div>
+    <p class="lab-intro">Pose the arm with the three sliders, or drag the <b>amber hand</b>. Then press <b>Run self-motion</b>. The joints follow the nullspace of J, the elbow and wrist swing, and the hand stays on its amber mark. The motion turns round whenever a joint reaches the end of its range.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="wide" aria-label="Three-link robot arm with the three columns of its Jacobian drawn at the hand"></canvas>
+        <div class="lab-caption"><span class="key k1">column 1, shoulder</span><span class="key k2">column 2, elbow</span><span class="key k4">column 3, wrist</span><span class="key k3">hand</span><span class="key kd">paths of elbow and wrist</span><span><i data-ic="drag"></i> drag the hand</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group" data-slot="sliders"></div>
+        <div class="lab-group" data-slot="speed"></div>
+        <div class="lab-row" data-slot="buttons"></div>
+        <div data-slot="readouts"></div>
+        <div data-slot="status"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Press <b>Run self-motion</b> and watch two readouts. The elbow travels a long way. The hand moves 0.00 mm. The joint speeds under the picture are always a multiple of one vector, and J times that vector is (0, 0).</li>
+        <li>Stop, drag the hand somewhere new, and run again. Every pose has its own Jacobian and so its own nullspace. Slide the speed below zero to travel the same line the other way.</li>
+        <li>Press <b>Straighten</b>. The three arrows at the hand line up. C(J) drops from a plane to a line, N(J) grows from a line to a plane, and the two dimensions still add up to 3.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="gripper"></i>Robotics link<em>why pay for a spare joint</em></div>
+    <div class="robolink-body">
+      <h3>The spare joint is what lets a robot work around things</h3>
+      <p>An arm with exactly as many joints as its task needs has very little choice of posture once the hand is placed. A redundant arm has a whole family of postures for the same hand position, and self-motion is the road between them.</p>
+      <p>It can reach round a pillar. It can back a joint away from the end of its travel. It can hold a tool tip perfectly still while it moves its elbow out of a person's way. In each case the task sees nothing, because the extra motion lies in the nullspace.</p>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <i data-ic="warn"></i>
+    <span class="note-title">Watch out</span>
+    <div class="note-body">
+      <p>Stretch the arm out straight, or fold it flat, and all three columns become parallel. The column space collapses from a plane to a line and the nullspace grows from a line to a plane. The hand loses a direction at the very moment the joints gain a useless one. Robot people call that pose a <strong>singularity</strong>.</p>
+      <p>A nullspace vector describes joint <em>speeds</em> at one instant. To keep the hand still over a long move, the robot has to recompute the nullspace as the pose changes. Lab 6.3 does that on every frame.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 6.9 -->
+<section class="concept" id="not-a-subspace" data-toc="Solutions of Ax = b">
+  <header class="concept-head">
+    <span class="concept-no">6.9</span>
+    <h2>The solutions of A<b>x</b> = <b>b</b> are not a subspace</h2>
+    <p class="concept-sub">Change the right-hand side from zero to anything else and the subspace is gone.</p>
+  </header>
+  <div class="prose">
+    <p>The solutions of <span class="m">A<b>x</b> = <b>0</b></span> form a subspace. It is tempting to guess that the solutions of <span class="m">A<b>x</b> = <b>b</b></span> do too, for any <span class="m"><b>b</b></span>. They do not, and one check is enough. Every subspace contains the zero vector. But <span class="m">A</span> times the zero vector is the zero vector, which is not <span class="m"><b>b</b></span>. So when <span class="m"><b>b</b></span> is not zero, the zero vector is not a solution, and the set of solutions cannot be a subspace.</p>
+  </div>
+  <div class="work">
+    <span class="label">The lecture's example, b = (1, 2, 3, 4)</span>
+    <div class="eq wrapok">
+      <span class="eqg"><span class="m">A</span><span data-mx="1; 0; 0" data-cols="0:h3" data-cls="sm"></span><span class="op">=</span><span data-mx="1; 2; 3; 4" data-cls="sm"></span></span>
+      <span class="eqg"><span class="m">A</span><span data-mx="0; -1; 1" data-cols="0:h3" data-cls="sm"></span><span class="op">=</span><span data-mx="1; 2; 3; 4" data-cls="sm"></span></span>
+      <span class="eqg"><span class="m">A</span><span data-mx="0; 0; 0" data-cls="sm"></span><span class="op">=</span><span data-mx="0; 0; 0; 0" data-cls="sm"></span></span>
+    </div>
+    <p>Two solutions are <span class="m">(1, 0, 0)</span> and <span class="m">(0, −1, 1)</span>. The zero vector is not one. Adding fails as well: the sum of the two solutions is <span class="m">(1, −1, 1)</span>, and <span class="m">A</span> sends that to <span class="m">(2, 4, 6, 8)</span>, which is <span class="m">2<b>b</b></span> and not <span class="m"><b>b</b></span>.</p>
+  </div>
+  <div class="prose">
+    <p>So what shape do the solutions make? Strang's answer: a line that does not pass through the origin. In bigger problems it can be a plane that misses the origin. Flat, like a subspace, but in the wrong place.</p>
+    <h3>A look ahead</h3>
+    <p>The two solutions above differ by <span class="m">(1, 0, 0) − (0, −1, 1) = (1, 1, −1)</span>, and that is the nullspace vector. It is no coincidence. Every solution of <span class="m">A<b>x</b> = <b>b</b></span> is one particular solution plus something from the nullspace. Here the full set is <span class="m">(1, 0, 0) + c (1, 1, −1)</span>: the nullspace line, picked up and shifted. This lecture only hints at the pattern. A later lecture of the course develops it properly.</p>
+  </div>
+
+  <div class="lab board" id="lab-shifted">
+    <div class="lab-head"><span class="lab-tag">LAB 6.4</span><h3>The solutions are the nullspace, shifted off the origin</h3><i data-ic="nullspace"></i></div>
+    <p class="lab-intro">The blue line is the nullspace of the lecture's matrix. The amber line is every solution of A<b>x</b> = <b>b</b>. One slider moves a point along each line at the same time. Drag the picture to turn it.</p>
+    <div class="lab-main">
+      <div class="lab-stage">
+        <canvas class="sq" aria-label="Two parallel lines in three dimensions: the nullspace through the origin and the solution line shifted away from it"></canvas>
+        <div class="lab-caption"><span class="key k2">nullspace, A x = 0</span><span class="key k3">solutions of A x = b</span><span class="key k1">the shift, one particular solution</span><span><i data-ic="drag"></i> drag to turn</span></div>
+        <div class="lab-math" data-slot="eq"></div>
+      </div>
+      <div class="lab-side">
+        <div class="lab-group"><span class="label">Jump to a solution from the lecture</span><div data-slot="presets"></div></div>
+        <div class="lab-group" data-slot="sliders"></div>
+        <div data-slot="status"></div>
+      </div>
+    </div>
+    <div class="lab-foot">
+      <span class="label"><i data-ic="flask"></i>Try this</span>
+      <ol>
+        <li>Slide <b>c</b>. The amber point runs along its line and A<b>x</b> stays at (1, 2, 3, 4). The blue point runs along the nullspace and A times it stays at zero. The red arrow from one to the other never changes.</li>
+        <li>Press the two lecture buttons in turn. (1, 0, 0) and (0, −1, 1) are two points of the same amber line, exactly one step of (1, 1, −1) apart.</li>
+        <li>Shrink <b>b</b> to zero. The amber line slides onto the blue one. The solutions form a subspace when <b>b</b> = 0 and at no other time.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="target"></i>Robotics link<em>choosing joint speeds</em></div>
+    <div class="robolink-body">
+      <h3>One wanted hand velocity, a whole line of ways to get it</h3>
+      <p>Ask the arm of section 6.8 for a hand velocity of <span class="m">(0.2, 0.1)</span> m/s. The equation <span class="m">J q̇ = <b>v</b></span> has more unknowns than equations, and it has infinitely many solutions: one particular solution plus any amount of self-motion. Three of them, in rad/s:</p>
+      <ul>
+        <li><span class="m">(−0.055, 0.099, 0.103)</span>, the shortest of all, with length 0.153;</li>
+        <li><span class="m">(−0.096, 0.182, 0)</span>, which holds the wrist still, with length 0.206;</li>
+        <li><span class="m">(−0.145, 0.279, −0.120)</span>, the shortest one plus 0.3 of self-motion, with length 0.337.</li>
+      </ul>
+      <p>All three give exactly the same hand velocity. In joint-speed space they lie on one straight line, parallel to <span class="m">N(J)</span> and missing the origin. That line is not a subspace, for the reason this section gave.</p>
+      <p>The robot gets to choose a point on the line. Most controllers start from the shortest solution, which keeps the joints as slow as possible, and then add a deliberate dose of self-motion when there is something to avoid.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 6.10 -->
+<section class="concept" id="two-ways" data-toc="Two ways to describe a subspace">
+  <header class="concept-head">
+    <span class="concept-no">6.10</span>
+    <h2>Two ways to describe a subspace</h2>
+    <p class="concept-sub">Build it up from vectors, or cut it down with equations.</p>
+  </header>
+  <div class="prose">
+    <p>Strang closes by pointing out that his two subspaces were made in opposite ways.</p>
+    <ul>
+      <li><strong>Build it up.</strong> Start with a few vectors and take all their combinations. That is how the column space was made. You are handed some building blocks and told: everything these can make.</li>
+      <li><strong>Cut it down.</strong> Start with the whole space and keep only the vectors that satisfy some equations. That is how the nullspace was made. Each row of <span class="m">A<b>x</b> = <b>0</b></span> is one condition, and only the vectors that pass every condition are kept.</li>
+    </ul>
+    <p>Any subspace can be described either way. Which description you are given depends on where the subspace came from, and a good deal of linear algebra is the work of turning one description into the other.</p>
+  </div>
+  <div class="work">
+    <span class="label">The same line, both ways</span>
+    <div class="eq wrapok">
+      <span class="m">built up: every multiple of (1, 1, −1)</span><span class="op">&nbsp;&nbsp;&nbsp;</span><span class="m">cut down: every <b>x</b> with x<sub>1</sub> + x<sub>3</sub> = 0 and x<sub>2</sub> + x<sub>3</sub> = 0</span>
+    </div>
+    <p>Both describe the nullspace of the lecture's matrix. The first names one vector that generates the line. The second gives two equations that the line satisfies. They are what is left of the four equations <span class="m">A<b>x</b> = <b>0</b></span> once elimination has removed the repeats.</p>
+  </div>
+  <div class="robolink">
+    <div class="robolink-tab"><i data-ic="rover"></i>Robotics link<em>actuators and constraints</em></div>
+    <div class="robolink-body">
+      <h3>A rover's allowed velocities, described from both sides</h3>
+      <p>A differential-drive rover has two driven wheels side by side, of radius <span class="m">r</span>, a distance <span class="m">W</span> apart. Its body velocity is three numbers: forward speed <span class="m">v<sub>x</sub></span>, sideways speed <span class="m">v<sub>y</sub></span> and turning rate <span class="m">ω</span>.</p>
+      <div class="eq left">
+        <span data-mx="vₓ; v_y; ω" data-cls="sm"></span><span class="op">=</span>
+        <span data-mx="r/2 r/2; 0 0; −r/W r/W" data-cols="0:h1,1:h2" data-cls="sm" data-cap="G"></span>
+        <span data-mx="left_wheel_speed; right_wheel_speed" data-rows="0:h1,1:h2" data-cls="sm"></span>
+        <span class="op">&nbsp;&nbsp;and&nbsp;&nbsp;</span>
+        <span data-mx="0 1 0" data-cls="sm" data-cap="no sideways slip"></span>
+        <span data-mx="vₓ; v_y; ω" data-cls="sm"></span><span class="op">=</span><span class="m">0</span>
+      </div>
+      <p><strong>By generators:</strong> the allowed velocities are everything the two wheels can produce, the column space <span class="m">C(G)</span>. <strong>By constraints:</strong> they are everything that obeys "no sideways slip", the nullspace of the one-row matrix <span class="m">[0&nbsp;1&nbsp;0]</span>. Both describe the same plane, <span class="m">v<sub>y</sub> = 0</span>, inside the three-dimensional space of body velocities.</p>
+      <p>With <span class="m">r = 0.1</span> m and <span class="m">W = 0.5</span> m, a wanted velocity of <span class="m">(0.3, 0, 0.4)</span> is in the plane, and wheel speeds of 2 and 4 rad/s produce it. A wanted velocity of <span class="m">(0.3, 0.1, 0)</span> fails both descriptions at once: no wheel speeds produce it, and it breaks the constraint. This assumes ideal wheels that never skid.</p>
+    </div>
+  </div>
+
+  <div class="tablewrap">
+    <table class="t">
+      <thead><tr><th>Lecture idea</th><th>In plain words</th><th>What it is in a robot</th></tr></thead>
+      <tbody>
+        <tr><td>Subspace</td><td>A set of vectors where every combination stays inside</td><td>The set of velocities a robot can produce at one moment</td></tr>
+        <tr><td>Union of two subspaces</td><td>In one or the other. Usually not a subspace</td><td>Motions at least one of two machines can make. Their sums belong to neither</td></tr>
+        <tr><td>Intersection of two subspaces</td><td>In both. Always a subspace</td><td>Motions both machines can make</td></tr>
+        <tr><td>Column space C(A)</td><td>Every vector that A x can be</td><td>Every hand velocity the arm can produce in its present pose</td></tr>
+        <tr><td>A x = b solvable exactly when b is in C(A)</td><td>You can only ask for what the columns can build</td><td>A commanded velocity is achievable exactly when it lies in C(J)</td></tr>
+        <tr><td>More equations than unknowns</td><td>Most right-hand sides are out of reach</td><td>More sensors than unknowns: readings must be consistent, and noise breaks that</td></tr>
+        <tr><td>Dependent column</td><td>A column the others can already build</td><td>A joint that gives the hand no new direction</td></tr>
+        <tr><td>Pivot columns</td><td>The columns that do bring something new</td><td>A smallest set of joints that already covers the task</td></tr>
+        <tr><td>Nullspace N(A)</td><td>Every x that A sends to zero</td><td>Self-motion: the joints move and the hand stays still</td></tr>
+        <tr><td>N(A) is a subspace</td><td>Sums and multiples of such x are sent to zero too</td><td>Self-motions can be scaled, reversed and added to any command</td></tr>
+        <tr><td>Solutions of A x = b, b not zero</td><td>A shifted copy of the nullspace that misses the origin</td><td>All joint speeds for one hand velocity: one choice plus any self-motion</td></tr>
+        <tr><td>Two descriptions of a subspace</td><td>Built up from vectors, or cut down by equations</td><td>What the actuators can produce, or what the constraints allow</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ practice -->
+<section class="concept" id="practice" data-toc="Practice problems">
+  <header class="concept-head">
+    <span class="concept-no">6.11</span>
+    <h2>Practice problems</h2>
+    <p class="concept-sub">Ten problems, from first steps to robot diagnosis. Work each on paper, then open the solution. Every answer has been checked by the code for this lecture.</p>
+  </header>
+  <div class="quiz problems">
+    <details><summary><span class="q">P1</span><span>Which of these sets of vectors <span class="m">(x, y)</span> are subspaces of <span class="m"><b class="u">R</b><sup>2</sup></span>? (a) All multiples of <span class="m">(1, 2)</span>. (b) All vectors with <span class="m">x + y = 1</span>. (c) All vectors with <span class="m">x ≥ 0</span>.<em class="tag">subspace test</em></span></summary>
+      <div class="a">
+        <p><strong>(a)</strong> Add two multiples of <span class="m">(1, 2)</span> and you get a multiple of <span class="m">(1, 2)</span>. Stretch one and you get another. For instance <span class="m">3 (1, 2) − 4 (2, 4) = (−5, −10)</span>, which is <span class="m">−5 (1, 2)</span>. A line through the origin: a subspace.</p>
+        <p><strong>(b)</strong> The zero vector has <span class="m">x + y = 0</span>, so it is missing. Adding fails too: <span class="m">(1, 0) + (0, 1) = (1, 1)</span> has <span class="m">x + y = 2</span>. A line that misses the origin.</p>
+        <p><strong>(c)</strong> <span class="m">(1, 0)</span> is in the set, but <span class="m">−1</span> times it is <span class="m">(−1, 0)</span>, which is out. Sums stay inside, so only the second rule fails. One failure is enough.</p>
+        <p><strong>Answer:</strong> only (a) is a subspace.</p>
+      </div></details>
+    <details><summary><span class="q">P2</span><span>In <span class="m"><b class="u">R</b><sup>3</sup></span>, let <span class="m">S</span> be the plane of all vectors <span class="m">(0, y, z)</span> and <span class="m">T</span> the plane of all vectors <span class="m">(x, 0, z)</span>. Describe <span class="m">S ∩ T</span>. Then find one sum that shows <span class="m">S ∪ T</span> is not a subspace.<em class="tag">union, intersection</em></span></summary>
+      <div class="a">
+        <p>A vector in both planes needs its first entry to be 0 (to be in <span class="m">S</span>) and its second entry to be 0 (to be in <span class="m">T</span>). That leaves <span class="m">(0, 0, z)</span>.</p>
+        <p>For the union, take <span class="m">(0, 1, 0)</span> from <span class="m">S</span> and <span class="m">(1, 0, 0)</span> from <span class="m">T</span>. Their sum is <span class="m">(1, 1, 0)</span>. Its first entry is not 0, so it is not in <span class="m">S</span>. Its second entry is not 0, so it is not in <span class="m">T</span>.</p>
+        <p><strong>Answer:</strong> <span class="m">S ∩ T</span> is the <span class="m">z</span> axis, every multiple of <span class="m">(0, 0, 1)</span>: a line through the origin, and a subspace. The union is not closed under addition.</p>
+      </div></details>
+    <details><summary><span class="q">P3</span><span>Describe the column space of <span data-mx="1 2; 2 4; 3 6" data-cls="sm"></span>. Which space is it inside? Is <span class="m">(2, 4, 6)</span> in it? Is <span class="m">(1, 2, 4)</span>?<em class="tag">column space</em></span></summary>
+      <div class="a">
+        <p>The columns have three entries, so the column space is inside <span class="m"><b class="u">R</b><sup>3</sup></span>. The second column is twice the first, so it adds nothing. Every combination is a multiple of <span class="m">(1, 2, 3)</span>.</p>
+        <p><span class="m">(2, 4, 6) = 2 (1, 2, 3)</span>: yes, it is in the column space. For <span class="m">(1, 2, 4)</span> the first entry would need a multiplier of 1, and then the third entry would be 3 and not 4: no.</p>
+        <p><strong>Answer:</strong> <span class="m">C(A)</span> is the line through the origin of <span class="m"><b class="u">R</b><sup>3</sup></span> in the direction <span class="m">(1, 2, 3)</span>. It has one pivot column and dimension 1. <span class="m">(2, 4, 6)</span> is in it and <span class="m">(1, 2, 4)</span> is not.</p>
+      </div></details>
+    <details><summary><span class="q">P4</span><span>For <span data-mx="1 0; 0 1; 1 1" data-cls="sm"></span>, find the condition on <span class="m"><b>b</b> = (b<sub>1</sub>, b<sub>2</sub>, b<sub>3</sub>)</span> that makes <span class="m">A<b>x</b> = <b>b</b></span> solvable. Then solve it for <span class="m"><b>b</b> = (2, 3, 5)</span>.<em class="tag">which b</em></span></summary>
+      <div class="a">
+        <p>Write the three equations: <span class="m">x<sub>1</sub> = b<sub>1</sub></span>, <span class="m">x<sub>2</sub> = b<sub>2</sub></span> and <span class="m">x<sub>1</sub> + x<sub>2</sub> = b<sub>3</sub></span>. The first two fix <span class="m"><b>x</b></span> completely. The third then has no freedom left: it holds only if <span class="m">b<sub>3</sub> = b<sub>1</sub> + b<sub>2</sub></span>.</p>
+        <p>For <span class="m">(2, 3, 5)</span>: <span class="m">2 + 3 = 5</span>, so the condition holds, and <span class="m"><b>x</b> = (2, 3)</span>.</p>
+        <p><strong>Answer:</strong> solvable exactly when <span class="m">b<sub>3</sub> = b<sub>1</sub> + b<sub>2</sub></span>. That one equation describes the column space, a plane inside <span class="m"><b class="u">R</b><sup>3</sup></span>. For <span class="m">(2, 3, 5)</span> the solution is <span class="m"><b>x</b> = (2, 3)</span>.</p>
+        <p>Follow-up: change the 5 to a 6. Now <span class="m">2 + 3 ≠ 6</span>, the vector has left the column space, and there is no solution.</p>
+      </div></details>
+    <details><summary><span class="q">P5</span><span>Find the nullspace of <span data-mx="1 2 3; 2 4 6" data-cls="sm"></span>. Which space is it inside, and what shape is it?<em class="tag">nullspace</em></span></summary>
+      <div class="a">
+        <p>A vector <span class="m"><b>x</b></span> has three entries, so the nullspace is inside <span class="m"><b class="u">R</b><sup>3</sup></span>. The second row is twice the first, so the two equations are really one: <span class="m">x<sub>1</sub> + 2x<sub>2</sub> + 3x<sub>3</sub> = 0</span>.</p>
+        <p>One equation in three unknowns leaves two unknowns free. Choose <span class="m">x<sub>2</sub> = 1, x<sub>3</sub> = 0</span> and you need <span class="m">x<sub>1</sub> = −2</span>. Choose <span class="m">x<sub>2</sub> = 0, x<sub>3</sub> = 1</span> and you need <span class="m">x<sub>1</sub> = −3</span>.</p>
+        <p><strong>Answer:</strong> the nullspace is every combination of <span class="m">(−2, 1, 0)</span> and <span class="m">(−3, 0, 1)</span>: a plane through the origin of <span class="m"><b class="u">R</b><sup>3</sup></span>, of dimension 2. Each of the two vectors records one relation between the columns: column 2 is twice column 1, and column 3 is three times column 1.</p>
+      </div></details>
+    <details><summary><span class="q">P6</span><span>For the lecture's matrix <span data-mx="1 1 2; 2 1 3; 3 1 4; 4 1 5" data-cls="sm"></span> and <span class="m"><b>b</b> = (2, 3, 4, 5)</span>, find two different solutions by looking at the columns. Then write down every solution.<em class="tag">shifted nullspace</em></span></summary>
+      <div class="a">
+        <p><span class="m"><b>b</b></span> is column 3 itself, so <span class="m"><b>x</b> = (0, 0, 1)</span> works. Column 3 is also column 1 plus column 2, so <span class="m"><b>x</b> = (1, 1, 0)</span> works as well.</p>
+        <p>The two differ by <span class="m">(1, 1, 0) − (0, 0, 1) = (1, 1, −1)</span>, which is the nullspace vector from section 6.6.</p>
+        <p><strong>Answer:</strong> every solution is <span class="m">(0, 0, 1) + c (1, 1, −1)</span>. It is a line parallel to the nullspace that misses the origin, so it is not a subspace. Check: the sum of the two solutions, <span class="m">(1, 1, 1)</span>, gives <span class="m">A<b>x</b> = (4, 6, 8, 10)</span>, which is <span class="m">2<b>b</b></span>.</p>
+      </div></details>
+    <details><summary><span class="q">P7</span><span>A planar arm has three links of length 1. The shoulder is at 0°, the elbow is bent 90° and the wrist is bent 90°, so the joints sit at (0, 0), (1, 0) and (1, 1) and the hand at (0, 1). Find the Jacobian, <span class="m">C(J)</span> and <span class="m">N(J)</span>.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>Each column is the arrow from that joint to the hand, turned a quarter turn anticlockwise. Turning <span class="m">(a, b)</span> gives <span class="m">(−b, a)</span>.</p>
+        <ul>
+          <li>Shoulder at (0, 0): arrow (0, 1), turned (−1, 0).</li>
+          <li>Elbow at (1, 0): arrow (−1, 1), turned (−1, −1).</li>
+          <li>Wrist at (1, 1): arrow (−1, 0), turned (0, −1).</li>
+        </ul>
+        <div class="eq"><span class="m">J</span><span class="op">=</span><span data-mx="-1 -1 0; 0 -1 -1" data-cols="0:h1,1:h2,2:h4"></span></div>
+        <p>Columns 1 and 3 point along different axes, so they are independent and the rank is 2. For the nullspace solve <span class="m">−q̇<sub>1</sub> − q̇<sub>2</sub> = 0</span> and <span class="m">−q̇<sub>2</sub> − q̇<sub>3</sub> = 0</span>. Set <span class="m">q̇<sub>3</sub> = 1</span>: then <span class="m">q̇<sub>2</sub> = −1</span> and <span class="m">q̇<sub>1</sub> = 1</span>.</p>
+        <p><strong>Answer:</strong> <span class="m">C(J)</span> is all of <span class="m"><b class="u">R</b><sup>2</sup></span>, so the hand can move in any direction. <span class="m">N(J)</span> is every multiple of <span class="m">(1, −1, 1)</span>: shoulder and wrist turn one way, the elbow turns the other way at the same speed, and the hand stays still.</p>
+      </div></details>
+    <details><summary><span class="q">P8</span><span>The arm of P7 is now stretched straight along the <span class="m">x</span> axis, with the hand at (3, 0). Find <span class="m">J</span>. Can the hand move in the direction (1, 0)? What are the dimensions of <span class="m">C(J)</span> and <span class="m">N(J)</span>?<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>The arrows from the joints to the hand are (3, 0), (2, 0) and (1, 0). Turned a quarter turn they are (0, 3), (0, 2) and (0, 1).</p>
+        <div class="eq"><span class="m">J</span><span class="op">=</span><span data-mx="0 0 0; 3 2 1" data-cols="0:h1,1:h2,2:h4"></span></div>
+        <p>All three columns are multiples of (0, 1), so the rank is 1. The top row is all zeros: no joint speeds can give the hand any velocity along <span class="m">x</span>. The nullspace is every solution of the one remaining equation, <span class="m">3q̇<sub>1</sub> + 2q̇<sub>2</sub> + q̇<sub>3</sub> = 0</span>.</p>
+        <p><strong>Answer:</strong> the hand cannot move along (1, 0). <span class="m">C(J)</span> is the line of multiples of (0, 1), dimension 1. <span class="m">N(J)</span> is a plane, dimension 2, spanned for example by <span class="m">(−2, 3, 0)</span> and <span class="m">(−1, 0, 3)</span>. The dimensions add to <span class="m">1 + 2 = 3</span>, the number of joints, exactly as they did in P7 with <span class="m">2 + 1</span>.</p>
+      </div></details>
+    <details><summary><span class="q">P9</span><span>Back to the bent arm of P7. The hand must move with velocity (1, 0). Find the joint speeds that do it with the wrist held still. Then the ones that do it with the shoulder held still. Then the shortest set of all.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p><strong>Wrist still</strong>, <span class="m">q̇<sub>3</sub> = 0</span>: the second row gives <span class="m">q̇<sub>2</sub> = 0</span>, and the first gives <span class="m">−q̇<sub>1</sub> = 1</span>. So <span class="m">q̇ = (−1, 0, 0)</span>.</p>
+        <p><strong>All solutions:</strong> add any multiple of the self-motion from P7: <span class="m">(−1, 0, 0) + c (1, −1, 1) = (c − 1, −c, c)</span>.</p>
+        <p><strong>Shoulder still:</strong> <span class="m">c = 1</span> gives <span class="m">(0, −1, 1)</span>.</p>
+        <p><strong>Shortest:</strong> the squared length is <span class="m">(c − 1)² + c² + c² = 3c² − 2c + 1</span>, smallest at <span class="m">c = 1/3</span>. That gives <span class="m">(−2/3, −1/3, 1/3)</span>, of length about 0.816.</p>
+        <p><strong>Answer:</strong> <span class="m">(−1, 0, 0)</span>, then <span class="m">(0, −1, 1)</span>, then <span class="m">(−2/3, −1/3, 1/3)</span>. All three give the hand velocity (1, 0). They lie on one line in joint-speed space, parallel to <span class="m">N(J)</span> and missing the origin.</p>
+      </div></details>
+    <details><summary><span class="q">P10</span><span>A cart runs on a rail between two walls 10 m apart. Its position is <span class="m">x</span>. A rear sensor reads <span class="m">x + d</span> and a front sensor reads <span class="m">(10 − x) + d</span>, where <span class="m">d</span> is an unknown offset shared by both. A tape along the rail reads <span class="m">x</span> directly. (a) The three readings are 5, 7 and 4. Find <span class="m">x</span> and <span class="m">d</span>. (b) Next day they are 5, 7 and 5. What should the robot conclude?<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>Move the known 10 to the right-hand side. There are three equations and two unknowns:</p>
+        <div class="eq"><span data-mx="1 1; -1 1; 1 0" data-cls="sm"></span><span data-mx="x; d" data-cls="sm"></span><span class="op">=</span><span data-mx="rear; front_−_10; tape" data-cols="0:h3" data-cls="sm"></span></div>
+        <p>Subtract the second equation from the first: <span class="m">2x = b<sub>1</sub> − b<sub>2</sub></span>. The third says <span class="m">x = b<sub>3</sub></span>. Both can be true only if <span class="m">b<sub>1</sub> − b<sub>2</sub> = 2b<sub>3</sub></span>. That is the condition for <span class="m"><b>b</b></span> to be in the column space.</p>
+        <p><strong>(a)</strong> <span class="m"><b>b</b> = (5, −3, 4)</span>: <span class="m">5 − (−3) = 8 = 2 · 4</span>. Consistent. Then <span class="m">x = 4</span> and <span class="m">d = 5 − 4 = 1</span>.</p>
+        <p><strong>(b)</strong> <span class="m"><b>b</b> = (5, −3, 5)</span>: <span class="m">5 − (−3) = 8</span> but <span class="m">2 · 5 = 10</span>. The readings contradict each other.</p>
+        <p><strong>Answer:</strong> (a) <span class="m">x = 4</span> m and <span class="m">d = 1</span> m. (b) There is no exact solution, because <span class="m"><b>b</b></span> has left the column space. At least one sensor is wrong, and these three numbers alone cannot say which. An extra sensor never guarantees a better answer, but it does give the robot a way to notice that something is off.</p>
+      </div></details>
+  </div>
+</section>
+
+<!-- ============================================================ check -->
+<section class="concept" id="check" data-toc="Check yourself">
+  <header class="concept-head">
+    <span class="concept-no">6.12</span>
+    <h2>Check yourself</h2>
+    <p class="concept-sub">Answer in your head first, then open each one.</p>
+  </header>
+  <div class="quiz">
+    <details><summary><span class="q">Q1</span><span>A plane and a line both pass through the origin of <span class="m"><b class="u">R</b><sup>3</sup></span>, and the line is not in the plane. Is their union a subspace? Is their intersection?</span></summary>
+      <div class="a"><p>The union is not. Add a non-zero vector of the plane to a non-zero vector of the line and the sum is in neither, so the union is not closed under addition. The intersection is the zero vector alone, and that is a subspace, the smallest one.</p></div></details>
+    <details><summary><span class="q">Q2</span><span>The lecture's matrix has 4 rows and 3 columns. In which space does its column space live? In which space does its nullspace live?</span></summary>
+      <div class="a"><p>The columns have four entries, so <span class="m">C(A)</span> is a subspace of <span class="m"><b class="u">R</b><sup>4</sup></span>. A vector <span class="m"><b>x</b></span> has one entry per column, three in all, so <span class="m">N(A)</span> is a subspace of <span class="m"><b class="u">R</b><sup>3</sup></span>.</p></div></details>
+    <details><summary><span class="q">Q3</span><span>Without elimination, decide whether <span class="m"><b>b</b> = (3, 4, 5, 6)</span> is in the column space of the lecture's matrix.</span></summary>
+      <div class="a"><p>It is. Column 1 plus twice column 2 is <span class="m">(1, 2, 3, 4) + (2, 2, 2, 2) = (3, 4, 5, 6)</span>. So <span class="m"><b>x</b> = (1, 2, 0)</span> solves <span class="m">A<b>x</b> = <b>b</b></span>. The check from section 6.4 agrees: <span class="m">3 − 8 + 5 = 0</span> and <span class="m">6 − 12 + 6 = 0</span>.</p></div></details>
+    <details><summary><span class="q">Q4</span><span>Column 3 of the lecture's matrix equals column 1 plus column 2. What does that one fact tell you about the column space, and what does it tell you about the nullspace?</span></summary>
+      <div class="a"><p>For the column space: column 3 adds nothing, so <span class="m">C(A)</span> is built from columns 1 and 2 alone and is a two-dimensional plane inside <span class="m"><b class="u">R</b><sup>4</sup></span>. For the nullspace: column 1 plus column 2 minus column 3 is zero, so <span class="m">(1, 1, −1)</span> and all its multiples are in <span class="m">N(A)</span>, a line in <span class="m"><b class="u">R</b><sup>3</sup></span>.</p></div></details>
+    <details><summary><span class="q">Q5</span><span>Why can the solutions of <span class="m">A<b>x</b> = <b>b</b></span> never form a subspace when <span class="m"><b>b</b></span> is not zero?</span></summary>
+      <div class="a"><p>A subspace must contain the zero vector, and <span class="m">A</span> times the zero vector is zero, which is not <span class="m"><b>b</b></span>. The solutions form a flat set that misses the origin: the nullspace shifted by one particular solution.</p></div></details>
+    <details><summary><span class="q">Q6</span><span>A planar arm with three joints only has to place its hand. In an ordinary pose, what are the dimensions of <span class="m">C(J)</span> and <span class="m">N(J)</span>, and what does a vector in <span class="m">N(J)</span> do?</span></summary>
+      <div class="a"><p><span class="m">C(J)</span> has dimension 2: the hand can move in every direction of the plane. <span class="m">N(J)</span> has dimension <span class="m">3 − 2 = 1</span>. A vector in it is a set of three joint speeds whose effects on the hand cancel. The elbow and wrist swing and the hand stays put. That is self-motion.</p></div></details>
+    <details><summary><span class="q">Q7</span><span>The same arm is stretched out perfectly straight. What happens to the two subspaces?</span></summary>
+      <div class="a"><p>All three columns of <span class="m">J</span> now point the same way, across the arm. The rank drops to 1. <span class="m">C(J)</span> shrinks to a line, so the hand can no longer move along the arm. <span class="m">N(J)</span> grows to a plane of dimension <span class="m">3 − 1 = 2</span>. The two dimensions still add up to the number of joints.</p></div></details>
+  </div>
+
+  <div class="note say">
+    <i data-ic="pen"></i>
+    <span class="note-title">For your article</span>
+    <div class="note-body">
+      <p><strong>One-line summary:</strong> the column space is everything a matrix can produce, the nullspace is everything it cannot see, and both are subspaces.</p>
+      <p><strong>A robot sentence you can reuse:</strong> the column space of the Jacobian is what the hand can do, and the nullspace is how the joints can move while the hand stays still.</p>
+      <p><strong>Good figures to capture:</strong> Lab 6.3 part-way through a self-motion, with the ghost pose and the traced elbow path, and Lab 6.4 with the two parallel lines next to the same lab with <b>b</b> shrunk to zero.</p>
+      <p>The full notes, worked numbers and references for this lecture are in <a href="article/06-column-space-and-nullspace.md">article/06-column-space-and-nullspace.md</a>, and runnable code is in <a href="code/l06_column_space_nullspace.py">code/l06_column_space_nullspace.py</a>.</p>
+    </div>
+  </div>
+</section>
+
+</article>
+</div>
+</main>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/la.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/plot.js"></script>
+<script src="assets/js/robots.js"></script>
+<script src="assets/js/lectures/l6.js"></script>
+</body>
+</html>

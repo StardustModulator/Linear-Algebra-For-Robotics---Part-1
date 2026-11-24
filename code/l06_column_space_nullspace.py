@@ -359,6 +359,67 @@ def rover_two_ways():
     print()
 
 
+# ----------------------------------------------------------------- 14
+def practice():
+    heading("14. Practice problems (answers to P1-P10 on the page)")
+    # P1: three sets in R^2
+    print("P1  (a) multiples of (1, 2): 3*(1, 2) + (-4)*(2, 4) =", tup(vadd(vscale([1, 2], 3), vscale([2, 4], -4))), " still a multiple -> subspace")
+    s = vadd([1, 0], [0, 1])
+    print(f"    (b) x + y = 1: (1, 0) + (0, 1) = {tup(s)}, x + y = {s[0] + s[1]}; zero vector gives 0 -> not a subspace")
+    print(f"    (c) x >= 0: (-1)*(1, 0) = {tup(vscale([1, 0], -1))}, x < 0 -> not a subspace")
+    # P2: two planes in R^3
+    S, T = [frac([0, 1, 0]), frac([0, 0, 1])], [frac([1, 0, 0]), frac([0, 0, 1])]
+    print("P2  S n T = all multiples of", ", ".join(tup(x) for x in intersection(S, T)),
+          "  and (0, 1, 0) + (1, 0, 0) =", tup(vadd([0, 1, 0], [1, 0, 0])), "has x and y both non-zero: in neither")
+    # P3: a 3 by 2 matrix with parallel columns
+    A3 = frac([[1, 2], [2, 4], [3, 6]])
+    print("P3  independent columns:", rank(A3), " C(A) = multiples of", tup(column(A3, 0)),
+          "  (2, 4, 6) in C(A)?", in_column_space(A3, frac([2, 4, 6])), "  (1, 2, 4) in C(A)?", in_column_space(A3, frac([1, 2, 4])))
+    # P4: solvability condition
+    A4 = frac([[1, 0], [0, 1], [1, 1]])
+    y = nullspace(transpose(A4))[0]
+    print("P4  condition:", tup(y), ". b = 0, that is b3 = b1 + b2.   b = (2, 3, 5): x =", tup(one_solution(A4, frac([2, 3, 5]))),
+          "  b = (2, 3, 6) solvable?", in_column_space(A4, frac([2, 3, 6])))
+    # P5: a nullspace that is a plane
+    B = frac([[1, 2, 3], [2, 4, 6]])
+    ns = nullspace(B)
+    print("P5  N(B) is spanned by", " and ".join(tup(x) for x in ns), "  B times each:", ", ".join(tup(matvec(B, x)) for x in ns),
+          "  dimension", len(ns))
+    # P6: all solutions for b = column 3 of the lecture's matrix
+    b = frac([2, 3, 4, 5])
+    x1, x2 = frac([0, 0, 1]), frac([1, 1, 0])
+    print("P6  A (0, 0, 1) =", tup(matvec(A, x1)), "  A (1, 1, 0) =", tup(matvec(A, x2)),
+          "  difference", tup(vadd(x2, vscale(x1, -1))), "  A (sum) =", tup(matvec(A, vadd(x1, x2))), "= 2b")
+    # P7: unit three-link arm at 0, 90, 90 degrees
+    q = [0.0, math.pi / 2, math.pi / 2]
+    J = [[round(v) for v in row] for row in arm_jacobian([1, 1, 1], q)]
+    print("P7  hand at", tup([round(v, 6) for v in arm_points([1, 1, 1], q)[3]]), "  J =", J, "  rank", rank(J))
+    n = [1, -1, 1]
+    print("    J (1, -1, 1) =", tup(matvec(J, n)), "  special solution from elimination:", tup(nullspace(frac(J))[0]))
+    # P8: the same arm stretched straight
+    Js = [[round(v) for v in row] for row in arm_jacobian([1, 1, 1], [0.0, 0.0, 0.0])]
+    print("P8  J =", Js, "  rank", rank(Js), "  (1, 0) in C(J)?", in_column_space(Js, [1, 0]), "  (0, 1) in C(J)?", in_column_space(Js, [0, 1]))
+    print("    N(J) is spanned by", " and ".join(tup(x) for x in nullspace(frac(Js))), "  dim C(J) + dim N(J) =", rank(Js), "+", 3 - rank(Js))
+    # P9: all joint speeds for one hand velocity, arm of P7
+    v = frac([1, 0])
+    Jf = frac(J)
+    locked = one_solution(Jf, v)
+    still = vadd(locked, n)
+    short = matvec(transpose(Jf), solve(matmul(Jf, transpose(Jf)), v))
+    print("P9  wrist still:", tup(locked), "  shoulder still:", tup(still), "  shortest:", tup(short),
+          " length", fmt(norm([float(c) for c in short])))
+    print("    J times each:", tup(matvec(Jf, locked)), tup(matvec(Jf, still)), tup(matvec(Jf, short)))
+    # P10: rail cart with three sensors
+    S10 = frac([[1, 1], [-1, 1], [1, 0]])
+    y = nullspace(transpose(S10))[0]
+    for r in ([5, 7, 4], [5, 7, 5]):
+        b = frac([r[0], r[1] - 10, r[2]])
+        x = one_solution(S10, b)
+        print(f"P10 readings {tup(r)}: b = {tup(b)}  check {tup(y)} . b = {fmt(dot(y, b))}  ->",
+              "(x, d) = " + tup(x) if x else "no exact solution, the readings disagree")
+    print()
+
+
 if __name__ == "__main__":
     subspace_test()
     union_and_intersection()
@@ -373,3 +434,4 @@ if __name__ == "__main__":
     range_sensors()
     two_machines()
     rover_two_ways()
+    practice()
