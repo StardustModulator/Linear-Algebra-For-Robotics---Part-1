@@ -94,13 +94,14 @@
   UI.shell = function () {
     var main = document.querySelector('[data-lecture], [data-page]');
     var cur = main && main.getAttribute('data-lecture') ? parseInt(main.getAttribute('data-lecture'), 10) : 0;
+    var base = (main && main.getAttribute('data-base')) || '';   /* '../' for pages one folder down */
 
     /* top bar */
     var bar = el('header', 'topbar');
     var nav = UI.LECTURES.map(function (L) {
-      return '<a href="' + L.file + '" title="Lecture ' + L.n + ': ' + L.title + '"' + (L.n === cur ? ' aria-current="page"' : '') + '>' + pad(L.n) + '</a>';
+      return '<a href="' + base + L.file + '" title="Lecture ' + L.n + ': ' + L.title + '"' + (L.n === cur ? ' aria-current="page"' : '') + '>' + pad(L.n) + '</a>';
     }).join('');
-    bar.innerHTML = '<div class="wrap"><a class="brand" href="index.html" aria-label="Linear Algebra for Robotics, home">' + MARK +
+    bar.innerHTML = '<div class="wrap"><a class="brand" href="' + base + 'index.html" aria-label="Linear Algebra for Robotics, home">' + MARK +
       '<span class="brand-text">Linear Algebra for Robotics <span>/ Part 1</span></span></a>' +
       '<nav class="lecnav" aria-label="Lectures">' + nav + '</nav>' +
       '<button class="iconbtn" id="theme-btn" type="button"></button></div>';
@@ -129,9 +130,10 @@
     /* footer */
     var f = el('footer', 'footer');
     f.innerHTML = '<div class="wrap"><div><h4>About this companion</h4><p>An independent study companion that follows the first seven lectures of MIT 18.06 Linear Algebra (Prof. Gilbert Strang) and ties every idea to a robot. It is not affiliated with or endorsed by MIT. The lectures themselves are published by MIT OpenCourseWare under a Creative Commons BY-NC-SA licence.</p></div>' +
-      '<div><h4>Go to the source</h4><ul><li><a href="' + OCW + 'video_galleries/video-lectures/" target="_blank" rel="noopener">18.06 video lectures on MIT OpenCourseWare</a></li><li><a href="' + SC + '" target="_blank" rel="noopener">18.06SC, with lecture summaries and problems</a></li><li><a href="index.html#kit">Article kit, notes and code in this repository</a></li></ul></div></div>';
+      '<div><h4>Go to the source</h4><ul><li><a href="' + OCW + 'video_galleries/video-lectures/" target="_blank" rel="noopener">18.06 video lectures on MIT OpenCourseWare</a></li><li><a href="' + SC + '" target="_blank" rel="noopener">18.06SC, with lecture summaries and problems</a></li><li><a href="' + base + 'index.html#kit">Article kit, notes and code in this repository</a></li></ul></div></div>';
     document.body.appendChild(f);
 
+    UI.$$('.kit-nav').forEach(collapseOnPhones);
     hydrateIcons(document);
     UI.hydrateMath(document);
   };
@@ -184,6 +186,12 @@
     });
   };
 
+  /* a contents list starts closed on small screens so the page opens on its content */
+  function collapseOnPhones(node) {
+    var d = node.querySelector('details');
+    if (d && window.matchMedia && window.matchMedia('(max-width: 980px)').matches) d.open = false;
+  }
+
   function buildToc() {
     var toc = document.querySelector('.toc');
     var secs = UI.$$('.concept[id]');
@@ -192,7 +200,8 @@
       var no = s.querySelector('.concept-no'), h = s.querySelector('h2');
       return '<li><a href="#' + s.id + '"><span class="n">' + (no ? no.textContent : '') + '</span><span>' + (s.getAttribute('data-toc') || (h ? h.textContent : s.id)) + '</span></a></li>';
     }).join('');
-    toc.innerHTML = '<div class="toc-title label">In this lecture</div><ol>' + items + '</ol>';
+    toc.innerHTML = '<details open><summary class="toc-title label">In this lecture</summary><ol>' + items + '</ol></details>';
+    collapseOnPhones(toc);
     toc.setAttribute('aria-label', 'In this lecture');
     if (!('IntersectionObserver' in window)) return;
     var links = UI.$$('a', toc), seen = {};

@@ -525,3 +525,58 @@ a.card:hover p { color: #b9b6b3; }
 .sysrow { display: flex; align-items: center; gap: 7px; font-size: 1.2em; white-space: nowrap; }
 .sysrow.c1 { color: var(--s1); } .sysrow.c2 { color: var(--s2); } .sysrow.c3 { color: var(--s3); } .sysrow.c4 { color: var(--s4); }
 .eq.lg { font-size: 1.22em; }
+
+/* ---------- home: hero equation, notes list ---------- */
+.home-stage .eq { flex-wrap: wrap; row-gap: .7em; }
+.notes-list { display: grid; gap: 12px; }
+.notes-list > .label { color: var(--ink-3); }
+.notes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); column-gap: 28px; border-top: 1.5px solid var(--ink); }
+.notes-grid a { display: grid; grid-template-columns: 2.2em 1fr auto; gap: 10px; align-items: center; padding: 12px 6px; border-bottom: 1px solid var(--rule-2); text-decoration: none; color: var(--ink); font-weight: 500; font-size: 15.5px; line-height: 1.3; }
+.notes-grid a:hover { background: var(--ink); color: var(--paper); }
+.notes-grid .n { font-family: var(--font-mono); font-size: 13px; color: var(--accent-ink); }
+.notes-grid a:hover .n { color: var(--s1); }
+.notes-grid .ic { width: 16px; height: 16px; }
+
+/* ---------- article kit: rendered Markdown ---------- */
+.kit-hero { border-bottom: 1.5px solid var(--ink); }
+.kit-hero .wrap { padding-block: 30px 26px; display: grid; gap: 10px; }
+.kit-hero .label { color: var(--accent-ink); display: flex; align-items: center; gap: 10px; }
+.kit-hero h1 { font-size: clamp(30px, 5vw, 54px); font-weight: 800; letter-spacing: -.025em; max-width: 22ch; }
+.kit-hero p { color: var(--ink-2); max-width: 66ch; }
+.kit-nav a.on { color: var(--ink); font-weight: 600; }
+.kit-nav a.on .n { color: var(--accent-ink); }
+.doc { min-width: 0; max-width: 80ch; }
+.doc > * + * { margin-top: 1em; }
+.doc h1 { font-size: clamp(28px, 4.4vw, 44px); font-weight: 800; letter-spacing: -.025em; }
+.doc h2 { font-size: clamp(23px, 3vw, 30px); font-weight: 800; letter-spacing: -.02em; margin-top: 2.2em; padding-top: 14px; border-top: 1.5px solid var(--ink); }
+.doc h3 { font-size: 20px; font-weight: 700; margin-top: 1.7em; }
+.doc h4 { font-size: 17px; font-weight: 700; margin-top: 1.4em; }
+.doc p, .doc li { max-width: 74ch; }
+.doc ul, .doc ol { padding-left: 1.3em; }
+.doc li + li { margin-top: .35em; }
+.doc li > ul, .doc li > ol { margin-top: .35em; }
+.doc blockquote { margin-left: 0; margin-right: 0; border: 1.5px solid var(--ink); background: var(--paper-2); padding: 14px 18px; font-size: 1.06em; }
+.doc blockquote > * + * { margin-top: .6em; }
+.doc pre { background: var(--board); color: var(--chalk); border: 1px solid var(--board-rule); padding: 14px 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.55; tab-size: 4; }
+.doc pre code { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
+.doc hr { border: 0; border-top: 1px solid var(--rule-2); margin: 2.2em 0; }
+.doc .tablewrap { border-width: 1px; }
+.doc table.t { min-width: 480px; }
+.doc table.t td:first-child { font-weight: 500; }
+.doc table.t.kv { min-width: 0; }
+.doc table.t.kv td:first-child { width: 11em; font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; }
+.doc details { border: 1px solid var(--rule-2); }
+.doc summary { cursor: pointer; padding: 11px 14px; font-weight: 600; font-family: var(--font-mono); font-size: 13.5px; }
+.doc details[open] summary { border-bottom: 1px solid var(--rule-2); }
+.doc details pre { margin: 0; border: 0; }
+.doc .lead { font-size: 1.1em; color: var(--ink-2); }
+.lec-row .robot b { color: var(--ink); }
+.lec-row:hover .robot b { color: var(--paper); }
+
+/* contents lists fold away on small screens */
+.toc summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.toc summary::-webkit-details-marker { display: none; }
+.toc summary::after { content: "\2212"; font-size: 16px; line-height: 1; }
+.toc details:not([open]) summary { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+.toc details:not([open]) summary::after { content: "+"; }
+@media (min-width: 981px) { .toc summary { cursor: default; pointer-events: none; } .toc summary::after { content: none; } }

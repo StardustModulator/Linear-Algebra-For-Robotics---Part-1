@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Linear Algebra for Robotics</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="The first seven lectures of MIT 18.06 Linear Algebra, rebuilt as hands-on robot labs, with notes and code for writing about linear algebra in robotics.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
+<link rel="stylesheet" href="assets/css/mit.css">
+</head>
+<body>
+<main data-page="home">
+
+<section class="home-hero board">
+  <div class="wrap">
+    <div>
+      <div class="home-kicker label"><span class="bars"></span><span>MIT 18.06 · Lectures 1 to 7 · a robotics companion</span></div>
+      <h1>Linear algebra, learned on <em>robots</em>.</h1>
+      <p class="home-lede">Seven lectures by Gilbert Strang, rebuilt as hands-on labs. Every idea is explained from zero, worked with <strong>the lecture's own numbers</strong>, then put to work on an arm, a rover or a thruster vehicle. Nothing is assumed beyond arithmetic.</p>
+      <div class="home-cta">
+        <a class="btn primary" href="01-geometry-of-linear-equations.html"><i data-ic="play"></i><span>Start with Lecture 1</span></a>
+        <a class="btn" href="#kit"><i data-ic="pen"></i><span>Open the article kit</span></a>
+      </div>
+    </div>
+    <div class="home-stage" id="hero-lab">
+      <canvas aria-label="A two-link robot arm following a target, with the two columns of its Jacobian drawn at the hand"></canvas>
+      <div class="lab-caption"><span class="key k1">what the shoulder contributes</span><span class="key k2">what the elbow contributes</span><span><i data-ic="drag"></i> drag the amber target</span></div>
+      <div class="lab-math" data-slot="eq"></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="lectures">
+  <div class="wrap">
+    <div class="band-head">
+      <span class="label">The course</span>
+      <h2>Seven lectures, seven robots</h2>
+      <p>Each page follows one lecture in order, covers every concept in it, and builds a working robot out of the mathematics. Go in sequence: each lecture uses the one before.</p>
+    </div>
+    <div class="lec-list" id="lec-list"></div>
+  </div>
+</section>
+
+<section class="band alt">
+  <div class="wrap">
+    <div class="band-head">
+      <span class="label">How each page teaches</span>
+      <h2>Four moves, repeated for every idea</h2>
+    </div>
+    <div class="cards">
+      <div class="card"><i data-ic="book"></i><h3>Say it plainly</h3><p>The idea in ordinary words first. Every new term is defined the moment it appears.</p></div>
+      <div class="card"><i data-ic="matrix"></i><h3>Work the lecture's numbers</h3><p>The same matrices Strang writes on the board, step by step, so the page and the video match.</p></div>
+      <div class="card"><i data-ic="flask"></i><h3>Play in the lab</h3><p>A chalkboard lab for each concept: drag, slide and break things until the idea is obvious.</p></div>
+      <div class="card"><i data-ic="robot"></i><h3>Meet it in a robot</h3><p>What the idea is in a real machine, with a simulation that runs on the same mathematics.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="map">
+  <div class="wrap">
+    <div class="band-head">
+      <span class="label">Concept map</span>
+      <h2>Every idea, and where a robot uses it</h2>
+      <p>The short version of the whole project. The complete map, with all concepts from all seven lectures, is in the article kit.</p>
+    </div>
+    <div class="tablewrap">
+      <table class="t">
+        <thead><tr><th>Idea</th><th>Lecture</th><th>In plain words</th><th>In a robot</th></tr></thead>
+        <tbody>
+          <tr><td>Row picture</td><td><a href="01-geometry-of-linear-equations.html#row-picture">01</a></td><td>Each equation is a line; the answer is where they cross</td><td>Triangulation: every sensor reading narrows down where the robot is</td></tr>
+          <tr><td>Column picture</td><td><a href="01-geometry-of-linear-equations.html#column-picture">01</a></td><td>Mix the columns to reach the target</td><td>Every motor owns a column; the controller chooses the mix</td></tr>
+          <tr><td>Singular matrix</td><td><a href="01-geometry-of-linear-equations.html#every-b">01</a></td><td>The columns do not fill the space</td><td>A singularity: a motion that cannot be made or sensed</td></tr>
+          <tr><td>Elimination and pivots</td><td><a href="02-elimination-with-matrices.html">02</a></td><td>Remove one unknown at a time</td><td>Odometry: wheel encoder readings become one body velocity</td></tr>
+          <tr><td>Matrix multiplication</td><td><a href="03-multiplication-and-inverse-matrices.html">03</a></td><td>Do one transformation, then another</td><td>Forward kinematics: a chain of link transforms</td></tr>
+          <tr><td>Inverse matrix</td><td><a href="03-multiplication-and-inverse-matrices.html">03</a></td><td>Undo a transformation</td><td>Change viewpoint: where is that landmark as seen from me?</td></tr>
+          <tr><td>A = LU</td><td><a href="04-factorization-into-a-lu.html">04</a></td><td>Save the elimination so it never has to be repeated</td><td>Factor once, then solve every control tick cheaply</td></tr>
+          <tr><td>Transpose</td><td><a href="05-transposes-permutations-spaces.html">05</a></td><td>Swap rows and columns</td><td>Forces go through the transpose: joint torque = Jᵀ × hand force</td></tr>
+          <tr><td>Subspace</td><td><a href="05-transposes-permutations-spaces.html">05</a></td><td>A set of vectors closed under adding and scaling</td><td>The set of motions a wheeled robot is able to make</td></tr>
+          <tr><td>Column space</td><td><a href="06-column-space-and-nullspace.html">06</a></td><td>Everything the matrix can produce</td><td>Every hand velocity the arm can deliver in its current pose</td></tr>
+          <tr><td>Nullspace</td><td><a href="06-column-space-and-nullspace.html">06</a></td><td>Everything the matrix sends to zero</td><td>Self-motion: the elbow moves, the hand stays still</td></tr>
+          <tr><td>Rank</td><td><a href="07-solving-ax-equals-0.html">07</a></td><td>The number of pivots</td><td>The directions a machine can truly control</td></tr>
+          <tr><td>Free variables</td><td><a href="07-solving-ax-equals-0.html">07</a></td><td>Unknowns you may choose freely</td><td>Spare actuators: redundancy and fault tolerance</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="band alt" id="kit">
+  <div class="wrap">
+    <div class="band-head">
+      <span class="label">For the writer</span>
+      <h2>The article kit</h2>
+      <p>Everything needed to write about linear algebra for robotics: an outline, in-depth notes for each lecture with worked robot numbers, a glossary, a reading list, runnable code and the icon set. The notes are plain Markdown files in the <code>article</code> folder, so they are easy to copy from.</p>
+    </div>
+    <div class="cards">
+      <a class="card" href="kit/index.html"><i data-ic="compass"></i><h3>Start here: the outline</h3><p>A suggested structure for the article, the storyline that ties seven lectures together, and how to use the kit.</p></a>
+      <a class="card" href="kit/concept-map.html"><i data-ic="map"></i><h3>Complete concept map</h3><p>Every concept of every lecture in one table: meaning, robot use, and the lab that shows it.</p></a>
+      <a class="card" href="kit/glossary.html"><i data-ic="list"></i><h3>Glossary</h3><p>Each term in plain words, with its robotics meaning and the lecture where it first appears.</p></a>
+      <a class="card" href="kit/resources.html"><i data-ic="book"></i><h3>Sources and further reading</h3><p>The OCW lectures and summaries, the textbook sections, and the robotics books that go deeper.</p></a>
+      <a class="card" href="kit/code.html"><i data-ic="code"></i><h3>Runnable code</h3><p>One plain Python script per lecture, built on a from-scratch linear algebra module. No libraries needed.</p></a>
+      <a class="card" href="#icons"><i data-ic="spark"></i><h3>Icon set</h3><p>The custom black-and-white glyphs used on these pages, as separate SVG files for your figures.</p></a>
+    </div>
+    <div class="notes-list" id="notes-list"></div>
+  </div>
+</section>
+
+<section class="band" id="icons">
+  <div class="wrap">
+    <div class="band-head">
+      <span class="label">Drawn for this project</span>
+      <h2>The icon set</h2>
+      <p>No emoji anywhere. Every glyph is drawn on one grid with one stroke weight, in black and white only. Each one is also saved as its own file in <code>assets/icons</code>.</p>
+    </div>
+    <div class="iconwall" id="iconwall"></div>
+  </div>
+</section>
+
+</main>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/la.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/plot.js"></script>
+<script src="assets/js/robots.js"></script>
+<script src="assets/js/home.js"></script>
+</body>
+</html>
