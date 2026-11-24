@@ -13,6 +13,7 @@ Every concept in each lecture is explained from scratch, worked with the lecture
 | 05 | Transposes, Permutations, Spaces Rⁿ | Force and motion duality, a rover's velocity subspace | [`05-transposes-permutations-spaces.html`](05-transposes-permutations-spaces.html) |
 | 06 | Column Space and Nullspace | A redundant three-link arm | [`06-column-space-and-nullspace.html`](06-column-space-and-nullspace.html) |
 | 07 | Solving Ax = 0: Pivot Variables, Special Solutions | A four-joint arm and a four-thruster vehicle | [`07-solving-ax-equals-0.html`](07-solving-ax-equals-0.html) |
+| 1–7 | Capstone: all seven lectures on one robot | A redundant three-joint arm seen through seven lenses | [`capstone.html`](capstone.html) |
 
 ## Open it
 

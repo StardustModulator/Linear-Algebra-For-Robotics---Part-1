@@ -7,14 +7,16 @@
 | File | What it gives you |
 |---|---|
 | `README.md` (this page) | The storyline, a suggested outline, notation, an accuracy checklist and how to cite |
-| `01-…md` to `07-…md` | In-depth notes for each lecture, all built on the same nine sections |
+| `01-…md` to `07-…md` | In-depth notes for each lecture, all built on the same ten sections |
 | [`concept-map.md`](concept-map.md) | Every concept of all seven lectures in one table, with its robot meaning and the lab that shows it |
+| [`cheat-sheet.md`](cheat-sheet.md) | Every rule and formula of the seven lectures on one page, each beside its robot meaning |
+| [`figures.md`](figures.md) | The figure pack: high-resolution captures of every lab in its most telling state, with captions |
 | [`glossary.md`](glossary.md) | Every term in plain words, with its robotics reading |
 | [`resources.md`](resources.md) | The OCW lectures and summaries, textbook sections and the robotics books that go deeper |
 | [`../code/`](../code/linalg.py) | One runnable Python script per lecture. Every robot number quoted in the notes comes from these |
 | `../assets/icons/` | The black-and-white icon set as separate SVG files |
 
-Each lecture note has the same nine sections, so you always know where to look:
+Each lecture note has the same ten sections, so you always know where to look:
 
 1. What the lecture is really about
 2. The ideas, from scratch (every concept, every lecture example, all numbers)
@@ -22,9 +24,10 @@ Each lecture note has the same nine sections, so you always know where to look:
 4. Concept-to-robot table
 5. Common mistakes and misconceptions
 6. Analogies and sentences you can use
-7. Figures worth including (which lab, in which state)
+7. Figures worth including (ready-made files in the figure pack)
 8. Check questions with answers
-9. Go deeper
+9. Practice problems with worked solutions
+10. Go deeper
 
 ---
 
@@ -120,6 +123,8 @@ Then state the claim of the article: *almost everything a robot computes is `A x
 ### 7. Closing (100 to 200 words)
 
 Return to the hook and restate it in the new vocabulary. A good closing line: *a robot's abilities are the column space of its matrices, its blind spots are their nullspaces, and its rank is the honest count of what it can do.* Point readers to the seven lectures and to what comes next in the course (solving `A x = b` completely, the four fundamental subspaces, least squares).
+
+A strong closing figure is the capstone: one arm in one pose, shown through all seven lenses side by side (`cap-01-columns.png` to `cap-07-rank.png` in the figure pack). It makes the article's point visually: seven lectures, one matrix.
 
 ---
 
