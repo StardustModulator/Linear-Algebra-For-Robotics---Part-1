@@ -253,15 +253,20 @@ A singular matrix means a missing direction. No controller can supply it. Only c
 
 ## 7. Figures worth including
 
-| Figure | How to capture it |
-|---|---|
-| Row picture of the lecture example | Lab 1.1, "Lecture example": two lines crossing at (1, 2) |
-| The three cases of two lines | Lab 1.1 three times: Lecture example, Parallel, Same line |
-| Column picture of the same example | Lab 1.3 after "Show the answer": one red arrow, two blue arrows, landing on `b` |
-| Good fix against fragile fix | Lab 1.2 with sensor error at 2°: robot placed for a wide crossing, then for a thin one |
-| Arm with its two columns | Lab 1.4 in the default pose: red and blue steps adding up to the amber velocity |
-| Singularity | Lab 1.4 with the elbow at 0°: the dashed column lines coincide |
-| Columns that fail to fill space | Lab 1.7, "All aimed at the centre", turning effort not zero: `b` leaves the plane |
+Every figure below is already captured in `article/figures/` (see the [figure pack](figures.md)). To retake one in a different state, open the lab, set it up, and screenshot it, or edit `tools/figures/l1.js` and run `node tools/figures.js 1`.
+
+| Figure | Ready-made file | How it was set up |
+|---|---|---|
+| Row picture of the lecture example | `l1-row-picture.png` | Lab 1.1, "Lecture example": two lines crossing at (1, 2) |
+| The two singular cases of two lines | `l1-rows-parallel.png`, `l1-rows-same-line.png` | Lab 1.1, "Parallel" and "Same line" |
+| Column picture of the same example | `l1-column-picture.png` | Lab 1.3 after "Show the answer": one red arrow, two blue arrows, landing on `b` |
+| Columns that cannot reach the target | `l1-columns-parallel.png` | Lab 1.3, "Parallel columns" |
+| Good fix against fragile fix | `l1-triangulation-wide.png`, `l1-triangulation-thin.png` | Lab 1.2 with sensor error at 2°: a wide crossing, then a thin one |
+| Arm with its two columns | `l1-arm-columns.png` | Lab 1.4 in the default pose: red and blue steps adding up to the amber velocity |
+| Singularity | `l1-arm-singular.png` | Lab 1.4 with the elbow at 0°: the dashed column lines coincide |
+| `A x` two ways | `l1-ax-by-columns.png`, `l1-ax-by-rows.png` | Lab 1.5 in each mode |
+| Three columns in space | `l1-three-columns.png` | Lab 1.6 after "Show the answer" |
+| Columns that fill space, and columns that do not | `l1-thrusters-good.png`, `l1-thrusters-singular.png` | Lab 1.7: good layout while turning; then "All aimed at the centre" with a turn requested |
 
 ---
 
@@ -276,7 +281,57 @@ A singular matrix means a missing direction. No controller can supply it. Only c
 
 ---
 
-## 9. Go deeper
+## 9. Practice problems with worked solutions
+
+The same nine problems as on the page, with full solutions. All answers are reproduced by `code/l01_geometry.py` (section 7 of its output).
+
+**P1. Row picture.** Draw `x + y = 5` and `x − y = 1`. Where do the lines cross?
+
+*Solution.* The first line passes through (5, 0) and (0, 5), the second through (1, 0) and (0, −1). Adding the equations cancels `y`: `2x = 6`, so `x = 3`, then `y = 2`. They cross at **(3, 2)**.
+
+**P2. Column picture.** Write the same system by columns and check the solution.
+
+*Solution.* `x(1, 1) + y(1, −1) = (5, 1)`. Three of (1, 1) is (3, 3); two of (1, −1) is (2, −2); the sum is (5, 1).
+
+**P3. A times x, two ways.** Multiply `[1 2; 3 4]` by `(2, −1)` by columns and by rows.
+
+*Solution.* By columns: `2(1, 3) − (2, 4) = (0, 2)`. By rows: `1·2 + 2·(−1) = 0` and `3·2 + 4·(−1) = 2`. Both give **(0, 2)**.
+
+**P4. Finding the singular case.** For which `k` does `x + 2y = 3`, `2x + ky = 6` stop having exactly one solution? What if the 6 were a 7?
+
+*Solution.* The second row is a multiple of the first when **`k = 4`**. With right-hand side 6 the second equation is twice the first: one line, infinitely many solutions. With 7 the lines are parallel: no solution. By columns: (1, 2) and (2, 4) lie on one line, and (3, 6) is on that line while (3, 7) is not.
+
+**P5. Solve by looking.** For the lecture's 3 by 3 matrix, solve `A x = b` with no elimination for `b = (2, −1, 0)`, `(−1, 1, 1)` and `(4, −1, −4)`.
+
+*Solution.* The first `b` is column 1, so `x = (1, 0, 0)`. The second is column 2 + column 3, so `x = (0, 1, 1)`. The third is 2·column 1 − column 3, so `x = (2, 0, −1)`.
+
+**P6. Triangulation (robot).** A robot with a compass sees beacon A at (4, 6) at bearing 45° and beacon B at (7, 1) at bearing 0°. Where is it?
+
+*Solution.* Bearing `φ` to a beacon at `(p, q)` gives `(sin φ) x − (cos φ) y = (sin φ) p − (cos φ) q`. For A, sine and cosine are equal: `x − y = −2`. For B: `−y = −1`, so `y = 1`. Then `x = −1`. The robot is at **(−1, 1)**. Check: from there A is 5 across and 5 up (45°), B is 8 across and 0 up (0°). The fix fails anywhere on the line through A and B.
+
+**P7. Jacobian of an arm (robot).** Two links of length 1, shoulder at 0°, elbow bent 90°: elbow at (1, 0), hand at (1, 1). Find `J` and the joint speeds that move the hand straight up at 1 unit per second.
+
+*Solution.* Column *i* is the arrow from joint *i* to the hand, turned a quarter turn anticlockwise: `(a, b) → (−b, a)`. Shoulder: (1, 1) → (−1, 1). Elbow: (0, 1) → (−1, 0). So `J = [−1 −1; 1 0]`. Solving `q̇₁(−1, 1) + q̇₂(−1, 0) = (0, 1)`: bottom entries give `q̇₁ = 1`, top entries give `q̇₂ = −1`. With the elbow straight the columns are (0, 2) and (0, 1), parallel, and motion along the arm is impossible.
+
+**P8. Thruster layout (robot).** Thrusters 1 and 2 at (−1, 1) and (−1, −1) push along +x; thruster 3 at (0, 0) pushes along +y. Write `B`, decide whether it is singular, and find the thrusts for `b = (2, 1, 1)`.
+
+*Solution.* Column of a thruster at `(x, y)` with angle `a`: `(cos a, sin a, x sin a − y cos a)`. So
+
+```
+     [  1   1   0 ]
+ B = [  0   0   1 ]
+     [ −1   1   0 ]
+```
+
+Row 2: `f₃ = 1`. Rows 1 and 3: `f₁ + f₂ = 2`, `−f₁ + f₂ = 1`, so `f₂ = 1.5`, `f₁ = 0.5`. Thrusts **(0.5, 1.5, 1)**. The same steps work for every `b`, so `B` is not singular. Moving thrusters 1 and 2 onto the centre line makes the torque row all zeros and the vehicle can no longer turn.
+
+**P9. Ill-conditioning (robot).** `x + y = 2` and `x + 1.01y = 2.01` cross at (1, 1). A sensor error changes 2.01 to 2.02. Where is the crossing now?
+
+*Solution.* Subtracting: `0.01y = 0.02`, so `y = 2`, `x = 0`. The crossing jumps from (1, 1) to **(0, 2)**: a 0.5% change in one measurement moved the answer by about 1.4 units. The lines are nearly parallel. The cure is better measurement geometry, not better arithmetic.
+
+---
+
+## 10. Go deeper
 
 - Strang, *Introduction to Linear Algebra*, chapter 1 and section 2.1: vectors, linear combinations and the two pictures.
 - Lynch and Park, *Modern Robotics*, chapter 5 (velocity kinematics): the Jacobian, its columns and singularities, in full generality.

@@ -580,3 +580,13 @@ a.card:hover p { color: #b9b6b3; }
 .toc details:not([open]) summary { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
 .toc details:not([open]) summary::after { content: "+"; }
 @media (min-width: 981px) { .toc summary { cursor: default; pointer-events: none; } .toc summary::after { content: none; } }
+
+/* figures inside the kit, and problem tags */
+.doc figure { margin-left: 0; margin-right: 0; }
+.doc figure img { display: block; max-width: min(100%, 620px); height: auto; border: 1px solid var(--rule-2); }
+.doc figcaption { margin-top: 8px; font-size: 14.5px; color: var(--ink-2); max-width: 70ch; }
+.doc figure + figure { margin-top: 2em; }
+.quiz .tag { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; font-style: normal; font-weight: 500; border: 1px solid var(--rule-2); padding: 1px 6px; margin-left: 8px; color: var(--ink-3); white-space: nowrap; vertical-align: 1px; }
+.quiz .tag.robot { border-color: var(--accent-ink); color: var(--accent-ink); }
+.quiz .a .eq { justify-content: flex-start; padding: .3em 0; flex-wrap: wrap; row-gap: .6em; }
+.quiz .a ol, .quiz .a ul { display: grid; gap: 6px; }

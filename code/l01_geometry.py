@@ -8,6 +8,7 @@ example, and the question "can we solve A x = b for every b?".
 Robots: triangulation from two beacons, a two-link arm, a three-thruster vehicle.
 """
 import math
+from fractions import Fraction
 from linalg import (frac, show, fmt, heading, solve, matvec, combine, column, from_columns,
                     transpose, arm_jacobian, det)
 
@@ -103,6 +104,33 @@ def thrust_allocation():
               "no solution, the torque row is all zeros" if f is None else [round(v, 2) for v in f], "\n")
 
 
+def practice():
+    heading("7. Practice problems (answers to P1-P9 on the page)")
+    print("P1/P2  x + y = 5, x - y = 1          ->", [fmt(v) for v in solve(frac([[1, 1], [1, -1]]), frac([5, 1]))])
+    print("P3     [1 2; 3 4] times (2, -1)      ->", matvec([[1, 2], [3, 4]], [2, -1]),
+          " by columns:", combine([[1, 3], [2, 4]], [2, -1]))
+    print("P4     k = 4 makes the rows proportional: det [1 2; 2 4] =", det(frac([[1, 2], [2, 4]])))
+    A = frac([[2, -1, 0], [-1, 2, -1], [0, -3, 4]])
+    for b in ([2, -1, 0], [-1, 1, 1], [4, -1, -4]):
+        print(f"P5     b = {b}".ljust(38), "->", [fmt(v) for v in solve(A, frac(b))])
+    # P6: beacon A (4, 6) at 45 degrees gives x - y = -2; beacon B (7, 1) at 0 degrees gives y = 1
+    robot = solve(frac([[1, -1], [0, 1]]), frac([-2, 1]))
+    print("P6     robot position                ->", [fmt(v) for v in robot])
+    bearings = [math.degrees(math.atan2(q - float(robot[1]), p - float(robot[0]))) for p, q in ((4, 6), (7, 1))]
+    print("       check: bearings from there    ->", [round(v, 6) for v in bearings])
+    J = arm_jacobian([1, 1], [0, math.pi / 2])
+    print("P7     J =", [[round(v, 6) for v in row] for row in J],
+          " joint speeds for (0, 1):", [round(v, 6) for v in solve(J, [0, 1])])
+    Jstraight = arm_jacobian([1, 1], [0, 0])
+    print("       straight arm columns:", [round(v, 6) for v in column(Jstraight, 0)], [round(v, 6) for v in column(Jstraight, 1)])
+    B = frac([[1, 1, 0], [0, 0, 1], [-1, 1, 0]])
+    print("P8     thrusts for (2, 1, 1)          ->", [fmt(v) for v in solve(B, frac([2, 1, 1]))], " det B =", fmt(det(B)))
+    for rhs in ("2.01", "2.02"):
+        x = solve([[Fraction(1), Fraction(1)], [Fraction(1), Fraction("1.01")]], [Fraction(2), Fraction(rhs)])
+        print(f"P9     second right-hand side {rhs}   ->", [fmt(v) for v in x])
+    print()
+
+
 if __name__ == "__main__":
     lecture_example()
     two_ways_to_multiply()
@@ -110,3 +138,4 @@ if __name__ == "__main__":
     triangulation()
     arm_columns()
     thrust_allocation()
+    practice()

@@ -427,10 +427,88 @@
   </div>
 </section>
 
+<!-- ============================================================ practice -->
+<section class="concept" id="practice" data-toc="Practice problems">
+  <header class="concept-head">
+    <span class="concept-no">1.6</span>
+    <h2>Practice problems</h2>
+    <p class="concept-sub">Nine problems, from first steps to robot design. Work each on paper, then open the solution. Every answer has been checked by the code for this lecture.</p>
+  </header>
+  <div class="quiz problems">
+    <details><summary><span class="q">P1</span><span>Draw the row picture of <span class="m">x + y = 5</span> and <span class="m">x − y = 1</span>. Where do the lines cross?<em class="tag">rows</em></span></summary>
+      <div class="a">
+        <p>The first line passes through (5, 0) and (0, 5). The second passes through (1, 0) and (0, −1). Add the two equations and <span class="m">y</span> cancels: <span class="m">2x = 6</span>, so <span class="m">x = 3</span>. Put that back into the first equation: <span class="m">y = 2</span>.</p>
+        <p><strong>Answer:</strong> the lines cross at (3, 2). Check: <span class="m">3 + 2 = 5</span> and <span class="m">3 − 2 = 1</span>.</p>
+      </div></details>
+    <details><summary><span class="q">P2</span><span>Write the system of P1 in the column picture and check your solution with it.<em class="tag">columns</em></span></summary>
+      <div class="a">
+        <div class="eq"><span class="m">x</span><span data-mx="1; 1" data-cols="0:h1"></span><span class="op">+</span><span class="m">y</span><span data-mx="1; -1" data-cols="0:h2"></span><span class="op">=</span><span data-mx="5; 1" data-cols="0:h3"></span></div>
+        <p>With <span class="m">x = 3</span>, <span class="m">y = 2</span>: three of (1, 1) is (3, 3), two of (1, −1) is (2, −2), and their sum is (5, 1).</p>
+      </div></details>
+    <details><summary><span class="q">P3</span><span>Multiply <span data-mx="1 2; 3 4" data-cls="sm"></span> by <span data-mx="2; -1" data-cls="sm"></span> twice: once by columns, once by rows.<em class="tag">A times x</em></span></summary>
+      <div class="a">
+        <p><strong>By columns:</strong> 2 of the first column minus 1 of the second: <span class="m">2(1, 3) − (2, 4) = (0, 2)</span>.</p>
+        <p><strong>By rows:</strong> first entry <span class="m">1·2 + 2·(−1) = 0</span>, second entry <span class="m">3·2 + 4·(−1) = 2</span>.</p>
+        <p><strong>Answer:</strong> (0, 2) both ways.</p>
+      </div></details>
+    <details><summary><span class="q">P4</span><span>For which number <span class="m">k</span> does <span class="m">x + 2y = 3</span>, <span class="m">2x + ky = 6</span> stop having exactly one solution? What happens then, and what if the 6 were a 7?<em class="tag">singular</em></span></summary>
+      <div class="a">
+        <p>The system is singular when the second row is a multiple of the first. Doubling the first row gives <span class="m">2x + 4y</span>, so <strong><span class="m">k = 4</span></strong>.</p>
+        <p>With <span class="m">k = 4</span> and right-hand side 6 the second equation is exactly twice the first. Both rows draw the same line, so there are infinitely many solutions.</p>
+        <p>With <span class="m">k = 4</span> and right-hand side 7 the left sides still match but the right sides do not. The lines are parallel and there is no solution.</p>
+        <p>Column view of the same fact: the columns (1, 2) and (2, 4) point along one line, so their combinations can only reach right-hand sides on that line. (3, 6) is on it. (3, 7) is not.</p>
+      </div></details>
+    <details><summary><span class="q">P5</span><span>For the lecture's matrix <span data-mx="2 -1 0; -1 2 -1; 0 -3 4" data-cls="sm"></span>, solve <span class="m">A<b>x</b> = <b>b</b></span> by looking at the columns, with no elimination, for <span class="m"><b>b</b> = (2, −1, 0)</span>, then <span class="m">(−1, 1, 1)</span>, then <span class="m">(4, −1, −4)</span>.<em class="tag">columns</em></span></summary>
+      <div class="a">
+        <ol>
+          <li>(2, −1, 0) is column 1. So <span class="m"><b>x</b> = (1, 0, 0)</span>.</li>
+          <li>(−1, 1, 1) is column 2 plus column 3: (−1, 2, −3) + (0, −1, 4). So <span class="m"><b>x</b> = (0, 1, 1)</span>.</li>
+          <li>(4, −1, −4) is twice column 1 minus column 3: (4, −2, 0) − (0, −1, 4). So <span class="m"><b>x</b> = (2, 0, −1)</span>.</li>
+        </ol>
+        <p>The habit to build: before computing, compare the target with the columns.</p>
+      </div></details>
+    <details><summary><span class="q">P6</span><span>A robot with a compass sees beacon A, at (4, 6), at a bearing of 45°, and beacon B, at (7, 1), due east (bearing 0°). Write the two equations and find the robot.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>Each bearing <span class="m">φ</span> to a beacon at <span class="m">(p, q)</span> gives the line <span class="m">(<span class="u">sin</span> φ) x − (<span class="u">cos</span> φ) y = (<span class="u">sin</span> φ) p − (<span class="u">cos</span> φ) q</span>.</p>
+        <p><strong>Beacon A</strong>, <span class="m">φ = 45°</span>: the sine and cosine are equal, so divide them out: <span class="m">x − y = 4 − 6 = −2</span>.</p>
+        <p><strong>Beacon B</strong>, <span class="m">φ = 0°</span>: sine is 0 and cosine is 1, so <span class="m">−y = −1</span>, which is <span class="m">y = 1</span>.</p>
+        <p>Then <span class="m">x = y − 2 = −1</span>. <strong>The robot is at (−1, 1).</strong></p>
+        <p>Check with geometry: from (−1, 1) beacon A is 5 across and 5 up, which is 45°. Beacon B is 8 across and 0 up, which is due east.</p>
+        <p>Follow-up: the fix fails anywhere on the straight line through A and B, because both bearings then describe that one line.</p>
+      </div></details>
+    <details><summary><span class="q">P7</span><span>A two-link arm has two links of length 1. The shoulder is at 0° and the elbow is bent 90°, so the elbow is at (1, 0) and the hand at (1, 1). Find the Jacobian, then the joint speeds that move the hand straight up at 1 unit per second.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>Each column is the arrow from that joint to the hand, turned a quarter turn anticlockwise. Turning <span class="m">(a, b)</span> a quarter turn gives <span class="m">(−b, a)</span>.</p>
+        <ul>
+          <li>Shoulder at (0, 0): arrow to the hand is (1, 1), turned it is (−1, 1).</li>
+          <li>Elbow at (1, 0): arrow to the hand is (0, 1), turned it is (−1, 0).</li>
+        </ul>
+        <div class="eq"><span class="m">J</span><span class="op">=</span><span data-mx="-1 -1; 1 0" data-cols="0:h1,1:h2"></span></div>
+        <p>We want <span class="m">q̇<sub>1</sub>(−1, 1) + q̇<sub>2</sub>(−1, 0) = (0, 1)</span>. The bottom entries give <span class="m">q̇<sub>1</sub> = 1</span>. The top entries give <span class="m">−1 − q̇<sub>2</sub> = 0</span>, so <span class="m">q̇<sub>2</sub> = −1</span>.</p>
+        <p><strong>Answer:</strong> the shoulder turns at +1 rad/s and the elbow at −1 rad/s. The shoulder alone would also drag the hand left, and the elbow cancels that part.</p>
+        <p>Follow-up: straighten the elbow. The hand is at (2, 0) and the columns become (0, 2) and (0, 1). They are parallel, so the hand can only move up or down. Moving it along the arm, in the direction (1, 0), has no solution.</p>
+      </div></details>
+    <details><summary><span class="q">P8</span><span>A vehicle has thruster 1 at (−1, 1) and thruster 2 at (−1, −1), both pushing forward (along +x), and thruster 3 at the centre (0, 0) pushing sideways (along +y). Write the matrix, decide whether it is singular, and find the thrusts for <span class="m"><b>b</b> = (F<sub>x</sub>, F<sub>y</sub>, τ) = (2, 1, 1)</span>.<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>A thruster at <span class="m">(x, y)</span> pushing along angle <span class="m">a</span> has the column <span class="m">(<span class="u">cos</span> a, <span class="u">sin</span> a, x <span class="u">sin</span> a − y <span class="u">cos</span> a)</span>. For the two forward thrusters <span class="m">a = 0</span>, so the torque entry is <span class="m">−y</span>: −1 for thruster 1 and +1 for thruster 2. Thruster 3 sits at the centre, so its torque entry is 0.</p>
+        <div class="eq"><span data-mx="1 1 0; 0 0 1; -1 1 0" data-cols="0:h1,1:h2,2:h4"></span><span data-mx="f₁; f₂; f₃"></span><span class="op">=</span><span data-mx="2; 1; 1" data-cols="0:h3"></span></div>
+        <p>Row 2 gives <span class="m">f<sub>3</sub> = 1</span>. Rows 1 and 3 give <span class="m">f<sub>1</sub> + f<sub>2</sub> = 2</span> and <span class="m">−f<sub>1</sub> + f<sub>2</sub> = 1</span>. Add them: <span class="m">2f<sub>2</sub> = 3</span>.</p>
+        <p><strong>Answer:</strong> <span class="m">f = (0.5, 1.5, 1)</span>. The same steps work for any right-hand side, so the matrix is not singular: this layout can produce every push and turn.</p>
+        <p>Follow-up: slide thrusters 1 and 2 onto the centre line (<span class="m">y = 0</span>). Both torque entries become 0, the bottom row is all zeros, and the vehicle can no longer turn.</p>
+      </div></details>
+    <details><summary><span class="q">P9</span><span>The lines <span class="m">x + y = 2</span> and <span class="m">x + 1.01y = 2.01</span> cross at (1, 1). A sensor error changes the 2.01 to 2.02. Where do they cross now, and what does that tell a robot designer?<em class="tag robot">robot</em></span></summary>
+      <div class="a">
+        <p>Subtract the first equation from the second: <span class="m">0.01y = 0.02</span>, so <span class="m">y = 2</span> and then <span class="m">x = 0</span>.</p>
+        <p><strong>Answer:</strong> the crossing jumps from (1, 1) to (0, 2). One measurement changed by half of one per cent and the answer moved by about 1.4 units.</p>
+        <p>The two lines are almost parallel, so the system is nearly singular, or ill-conditioned. A designer reads this as a warning about geometry, and the cure is to choose measurements whose lines cross at a wide angle. Better arithmetic would not help.</p>
+      </div></details>
+  </div>
+</section>
+
 <!-- ============================================================ check -->
 <section class="concept" id="check" data-toc="Check yourself">
   <header class="concept-head">
-    <span class="concept-no">1.6</span>
+    <span class="concept-no">1.7</span>
     <h2>Check yourself</h2>
     <p class="concept-sub">Answer in your head first, then open each one.</p>
   </header>

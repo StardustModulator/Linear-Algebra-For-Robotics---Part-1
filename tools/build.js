@@ -39,6 +39,8 @@ const pad = n => String(n).padStart(2, '0');
 const PAGES = [{ md: 'README.md', out: 'index.html', nav: 'Start here: the outline', tag: 'kit' }];
 LECTURES.forEach(([n, slug, title]) => PAGES.push({ md: slug + '.md', out: 'notes-' + pad(n) + '.html', nav: title, tag: pad(n) }));
 PAGES.push({ md: 'concept-map.md', out: 'concept-map.html', nav: 'Complete concept map', tag: 'map' });
+PAGES.push({ md: 'cheat-sheet.md', out: 'cheat-sheet.html', nav: 'Formula sheet', tag: 'f(x)' });
+PAGES.push({ md: 'figures.md', out: 'figures.html', nav: 'Figure pack', tag: 'fig' });
 PAGES.push({ md: 'glossary.md', out: 'glossary.html', nav: 'Glossary', tag: 'a–z' });
 PAGES.push({ md: 'resources.md', out: 'resources.html', nav: 'Sources and further reading', tag: 'src' });
 const CODE_PAGE = { out: 'code.html', nav: 'Runnable code', tag: 'py' };
@@ -118,6 +120,12 @@ function markdown(src) {
       i++; continue;
     }
     if (/^\s*(-{3,}|\*{3,})\s*$/.test(line)) { out += '<hr>\n'; i++; continue; }
+    if ((m = line.match(/^!\[([^\]]*)\]\(([^)\s]+)\)\s*$/))) {
+      /* a picture on its own line becomes a captioned figure; paths are relative to article/ */
+      const src = /^(https?:|\.\.\/)/.test(m[2]) ? m[2] : '../article/' + m[2];
+      out += '<figure><img src="' + src + '" alt="' + esc(m[1]).replace(/"/g, '&quot;') + '" loading="lazy"><figcaption>' + inline(m[1]) + '</figcaption></figure>\n';
+      i++; continue;
+    }
     if (/^> ?/.test(line)) {
       const buf = [];
       while (i < lines.length && /^> ?/.test(lines[i])) { buf.push(lines[i].replace(/^> ?/, '')); i++; }
