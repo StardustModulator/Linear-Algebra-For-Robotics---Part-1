@@ -19,6 +19,8 @@
     for (i = 0; i < U.length; i++) if (x >= U[i][0]) { v = x / U[i][0]; return (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2)) + U[i][1]; }
     return commas(x);
   }
+  /* "label = matrix" kept together as one unit when an equation row wraps */
+  function pair() { return '<span class="eqpair">' + Array.prototype.slice.call(arguments).map(function (p) { return /^</.test(p) ? p : '<span class="op">' + p + '</span>'; }).join('') + '</span>'; }
   function ease(k) { return k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; }
 
   /* ------------------------------------------------------------------ 4.1 */
@@ -271,6 +273,8 @@
       startPrim();
       if (UI.reducedMotion()) { while (!finished) advance(10); }
       report();
+      var box = canvas.getBoundingClientRect(), vh = window.innerHeight || 800;
+      if (box.top < 60 || box.bottom > vh) canvas.scrollIntoView({ block: 'center', behavior: UI.reducedMotion() ? 'auto' : 'smooth' });
     }
     function advance(dt) {
       var pr = queue[qi];
@@ -291,16 +295,16 @@
       out.x(fix(pose.x, 2) + ' m'); out.y(fix(pose.y, 2) + ' m'); out.th(fix(deg(LA.wrapAngle(pose.th)), 0) + '°'); out.d(fix(dist, 2) + ' m');
       if (mode === 'right' && finished) {
         R = result();
-        line2 = UI.eq({ cls: 'left' }, mm('A B B<sup>−1</sup> A<sup>−1</sup>'), '=', UI.mx(strs(R), { cls: 'sm', cols: { 0: 'h4', 1: 'h4', 2: 'h4' }, cap: 'the identity: home' }));
+        line2 = UI.eq({ cls: 'left' }, pair(mm('A B B<sup>−1</sup> A<sup>−1</sup>'), '=', UI.mx(strs(R), { cls: 'sm', cols: { 0: 'h4', 1: 'h4', 2: 'h4' }, cap: 'the identity: home' })));
       } else if (mode === 'wrong' && finished) {
         R = result(); tint[2] = 'h3';
-        line2 = UI.eq({ cls: 'left' }, mm('A B A<sup>−1</sup> B<sup>−1</sup>'), '=', UI.mx(strs(R), { cls: 'sm', cols: tint, cap: dist < 0.02 ? 'the identity, this once' : 'not the identity' }));
+        line2 = UI.eq({ cls: 'left' }, pair(mm('A B A<sup>−1</sup> B<sup>−1</sup>'), '=', UI.mx(strs(R), { cls: 'sm', cols: tint, cap: dist < 0.02 ? 'the identity, this once' : 'not the identity' })));
       } else {
-        line2 = UI.eq({ cls: 'left' }, mm('A B'), '=', UI.mx(strs(m.AB), { cls: 'sm', cap: 'pose after both moves' }));
+        line2 = UI.eq({ cls: 'left' }, pair(mm('A B'), '=', UI.mx(strs(m.AB), { cls: 'sm', cap: 'pose after both moves' })));
       }
       eq.innerHTML = UI.eq({ cls: 'left' },
-        mm('A', 'c1'), '=', UI.mx(strs(m.A), { cls: 'sm', cap: 'drive' }),
-        mm('B', 'c2'), '=', UI.mx(strs(m.B), { cls: 'sm', cap: 'turn, then drive' })) + line2;
+        pair(mm('A', 'c1'), '=', UI.mx(strs(m.A), { cls: 'sm', cap: 'drive' })),
+        pair(mm('B', 'c2'), '=', UI.mx(strs(m.B), { cls: 'sm', cap: 'turn, then drive' }))) + line2;
       if (!finished) {
         UI.status(status, '', mode === 'fwd' ? 'Replaying: move <b>A</b>, then move <b>B</b>.'
           : (mode === 'right' ? 'Undoing <b>B</b> first (back up, turn back), then <b>A</b>.' : 'Undoing <b>A</b> first (back up), then <b>B</b> (back up, turn back).'));
@@ -635,13 +639,13 @@
     function panel(el, left, right, nl, nr) {
       var prod = times(left, right), w = wires(PERMS[right].p, PERMS[left].p, nr, nl);
       el.innerHTML = '<div class="permpanel"><span class="label">' + nl + ' ' + nr + ' &nbsp;·&nbsp; ' + nr + ' acts first, then ' + nl + '</span>' + w.svg +
-        UI.eq(pm(left), pm(right), '=', pm(prod), '=', mm(PERMS[prod].html, 'c3')) +
+        UI.eq(pair(pm(left), pm(right)), pair('=', pm(prod), '=', mm(PERMS[prod].html, 'c3'))) +
         '<p class="permnote">Motors 1, 2, 3 receive signals ' + w.got.join(', ') + '.</p></div>';
     }
     function invPanel(k, letter) {
       var t = transposed(k);
       return '<div class="permpanel"><span class="label">Undo ' + letter + ' &nbsp;·&nbsp; inverse = transpose</span>' +
-        UI.eq(mm(letter + '<sup class="u">T</sup> ' + letter), '=', pm(t), pm(k), '=', pm(0)) +
+        UI.eq(pair(mm(letter + '<sup class="u">T</sup> ' + letter), '=', pm(t), pm(k)), pair('=', pm(0))) +
         '<p class="permnote">' + mm(letter + '<sup>−1</sup> = ' + letter + '<sup class="u">T</sup>') + ' is ' + nm(t) + (t === k ? ', the same matrix. An exchange undoes itself.' : (k === 0 ? '.' : ', the other cycle.')) + '</p></div>';
     }
 

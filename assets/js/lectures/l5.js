@@ -593,7 +593,11 @@
         p.arrow(pos, nx, { color: cl[i], width: 3 });
         pos = nx;
       }
-      if (omni && Math.abs(pos[1]) > 1e-6) p.line(pos, [pos[0], 0, pos[2]], { color: C.s3, width: 1.1, dash: [2, 4], alpha: .8 });
+      if (omni && Math.abs(pos[1]) > 1e-6) {
+        /* a dashed drop back to the plane, so the eye can see how far the dot has left it */
+        p.line(pos, [pos[0], 0, pos[2]], { color: C.s3, width: 1.5, dash: [3, 4] });
+        p.point([pos[0], 0, pos[2]], { r: 3, color: C.s3 });
+      }
       p.point(pos, { r: 6.5, color: C.s3, ring: C.board });
       p.note('faint arrows: each column at 10 rad/s', 10, -12, { color: C.faint });
     });

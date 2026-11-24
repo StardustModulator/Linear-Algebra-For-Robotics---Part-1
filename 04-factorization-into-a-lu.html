@@ -12,6 +12,7 @@
 <style>
 /* Lecture 4 only: small pieces built from the shared design tokens */
 .board b.c1 { color: var(--s1); } .board b.c2 { color: var(--s2); } .board b.c3 { color: var(--s3); }
+.eqpair { display: inline-flex; align-items: center; gap: .35em; }
 .steps { display: grid; gap: 6px; padding-left: 1.3em; font-size: 15.5px; color: var(--ink-2); max-width: 66ch; }
 
 /* Lab 4.1 */
@@ -311,7 +312,7 @@
       <span data-mx="2 1; 8 7" data-cap="A"></span><span class="op">=</span>
       <span data-mx="1 0; 4 1" data-cells="1.0:h3" data-cap="L"></span>
       <span data-mx="2 0; 0 3" data-pivots="0.0,1.1" data-cap="D · pivots"></span>
-      <span data-mx="1 1/2; 0 1" data-cap="U · ones on the diagonal"></span>
+      <span data-mx="1 1/2; 0 1" data-cap="U · unit diagonal"></span>
     </div>
     <p>Row 1 of the old <span class="m">U</span> was (2, 1). Divided by its pivot 2 it is (1, 1/2). Row 2 was (0, 3). Divided by 3 it is (0, 1). Now both triangular matrices have ones on the diagonal, and the pivots stand alone in the middle.</p>
   </div>
