@@ -144,7 +144,7 @@ The lecture's example: subtract 2 × row 1 from row 2, later subtract 5 × row 2
        [ 0  0 1 ]          [ 0 −5 1 ]                    [ 10 −5 1 ]
 ```
 
-**The 10 was in neither step.** The second step subtracts 5 × row 2 from row 3 after row 2 has already had 2 × row 1 removed, so row 3 picks up `5 × 2 = 10` of row 1 *through* row 2. Strang makes it clear that he would rather that 10 were not there.
+**The 10 was in neither step.** The second step subtracts 5 × row 2 from row 3 after row 2 has already had 2 × row 1 removed, so row 3 picks up `5 × 2 = 10` of row 1 *through* row 2. That stray entry is why software keeps L rather than E.
 
 In the other direction, with the inverses in reverse order:
 
@@ -285,7 +285,7 @@ Why robot software avoids `A⁻¹`: building the inverse costs about `n³` opera
 
 Libraries go one step further and never store `L` separately: each multiplier is written into the entry it has just made zero, so a single `n` by `n` array holds `U` on and above the diagonal and `L` below it. That is only possible because the multipliers enter `L` unchanged (section 2.6).
 
-### 3.3 Socks and shoes for a rover (Lab 4.2)
+### 3.3 Socks and shoes for a rover (Lab 4.1)
 
 A rover on a flat floor has a pose: position `(x, y)` and heading `θ`. One 3 by 3 **homogeneous transform** holds all three:
 
@@ -424,7 +424,7 @@ Worked numbers (script section 11): commands (10, 20, 30) through the cycle `C` 
 
 ## 5. Common mistakes and misconceptions
 
-- **Writing `(AB)⁻¹ = A⁻¹B⁻¹`.** True only when `A` and `B` commute. The rover in Lab 4.2 ends 3.44 m from home when you do this.
+- **Writing `(AB)⁻¹ = A⁻¹B⁻¹`.** True only when `A` and `B` commute. The rover in Lab 4.1 ends 3.44 m from home when you do this.
 - **Putting `−4` in `L`.** `E₂₁` holds `−4`; `L = E₂₁⁻¹` holds `+4`. `L` stores multipliers with the sign of "subtract this many times".
 - **Thinking `L` is `E` with the signs flipped.** That works for a single step, and fails as soon as steps interact: `E` has a 10 in the example, `L` has a 0 there.
 - **"LU is a faster way to solve one system."** For a single right-hand side it is the same work as elimination. The gain is in the second, third and thousandth right-hand side.
@@ -454,13 +454,13 @@ Every figure below is already captured in `article/figures/` (see the [figure pa
 
 | Figure | Ready-made file | How it was set up |
 |---|---|---|
-| `A = LU` for the lecture's 2 by 2 | `l4-lu-2x2.png` | Lab 4.1, "Lecture 2 by 2", stepped to "Finished: A = L U" |
-| The same matrix as `A = LDU` | `l4-ldu-2x2.png` | Lab 4.1 with "A = L D U" selected |
-| A multiplier dropping into `L` | `l4-lu-3x3-midway.png` | Lab 4.1, "Multipliers 2 and 5", step 6: the 5 has just landed |
-| `L` rebuilding `A` row by row | `l4-lu-rebuild.png` | Lab 4.1, "Multipliers 2 and 5", step "Check: multiply L by U" |
-| `E` against `L`, with the stray 10 | `l4-e-against-l.png` | Lab 4.1, "Multipliers 2 and 5", last step |
-| The rover after two moves | `l4-rover-two-moves.png` | Lab 4.2 as it opens |
-| Right order and wrong order of the undo | `l4-rover-undo-right-order.png`, `l4-rover-undo-wrong-order.png` | Lab 4.2 after each of the two undo buttons |
+| `A = LU` for the lecture's 2 by 2 | `l4-lu-2x2.png` | Lab 4.2, "Lecture 2 by 2", stepped to "Finished: A = L U" |
+| The same matrix as `A = LDU` | `l4-ldu-2x2.png` | Lab 4.2 with "A = L D U" selected |
+| A multiplier dropping into `L` | `l4-lu-3x3-midway.png` | Lab 4.2, "Multipliers 2 and 5", step 6: the 5 has just landed |
+| `L` rebuilding `A` row by row | `l4-lu-rebuild.png` | Lab 4.2, "Multipliers 2 and 5", step "Check: multiply L by U" |
+| `E` against `L`, with the stray 10 | `l4-e-against-l.png` | Lab 4.2, "Multipliers 2 and 5", last step |
+| The rover after two moves | `l4-rover-two-moves.png` | Lab 4.1 as it opens |
+| Right order and wrong order of the undo | `l4-rover-undo-right-order.png`, `l4-rover-undo-wrong-order.png` | Lab 4.1 after each of the two undo buttons |
 | The two cost bars | `l4-cost-bars.png` | Lab 4.3 at n = 100, k = 1,000 |
 | The tick budget at n = 500 | `l4-cost-tick-budget.png` | Lab 4.3 after "n = 500" |
 | Spline path with its system `T M = r` | `l4-spline-path.png` | Lab 4.4 as it opens |

@@ -15,7 +15,7 @@
 .eqpair { display: inline-flex; align-items: center; gap: .35em; }
 .steps { display: grid; gap: 6px; padding-left: 1.3em; font-size: 15.5px; color: var(--ink-2); max-width: 66ch; }
 
-/* Lab 4.1 */
+/* Lab 4.2 */
 #lab-lu .stepper-view { min-height: 25em; }
 .lu-rows { list-style: none; padding: 0; margin: 0; display: grid; gap: 5px; font-family: var(--font-mono); font-size: 13px; line-height: 1.45; color: var(--chalk-2); }
 .eq .op.gap { width: 1.4em; padding: 0; }
@@ -199,7 +199,7 @@
   </div>
 
   <div class="lab board" id="lab-socks">
-    <div class="lab-head"><span class="lab-tag">LAB 4.2</span><h3>Undo two moves: which order brings the rover home?</h3><i data-ic="rover"></i></div>
+    <div class="lab-head"><span class="lab-tag">LAB 4.1</span><h3>Undo two moves: which order brings the rover home?</h3><i data-ic="rover"></i></div>
     <p class="lab-intro">The rover has done move <b>A</b> (drive) and then move <b>B</b> (turn, then drive). Press one of the two undo buttons and watch where it finishes. The sliders change the two moves.</p>
     <div class="lab-main">
       <div class="lab-stage">
@@ -353,7 +353,7 @@
       <span data-mx="1 0 0; -2 1 0; 0 0 1" data-cells="1.0:h2" data-cap="E21"></span><span class="op">=</span>
       <span data-mx="1 0 0; -2 1 0; 10 -5 1" data-cells="2.0:h1" data-cap="E"></span>
     </div>
-    <p>Look at the <span class="hl1">10</span>. Neither step used a 10. It appears because the second step subtracts 5 × row 2 from row 3 after row 2 has already had 2 × row 1 taken out of it. So row 3 picks up 5 × 2 = 10 of row 1, passed along through row 2. Strang makes it clear that he would rather that 10 were not there.</p>
+    <p>Look at the <span class="hl1">10</span>. Neither step used a 10. It appears because the second step subtracts 5 × row 2 from row 3 after row 2 has already had 2 × row 1 taken out of it. So row 3 picks up 5 × 2 = 10 of row 1, passed along through row 2. That stray entry is why software keeps L rather than E.</p>
     <p>Now the other direction. The inverses multiply in the reverse order:</p>
     <div class="eq wrapok">
       <span data-mx="1 0 0; 2 1 0; 0 0 1" data-cells="1.0:h3" data-cap="E21 inverse"></span>
@@ -382,7 +382,7 @@
   </div>
 
   <div class="lab board" id="lab-lu">
-    <div class="lab-head"><span class="lab-tag">LAB 4.1</span><h3>Watch L fill up while A turns into U</h3><i data-ic="lu"></i></div>
+    <div class="lab-head"><span class="lab-tag">LAB 4.2</span><h3>Watch L fill up while A turns into U</h3><i data-ic="lu"></i></div>
     <p class="lab-intro">Step through elimination. The matrix on the right becomes <b>U</b>, and each multiplier drops into its own place in <b>L</b>. Load an example, or type your own numbers into A.</p>
     <div class="lab-main">
       <div class="lab-stage">
@@ -549,12 +549,12 @@
   </div>
   <div class="work">
     <span class="label">The spline equations (derived in the article notes)</span>
-    <div class="eq wrapok"><span class="m">M<sub>i−1</sub> + 4M<sub>i</sub> + M<sub>i+1</sub> = 6 (y<sub>i−1</sub> − 2y<sub>i</sub> + y<sub>i+1</sub>)</span></div>
+    <div class="eq wrapok"><span class="m">M<sub>i−1</sub> + 4M<sub>i</sub> + M<sub>i+1</sub></span><span class="op">=</span><span class="m">6 (y<sub>i−1</sub> − 2y<sub>i</sub> + y<sub>i+1</sub>)</span></div>
     <p>Here <span class="m">y<sub>i</sub></span> is one coordinate of waypoint <span class="m">i</span>. The path starts and ends with zero acceleration, <span class="m">M<sub>0</sub> = M<sub>n</sub> = 0</span>, a choice known as the natural spline. For seven waypoints that leaves five unknown accelerations and five equations:</p>
-    <div class="eq">
+    <div class="eq wrapok">
       <span data-mx="4 1 0 0 0; 1 4 1 0 0; 0 1 4 1 0; 0 0 1 4 1; 0 0 0 1 4" data-cls="sm" data-cap="T"></span>
-      <span data-mx="M₁; M₂; M₃; M₄; M₅" data-cls="sm" data-cols="0:h2" data-cap="accelerations"></span><span class="op">=</span>
-      <span data-mx="r₁; r₂; r₃; r₄; r₅" data-cls="sm" data-cols="0:h3" data-cap="from the waypoints"></span>
+      <span data-mx="M₁; M₂; M₃; M₄; M₅" data-cls="sm" data-cols="0:h2" data-cap="unknowns"></span><span class="op">=</span>
+      <span data-mx="r₁; r₂; r₃; r₄; r₅" data-cls="sm" data-cols="0:h3" data-cap="right side"></span>
     </div>
     <p>Look at what <span class="m">T</span> contains: fours and ones. No waypoint coordinate appears in it. The coordinates are all on the right-hand side.</p>
   </div>
@@ -565,7 +565,7 @@
   <div class="work">
     <span class="label">The factors of T, and where the pivots go</span>
     <div class="eq wrapok">
-      <span class="m">pivots: 4,&nbsp; 15/4 = 3.75,&nbsp; 56/15 ≈ 3.7333,&nbsp; 209/56 ≈ 3.7321,&nbsp; 780/209 ≈ 3.7321</span>
+      <span class="m">pivots: 4,</span><span class="m">15/4 = 3.75,</span><span class="m">56/15 ≈ 3.7333,</span><span class="m">209/56 ≈ 3.7321,</span><span class="m">780/209 ≈ 3.7321</span>
     </div>
     <p>Each pivot is 4 minus 1 over the pivot before it, and the multipliers are 1 over each pivot: 1/4, 4/15, 15/56, 56/209. The pivots settle almost at once on the number that reproduces itself under that rule, <span class="m">p = 4 − 1/p</span>, which is <span class="m">p = 2 + √3 ≈ 3.7321</span>.</p>
     <p>Counts for 500 waypoint unknowns: a full solve costs 250,000 operations after a 41,666,500-operation factorization. The banded solve costs 1,498 after a 998-operation factorization. That is 1.5% of a 1 ms tick at the speed assumed in Section 4.6.</p>
@@ -813,7 +813,7 @@
     <div class="note-body">
       <p><strong>One-line summary:</strong> elimination is work you can keep. Stored as L and U, it turns every later solve into two quick triangular passes.</p>
       <p><strong>A robot sentence you can reuse:</strong> a controller factors its matrix once, before the loop starts, and after that each tick only replays the logbook on fresh sensor readings.</p>
-      <p><strong>Good figures to capture:</strong> Lab 4.2 after the wrong undo, with the rover stranded away from home; Lab 4.3 at n = 100 and k = 1,000; Lab 4.4 with the dot patterns of T, L and U beside the path.</p>
+      <p><strong>Good figures to capture:</strong> Lab 4.1 after the wrong undo, with the rover stranded away from home; Lab 4.3 at n = 100 and k = 1,000; Lab 4.4 with the dot patterns of T, L and U beside the path.</p>
       <p>The full notes, worked numbers and references for this lecture are in <a href="article/04-factorization-into-a-lu.md">article/04-factorization-into-a-lu.md</a>, and runnable code is in <a href="code/l04_lu.py">code/l04_lu.py</a>.</p>
     </div>
   </div>

@@ -58,11 +58,11 @@ How to read the last column: "Lab 3.2" means the second lab on the Lecture 3 pag
 
 | Concept | In plain words | In a robot | See it |
 |---|---|---|---|
-| `(AB)⁻¹ = B⁻¹A⁻¹` | Undo in reverse order | To retrace two moves, undo the last one first | Lab 4.2 |
+| `(AB)⁻¹ = B⁻¹A⁻¹` | Undo in reverse order | To retrace two moves, undo the last one first | Lab 4.1 |
 | `(Aᵀ)⁻¹ = (A⁻¹)ᵀ` | Transposing and inverting can be done in either order | One factorization serves velocities and forces | page text |
-| `A = LU` | Elimination saved as two triangular matrices | Factor the robot's matrix once and keep it | Lab 4.1 |
-| `L` holds the multipliers | No mixing, each multiplier in its own place | A clean log of what elimination did | Lab 4.1 |
-| `A = LDU` | Pivots pulled out into a diagonal | The scale of each stage, kept separately | Lab 4.1 |
+| `A = LU` | Elimination saved as two triangular matrices | Factor the robot's matrix once and keep it | Lab 4.2 |
+| `L` holds the multipliers | No mixing, each multiplier in its own place | A clean log of what elimination did | Lab 4.2 |
+| `A = LDU` | Pivots pulled out into a diagonal | The scale of each stage, kept separately | Lab 4.2 |
 | Cost `n³/3` | The work of elimination on an `n` by `n` matrix | The one-off price of preparing a solver | Lab 4.3 |
 | Cost `n²` per right-hand side | The work for each new `b` | The price paid every control tick | Lab 4.3 |
 | Two triangular solves | `L y = b` going down, `U x = y` going up | How robot code solves without ever forming an inverse | Lab 4.3 |
