@@ -617,3 +617,7 @@ a.card:hover p { color: #b9b6b3; }
 
 /* a lab picture keeps its own height instead of stretching to the side panel */
 .lab-main > .lab-stage { align-self: start; }
+
+/* long file names and code in the kit wrap instead of widening the page */
+.doc h1, .doc h2, .doc h3, .doc p, .doc li, .doc td { overflow-wrap: anywhere; }
+.doc details { min-width: 0; max-width: 100%; }

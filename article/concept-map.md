@@ -49,9 +49,9 @@ How to read the last column: "Lab 3.2" means the second lab on the Lecture 3 pag
 | Column times row | A full matrix whose rows are all multiples of one row | A one-trick machine: output always along one direction | Lab 3.1 |
 | Block multiplication | Multiply blocks as if they were numbers | How poses multiply: rotations compose, positions add | Lab 3.2 |
 | `AB ≠ BA` | Order matters | Turn then drive is not drive then turn | Lab 3.3 |
-| Inverse `A⁻¹` | The matrix that undoes `A` | Changing viewpoint: world to robot and back | Lab 3.5 |
-| Singular: no inverse | Some non-zero `x` has `A x = 0` | Information destroyed; a motion the sensor cannot see | Lab 3.6 |
-| Gauss-Jordan | Reduce `[A I]` to `[I A⁻¹]` | Answer every unit command at once | Lab 3.4 |
+| Inverse `A⁻¹` | The matrix that undoes `A` | Changing viewpoint: world to robot and back | Lab 3.6 |
+| Singular: no inverse | Some non-zero `x` has `A x = 0` | Information destroyed; a motion the sensor cannot see | Lab 3.4 |
+| Gauss-Jordan | Reduce `[A I]` to `[I A⁻¹]` | Answer every unit command at once | Lab 3.5 |
 | Forward kinematics | (application) | A pose is a product of link transforms | Lab 3.2 |
 
 ## Lecture 4 · Factorization into A = LU

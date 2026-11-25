@@ -341,7 +341,7 @@ The rows of `WG` are combinations of the rows of `G`, which is way 3. Full forwa
 
 As a controller gain, `K` listens along one direction (`w`) and pushes along one direction (`d`). It is blind to the error (3, −1) and can never push off the line of `d`. This `K` is exactly the lecture's singular matrix `[1 3; 2 6]`, and the error it cannot hear is exactly Strang's `x = (3, −1)`. Rank one, singular, and "one-trick" are three views of one fact.
 
-### 3.8 Inverse = undo, or change viewpoint (Lab 3.5)
+### 3.8 Inverse = undo, or change viewpoint (Lab 3.6)
 
 **Undo.** `D⁻¹ = [1 0 −2; 0 1 0; 0 0 1]` drives 2 m backward. A chain is undone in reverse order, `(RD)⁻¹ = D⁻¹R⁻¹` (checked numerically; the rule belongs to Lecture 4).
 
@@ -363,7 +363,7 @@ In both cases the script confirms that the block formula equals the Gauss-Jordan
 
 The **rows** of `T⁻¹` explain it. Row 1 holds the rover's own `x` axis, so it measures how far along that axis the landmark is: the "ahead" number. Row 2 does the same for the `y` axis: the "left" number. The columns of `R` have become the rows of `Rᵀ`.
 
-### 3.9 Singular = information destroyed (Lab 3.6)
+### 3.9 Singular = information destroyed (Lab 3.4)
 
 The flattening map `F = [1 0; 0 0]` keeps `x` and drops `y`. Think of a camera looking along `y` that records sideways position and loses depth.
 
@@ -375,7 +375,7 @@ Two different points give one image, so no inverse can exist. The vector sent to
 
 The same thing happens to an arm. Lecture 1's two-link arm (links 2.2 and 1.7, shoulder at 58°) stretched straight has Jacobian `J = [−3.31 −1.44; 2.07 0.90]`, with parallel columns. Joint speeds (1.7, −3.9) rad/s give hand velocity (0, 0): a non-zero `x` with `Jx = 0`. So `J⁻¹` does not exist and the controller cannot turn a wanted hand velocity into joint speeds.
 
-Lab 3.6 slides between a healthy matrix and the lecture's singular one with `A(t) = [1  −2+5t; 2  1+5t]`:
+Lab 3.4 slides between a healthy matrix and the lecture's singular one with `A(t) = [1  −2+5t; 2  1+5t]`:
 
 | `t` | Angle between columns | `A x` for `x = (3, −1)` | Largest entry of `A⁻¹` |
 |---|---|---|---|
@@ -464,10 +464,10 @@ Every figure below is already captured in `article/figures/` (see the [figure pa
 | A partial product is an intermediate frame | `l3-arm-chain-elbow.png` | Lab 3.2 with "T₁ T₂" selected: the amber ring is on the elbow |
 | `AB ≠ BA` on a rover | `l3-order-matters.png` | Lab 3.3 default: 90° and 2 m, end points 2.83 m apart |
 | A pair that does commute | `l3-order-commutes.png` | Lab 3.3 with the turn at 0° |
-| Gauss-Jordan in progress and finished | `l3-gauss-jordan-step.png`, `l3-gauss-jordan-done.png` | Lab 3.4, "Lecture", after 2 and after 6 presses of Next step |
-| Gauss-Jordan on a singular matrix | `l3-gauss-jordan-singular.png` | Lab 3.4, "Singular", last step: no second pivot, and `x = (3, −1)` |
-| The inverse as a change of viewpoint | `l3-viewpoint.png`, `l3-viewpoint-turned.png` | Lab 3.5 default, then with the heading at 30° |
-| Invertible, nearly singular, singular | `l3-flatten-invertible.png`, `l3-flatten-nearly.png`, `l3-flatten-singular.png` | Lab 3.6 with Undo ticked at 0%, 90% and 100% |
+| Gauss-Jordan in progress and finished | `l3-gauss-jordan-step.png`, `l3-gauss-jordan-done.png` | Lab 3.5, "Lecture", after 2 and after 6 presses of Next step |
+| Gauss-Jordan on a singular matrix | `l3-gauss-jordan-singular.png` | Lab 3.5, "Singular", last step: no second pivot, and `x = (3, −1)` |
+| The inverse as a change of viewpoint | `l3-viewpoint.png`, `l3-viewpoint-turned.png` | Lab 3.6 default, then with the heading at 30° |
+| Invertible, nearly singular, singular | `l3-flatten-invertible.png`, `l3-flatten-nearly.png`, `l3-flatten-singular.png` | Lab 3.4 with Undo ticked at 0%, 90% and 100% |
 
 ---
 

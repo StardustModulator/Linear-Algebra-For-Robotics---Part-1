@@ -1707,6 +1707,66 @@ def flattening_family():
     print()
 
 
+def practice():
+    heading("24. Practice problems (answers to P1-P10 on the page)")
+    shapes = {"A": (2, 3), "B": (3, 4), "C": (4, 2)}
+    out = []
+    for name in ("AB", "BA", "BC", "CA"):
+        s = product_shape(shapes[name[0]], shapes[name[1]])
+        out.append(f"{name} " + (f"{s[0]} by {s[1]}" if s else "does not exist"))
+    abc = product_shape(product_shape(shapes["A"], shapes["B"]), shapes["C"])
+    print("P1    ", ",  ".join(out) + f",  ABC {abc[0]} by {abc[1]}")
+
+    M, N = [[1, 2], [3, 4]], [[2, 0], [1, 3]]
+    MN = matmul(M, N)
+    print("P2     AB =", MN, "  BA =", matmul(N, M))
+    print("       column 2 by columns:", combine([column(M, 0), column(M, 1)], column(N, 1)),
+          "  row 2 by rows:", [M[1][0] * a + M[1][1] * b for a, b in zip(N[0], N[1])])
+
+    S = outer([2, 3], [2, 1])
+    print("P3     (2, 3) times [2 1] =", S, "  times (1, -2) =", matvec(S, [1, -2]),
+          "  inverse:", inverse(frac(S)))
+
+    G = frac([[1, 2], [3, 7]])
+    print("P4     inverse of [1 2; 3 7] =", [[fmt(v) for v in row] for row in inverse(G)],
+          "  check:", matmul(G, inverse(G)) == identity(2))
+    G6 = frac([[1, 2], [3, 6]])
+    print("       with 6 in place of 7: inverse =", inverse(G6), "  times (2, -1) =", [fmt(v) for v in matvec(G6, [2, -1])])
+
+    U = frac([[1, 1, 0], [0, 1, 1], [0, 0, 1]])
+    print("P5     inverse of [1 1 0; 0 1 1; 0 0 1] =", [[fmt(v) for v in row] for row in inverse(U)])
+
+    T = hom2(math.radians(90), 2, 1)
+    print("P6     pose =", r2(T), "  cone at world", r2(matvec(T, [3, 1, 1])[:2]))
+
+    D, R = hom2(0, 3, 0), hom2(math.radians(90), 0, 0)
+
+    def pose(X):
+        return f"({X[0][2]:.2f}, {X[1][2]:.2f}) facing {math.degrees(math.atan2(X[1][0], X[0][0])):.0f} deg"
+
+    drive_turn, turn_drive = matmul(matmul(T, D), R), matmul(matmul(T, R), D)
+    print("P7     drive then turn:", pose(drive_turn), "   turn then drive:", pose(turn_drive),
+          f"   apart: {math.dist(column(drive_turn, 2)[:2], column(turn_drive, 2)[:2]):.2f} m")
+
+    T1, T2, T3 = hom2(math.radians(90), 0, 0), hom2(math.radians(-90), 1, 0), hom2(0, 1, 0)
+    print("P8     T1 T2 =", r2(matmul(T1, T2)), "  T1 T2 T3 =", r2(matmul(matmul(T1, T2), T3)))
+
+    Tr = hom2(math.radians(180), 4, 2)
+    Rt = transpose([row[:2] for row in Tr[:2]])
+    q = matvec(Rt, [4, 2])
+    Ti = [Rt[0] + [-q[0]], Rt[1] + [-q[1]], [0, 0, 1]]
+    print("P9     T^-1 =", r2(Ti), "  dock seen from the rover:", r2(matvec(Ti, [1, 3, 1])[:2]),
+          "  agrees with Gauss-Jordan:", close(Ti, inverse(Tr)))
+
+    bad, good = frac([[1, 1], [1, 1]]), frac([[1, -1], [1, 1]])
+    gi = inverse(good)
+    print("P10    broken mixer [1 1; 1 1]: inverse =", inverse(bad), "  times (1, -1) =", [fmt(v) for v in matvec(bad, [1, -1])])
+    print("       repaired [1 -1; 1 1]: inverse =", [[fmt(v) for v in row] for row in gi],
+          "  stick for wheels (1, 0):", [fmt(v) for v in column(gi, 0)],
+          "  check:", [fmt(v) for v in matvec(good, column(gi, 0))])
+    print()
+
+
 if __name__ == "__main__":
     way_1_entries()
     size_rule()
@@ -1728,6 +1788,7 @@ if __name__ == "__main__":
     lost_information()
     unit_commands()
     flattening_family()
+    practice()
 </code></pre></details>
 <details open><summary>Output</summary><pre><code>
 1. Way one: an entry at a time (row times column)
@@ -2117,7 +2178,24 @@ F^-1 (body -&gt; wheels) = [    1  1/4 ]
   t = 0.50   angle between columns  18.4 deg   A x = [2.5, 2.5]   largest entry of inverse 1.4
   t = 0.90   angle between columns   2.1 deg   A x = [0.5, 0.5]   largest entry of inverse 11.0
   t = 0.98   angle between columns   0.4 deg   A x = [0.1, 0.1]   largest entry of inverse 59.0
-  t = 1.00   angle between columns   0.0 deg   A x = [0.0, 0.0]   no inverse</code></pre></details>
+  t = 1.00   angle between columns   0.0 deg   A x = [0.0, 0.0]   no inverse
+
+
+24. Practice problems (answers to P1-P10 on the page)
+-----------------------------------------------------
+P1     AB 2 by 4,  BA does not exist,  BC 3 by 2,  CA 4 by 3,  ABC 2 by 2
+P2     AB = [[4, 6], [10, 12]]   BA = [[2, 4], [10, 14]]
+       column 2 by columns: [6, 12]   row 2 by rows: [10, 12]
+P3     (2, 3) times [2 1] = [[4, 2], [6, 3]]   times (1, -2) = [0, 0]   inverse: None
+P4     inverse of [1 2; 3 7] = [['7', '-2'], ['-3', '1']]   check: True
+       with 6 in place of 7: inverse = None   times (2, -1) = ['0', '0']
+P5     inverse of [1 1 0; 0 1 1; 0 0 1] = [['1', '-1', '1'], ['0', '1', '-1'], ['0', '0', '1']]
+P6     pose = [[0.0, -1.0, 2.0], [1.0, 0.0, 1.0], [0.0, 0.0, 1.0]]   cone at world [1.0, 4.0]
+P7     drive then turn: (2.00, 4.00) facing 180 deg    turn then drive: (-1.00, 1.00) facing 180 deg    apart: 4.24 m
+P8     T1 T2 = [[1.0, 0.0, 0.0], [0.0, 1.0, 1.0], [0.0, 0.0, 1.0]]   T1 T2 T3 = [[1.0, 0.0, 1.0], [0.0, 1.0, 1.0], [0.0, 0.0, 1.0]]
+P9     T^-1 = [[-1.0, 0.0, 4.0], [0.0, -1.0, 2.0], [0.0, 0.0, 1.0]]   dock seen from the rover: [3.0, -1.0]   agrees with Gauss-Jordan: True
+P10    broken mixer [1 1; 1 1]: inverse = None   times (1, -1) = ['0', '0']
+       repaired [1 -1; 1 1]: inverse = [['1/2', '1/2'], ['-1/2', '1/2']]   stick for wheels (1, 0): ['1/2', '-1/2']   check: ['1', '0']</code></pre></details>
 <h2 id="l04_lu">code/l04_lu.py</h2>
 <p>Lecture 4 - Factorization into A = LU, on a robot.</p>
 <details><summary>Source</summary><pre><code>"""
@@ -2917,14 +2995,15 @@ def sig(x, digits=3):
     return float(d.quantize(q, rounding=ROUND_HALF_UP))
 
 
-def solve_3_digits(a, b, c, d, e, f):
-    """Solve [a b; c d] (x, y) = (e, f) by elimination, pivot a, rounding every result to 3 digits."""
-    l = sig(c / a)                                   # the multiplier
-    d2 = sig(d - sig(l * b))                         # new entry of row 2
-    f2 = sig(f - sig(l * e))                         # new right-hand side of row 2
-    y = sig(f2 / d2)
-    x = sig(sig(e - sig(b * y)) / a)
-    return x, y, dict(l=l, d2_exact=d - sig(l * b), d2=d2, f2_exact=f - sig(l * e), f2=f2)
+def solve_3_digits(a, b, c, d, e, f, digits=3):
+    """Solve [a b; c d] (x, y) = (e, f) by elimination, pivot a, rounding every result to `digits` digits."""
+    r = lambda v: sig(v, digits)
+    l = r(c / a)                                     # the multiplier
+    d2 = r(d - r(l * b))                             # new entry of row 2
+    f2 = r(f - r(l * e))                             # new right-hand side of row 2
+    y = r(f2 / d2)
+    x = r(r(e - r(b * y)) / a)
+    return x, y, dict(l=l, d2_exact=d - r(l * b), d2=d2, f2_exact=f - r(l * e), f2=f2)
 
 
 def tiny_pivot():
@@ -3059,12 +3138,12 @@ def subspace_tests():
         return lambda p: abs(a * p[0] + b * p[1] - c) &lt; 1e-9
 
     sets = [
-        ("line through the origin  x - 2y = 0", on_line(1, -2, 0), (2, 1), (1, 0.5)),
+        ("line through the origin  x - 2y = 0", on_line(1, -2, 0), (2, 1), (-1, -0.5)),
         ("line missing the origin  x - 2y = -3", on_line(1, -2, -3), (1, 2), (-1, 1)),
         ("first quadrant  x &gt;= 0, y &gt;= 0", lambda p: p[0] &gt;= 0 and p[1] &gt;= 0, (2, 1), (0.5, 2)),
         ("whole plane R^2", lambda p: True, (2, 1), (-1, 2)),
         ("only the zero vector", lambda p: p[0] == 0 and p[1] == 0, (0, 0), (0, 0)),
-        ("disc of radius 2.5 (a speed limit)", lambda p: math.hypot(*p) &lt;= 2.5, (2, 1), (1, 1.5)),
+        ("disc of radius 2 (a speed limit)", lambda p: math.hypot(*p) &lt;= 2, (1.75, 0.75), (0.75, 1.5)),
     ]
     c = -1.5
     print(f"Each set is tested with one pair v, w from the set and the scalar c = {c}.")
@@ -3139,6 +3218,62 @@ def rover_velocity_space():
     print("   and (0, 0), standing still, gives vx = 0.0, so the zero vector is not in that set.\n")
 
 
+# ---------------------------------------------------------------- 11. practice
+def practice():
+    heading("11. Practice problems (answers to P1-P10 on the page)")
+    P = permutation_matrix((2, 0, 1))                 # rows in the order 3, 1, 2
+    print("P1   P =", P, "  P^-1 = P^T =", transpose(P))
+    print("     P^T P = I:", matmul(transpose(P), P) == identity(3),
+          "  P sends (1, 2, 3) to", matvec(P, [1, 2, 3]), "  5! =", math.factorial(5))
+
+    A = frac([[1, 1, 1], [2, 2, 5], [4, 6, 8]])
+    Pm, L, U, perm = lu(A)
+    f = lambda M: [[fmt(v) for v in row] for row in M]
+    print("P2   P =", f(Pm), " L =", f(L), " U =", f(U))
+    print("     P A == L U:", matmul(Pm, A) == matmul(L, U),
+          "  with the 5 changed to 2:", "singular" if lu(frac([[1, 1, 1], [2, 2, 2], [4, 6, 8]])) is None else "factors")
+
+    R = [[1, 2, 0], [0, 1, 1]]
+    print("P3   R^T R =", matmul(transpose(R), R), "  R R^T =", matmul(R, transpose(R)))
+
+    print("P4   (a) y = 3x: subspace   (d) x + y + z = 0: subspace")
+    print("     (b) y = 3x + 1: (0, 0) gives 0 = 1, zero vector missing")
+    print("     (c) xy = 0: (1, 0) + (0, 1) = (1, 1) and 1 x 1 =", 1 * 1, "not 0, adding fails")
+    print("     (e) x + y + z = 1: (1, 0, 0) + (0, 1, 0) has components adding to", sum([1, 1, 0]))
+
+    A = frac([[1, 0], [2, 1], [3, 1]])
+    print("P5   (2, 5, 7) in C(A):", in_column_space(A, frac([2, 5, 7])),
+          " as", [fmt(v) for v in solve([A[0], A[1]], frac([2, 5]))], "of the columns;",
+          " (1, 1, 1) in C(A):", in_column_space(A, frac([1, 1, 1])))
+    print("     with second column (2, 4, 6) the rank is", rank(frac([[1, 2], [2, 4], [3, 6]])))
+
+    x1, y1, _ = solve_3_digits(0.001, 1, 1, 1, 1, 2, digits=2)
+    x2, y2, _ = solve_3_digits(1, 1, 0.001, 1, 2, 1, digits=2)
+    print(f"P6   two digits, no exchange: ({x1:g}, {y1:g})   rows exchanged: ({x2:g}, {y2:g})"
+          f"   true: ({1 / 0.999:.3f}, {0.998 / 0.999:.3f})")
+
+    P = permutation_matrix((1, 2, 0))                 # the computer sees encoders 2, 3, 1
+    print("P7   scrambling P =", P, "  true readings = P^T (5, 7, 2) =", matvec(transpose(P), [5, 7, 2]))
+
+    J = arm_jacobian([1, 1], [0, math.pi / 2])
+    Jr = [[round(v) for v in row] for row in J]
+    print("P8   J =", Jr, "  torques for F = (0, -6):", matvec(transpose(Jr), [0, -6]),
+          "  for F = (4, 0):", matvec(transpose(Jr), [4, 0]))
+    Js = [[round(v) for v in row] for row in arm_jacobian([1, 1], [0, 0])]
+    print("     straight arm J =", Js, "  torques for F = (9, 0):", matvec(transpose(Js), [9, 0]))
+
+    r, W = Fraction(1, 5), Fraction(2, 5)
+    A = [[r / 2, r / 2], [Fraction(0), Fraction(0)], [-r / W, r / W]]
+    w = solve([A[0], A[2]], [Fraction(1), Fraction(1)])
+    print("P9   A =", [[fmt(v) for v in row] for row in A], "  wheel speeds (wL, wR) =", [fmt(v) for v in w],
+          "  (0, 0.5, 0) achievable:", in_column_space(A, [Fraction(0), Fraction(1, 2), Fraction(0)]))
+
+    thrusters = [[1, 0], [0, 1], [-1, -1]]
+    print("P10  thrusts (0, 3, 2) give the force", combine(thrusters, [0, 3, 2]),
+          "  and no thrust is negative")
+    print()
+
+
 if __name__ == "__main__":
     permutation_matrices()
     pa_equals_lu()
@@ -3150,6 +3285,7 @@ if __name__ == "__main__":
     subspace_tests()
     column_space()
     rover_velocity_space()
+    practice()
 </code></pre></details>
 <details open><summary>Output</summary><pre><code>
 1. Permutation matrices: the identity with its rows re-ordered
@@ -3356,7 +3492,7 @@ A single failure proves a set is not a subspace. Passing one trial proves nothin
 the sets marked 'subspace' pass for every choice, by the argument in the article note.
 
 line through the origin  x - 2y = 0
-   contains 0: True   v + w = (3, 1.5) inside: True   c v = (-3.0, -1.5) inside: True   -&gt;  subspace
+   contains 0: True   v + w = (1, 0.5) inside: True   c v = (-3.0, -1.5) inside: True   -&gt;  subspace
 line missing the origin  x - 2y = -3
    contains 0: False  v + w = (0, 3) inside: False  c v = (-1.5, -3.0) inside: False  -&gt;  NOT a subspace
 first quadrant  x &gt;= 0, y &gt;= 0
@@ -3365,8 +3501,8 @@ whole plane R^2
    contains 0: True   v + w = (1, 3) inside: True   c v = (-3.0, -1.5) inside: True   -&gt;  subspace
 only the zero vector
    contains 0: True   v + w = (0, 0) inside: True   c v = (0.0, 0.0) inside: True   -&gt;  subspace
-disc of radius 2.5 (a speed limit)
-   contains 0: True   v + w = (3, 2.5) inside: False  c v = (-3.0, -1.5) inside: False  -&gt;  NOT a subspace
+disc of radius 2 (a speed limit)
+   contains 0: True   v + w = (2.5, 2.25) inside: False  c v = (-2.625, -1.125) inside: False  -&gt;  NOT a subspace
 
 First quadrant with a positive scalar: 2 x (2, 1) = (4, 2) is inside. It is only
 negative scalars that leave, which is why the set can fool you.
@@ -3417,7 +3553,28 @@ rank = 3 : three independent columns fill all of R^3.
 
 A set that is NOT a subspace: wheel speeds that give exactly vx = 1 m/s.
    [8, 12] gives vx = 1.0, [15, 5] gives vx = 1.0, but their sum [23, 17] gives vx = 2.0
-   and (0, 0), standing still, gives vx = 0.0, so the zero vector is not in that set.</code></pre></details>
+   and (0, 0), standing still, gives vx = 0.0, so the zero vector is not in that set.
+
+
+11. Practice problems (answers to P1-P10 on the page)
+-----------------------------------------------------
+P1   P = [[0, 0, 1], [1, 0, 0], [0, 1, 0]]   P^-1 = P^T = [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
+     P^T P = I: True   P sends (1, 2, 3) to [3, 1, 2]   5! = 120
+P2   P = [['1', '0', '0'], ['0', '0', '1'], ['0', '1', '0']]  L = [['1', '0', '0'], ['4', '1', '0'], ['2', '0', '1']]  U = [['1', '1', '1'], ['0', '2', '4'], ['0', '0', '3']]
+     P A == L U: True   with the 5 changed to 2: singular
+P3   R^T R = [[1, 2, 0], [2, 5, 1], [0, 1, 1]]   R R^T = [[5, 2], [2, 2]]
+P4   (a) y = 3x: subspace   (d) x + y + z = 0: subspace
+     (b) y = 3x + 1: (0, 0) gives 0 = 1, zero vector missing
+     (c) xy = 0: (1, 0) + (0, 1) = (1, 1) and 1 x 1 = 1 not 0, adding fails
+     (e) x + y + z = 1: (1, 0, 0) + (0, 1, 0) has components adding to 2
+P5   (2, 5, 7) in C(A): True  as ['2', '1'] of the columns;  (1, 1, 1) in C(A): False
+     with second column (2, 4, 6) the rank is 1
+P6   two digits, no exchange: (0, 1)   rows exchanged: (1, 1)   true: (1.001, 0.999)
+P7   scrambling P = [[0, 1, 0], [0, 0, 1], [1, 0, 0]]   true readings = P^T (5, 7, 2) = [2, 5, 7]
+P8   J = [[-1, -1], [1, 0]]   torques for F = (0, -6): [-6, 0]   for F = (4, 0): [-4, -4]
+     straight arm J = [[0, 0], [2, 1]]   torques for F = (9, 0): [0, 0]
+P9   A = [['1/10', '1/10'], ['0', '0'], ['-1/2', '1/2']]   wheel speeds (wL, wR) = ['4', '6']   (0, 0.5, 0) achievable: False
+P10  thrusts (0, 3, 2) give the force [-2, 1]   and no thrust is negative</code></pre></details>
 <h2 id="l06_column_space_nullspace">code/l06_column_space_nullspace.py</h2>
 <p>Lecture 6 - Column Space and Nullspace, on a robot.</p>
 <details><summary>Source</summary><pre><code>"""
@@ -4092,7 +4249,7 @@ Robots: a four-joint planar arm (two spare joints), a four-thruster vehicle
 import math
 from fractions import Fraction
 from linalg import (frac, show, fmt, heading, copy, shape, transpose, column, from_columns,
-                    matvec, matmul, rref, rank, nullspace, arm_points, arm_jacobian, norm)
+                    matvec, matmul, rref, rank, nullspace, arm_points, arm_jacobian)
 
 LECTURE_A = [[1, 2, 2, 2],
              [2, 4, 6, 8],
@@ -4126,6 +4283,8 @@ def echelon(A, verbose=False, tol=1e-9):
     pivot_cols, r = [], 0
     for c in range(n):
         if r == m:
+            if verbose:
+                print(f"  every row now holds a pivot: column(s) {', '.join(str(j + 1) for j in range(c, n))} cannot get one -&gt; FREE")
             break
         p = next((i for i in range(r, m) if abs(A[i][c]) &gt; tol), None)
         if p is None:
@@ -4419,7 +4578,6 @@ def four_thrusters():
         p = particular(B, b)
         print(f"wanted (Fx, Fy, torque) = {want}")
         print(f"  free thruster set to 0:  f = {vec(p)}   total thrust {fmt(sum(abs(v) for v in p))} N")
-        best = None
         for c in (Fraction(1, 4), Fraction(1, 2), Fraction(1)):
             f = [pi + c * si for pi, si in zip(p, s)]
             effort = sum(abs(v) for v in f)
@@ -4500,6 +4658,53 @@ def same_rank():
     print("Velocities go through J, forces through J^T (Lecture 5). Both count the same r directions.\n")
 
 
+def practice():
+    heading("13. Practice problems (answers to P1-P10 on the page)")
+    A = frac([[1, 3, 1, 2], [2, 6, 4, 8], [0, 0, 2, 4]])
+    U, piv = echelon(A)
+    free = [j for j in range(4) if j not in piv]
+    print("P1   U =", [vec(r) for r in U], "  pivot columns", names(piv), "  free columns", names(free), "  rank", len(piv))
+    sols = [solve_from_free(U, piv, {c: (1 if c == f else 0) for c in free}) for f in free]
+    print("P2   special solutions by back-substitution:", [vec(x) for x in sols], "  A s =", [vec(matvec(A, x)) for x in sols])
+    R, pivR = rref(A)
+    F, N, _ = blocks(R, pivR)
+    print("P3   R =", [vec(r) for r in R], "  F =", [vec(r) for r in F], "  columns of N:", [vec(column(N, j)) for j in range(2)])
+    print("P4   (a) 3 by 5, rank 3: n - r =", 5 - 3, "  (b) 5 by 3, rank 3: n - r =", 3 - 3, "(only x = 0)",
+          "  (c) 3 by 5: n - r is at least", 5 - 3, "so never only zero")
+    A5 = frac([[1, 2, 1], [2, 4, 3]])
+    print("P5   A: rank", rank(A5), " special solutions", [vec(x) for x in nullspace(A5)],
+          "   A^T: rank", rank(transpose(A5)), " special solutions", [vec(x) for x in nullspace(transpose(A5))])
+    q6 = [0, 0, math.pi / 2, 0]                     # two links along the table, then two straight up
+    J = exact(arm_jacobian(ARM_LINKS, q6))
+    U6, piv6 = echelon(J)
+    R6, _ = rref(J)
+    s6 = nullspace(J)
+    print("P6   hand at", vec(arm_points(ARM_LINKS, q6)[-1]), "  J =", [vec(r) for r in J], "  U =", [vec(r) for r in U6])
+    print("     R =", [vec(r) for r in R6], "  rank", len(piv6), "  pivot joints", names(piv6), "  special solutions", [vec(x) for x in s6])
+    qd = [Fraction(1, 5) * v for v in s6[0]]
+    print("P7   0.2 * s1 =", vec([float(v) for v in qd]), "  J q_dot =", vec(matvec(J, qd)))
+    qd2 = [a + Fraction(1, 5) * b for a, b in zip(qd, s6[1])]
+    print("     follow-up, joint 4 also at 0.2:", vec([float(v) for v in qd2]), "  J q_dot =", vec(matvec(J, qd2)))
+    J8 = exact(arm_jacobian(ARM_LINKS, [math.pi / 2, 0, 0, 0]))
+    R8, piv8 = rref(J8)
+    print("P8   J =", [vec(r) for r in J8], "  R =", [vec(r) for r in R8], "  rank", len(piv8), "  n - r =", 4 - len(piv8))
+    print("     special solutions", [vec(x) for x in nullspace(J8)])
+    B = exact(from_columns([thruster_column(-1, 1, 0), thruster_column(-1, -1, 0),
+                            thruster_column(1, 0, math.pi / 2), thruster_column(-1, 0, math.pi / 2)]))
+    U9, piv9 = echelon(B)
+    R9, _ = rref(B)
+    s = nullspace(B)[0]
+    print("P9   B =", [vec(r) for r in B], "  U =", [vec(r) for r in U9])
+    print("     R =", [vec(r) for r in R9], "  rank", len(piv9), "  s =", vec(s), "  B s =", vec(matvec(B, s)))
+    print("     rank with one thruster removed:", [rank([[row[j] for j in range(4) if j != dead] for row in B]) for dead in range(4)])
+    p = particular(B, frac([0, 2, 0]))
+    best = min((-pi / si for pi, si in zip(p, s) if si != 0), key=lambda c: (sum(abs(pi + c * si) for pi, si in zip(p, s)), abs(c)))
+    f = [pi + best * si for pi, si in zip(p, s)]
+    print("P10  free thruster at zero: f =", vec(p), " total", fmt(sum(abs(v) for v in p)), "N;",
+          " least effort at c =", fmt(best), ": f =", vec(f), " total", fmt(sum(abs(v) for v in f)), "N;  B f =", vec(matvec(B, f)))
+    print()
+
+
 if __name__ == "__main__":
     lecture_matrix()
     U, piv = elimination()
@@ -4513,6 +4718,7 @@ if __name__ == "__main__":
     four_thrusters()
     repeated_sensor()
     same_rank()
+    practice()
 </code></pre></details>
 <details open><summary>Output</summary><pre><code>
 1. The lecture's matrix: 3 rows, 4 columns
@@ -4733,6 +4939,7 @@ B = [    0    1    0    1 ]
   column 2: pivot 1 in row 2
       row 3 &lt;- row 3 - (1) * row 2   =  (0, 0, 1, -2)
   column 3: pivot 1 in row 3
+  every row now holds a pivot: column(s) 4 cannot get one -&gt; FREE
 
     [  1  0  0  2 ]
 R = [  0  1  0  1 ]
@@ -4823,7 +5030,26 @@ staircase pose: J is 2 by 4, rank 2, free variables n - r = 2;   J^T is 4 by 2, 
 straight arm: J is 2 by 4, rank 1, free variables n - r = 3;   J^T is 4 by 2, rank 1, free variables m - r = 1
    special solution of J^T F = 0: hand force F = (1.428, 1) N needs joint torques (0, 0, 0, 0)
    that force is along the arm: (cos 35, sin 35) = (0.819, 0.574) gives torques (0, 0, 0, 0)
-Velocities go through J, forces through J^T (Lecture 5). Both count the same r directions.</code></pre></details>
+Velocities go through J, forces through J^T (Lecture 5). Both count the same r directions.
+
+
+13. Practice problems (answers to P1-P10 on the page)
+-----------------------------------------------------
+P1   U = ['(1, 3, 1, 2)', '(0, 0, 2, 4)', '(0, 0, 0, 0)']   pivot columns 1, 3   free columns 2, 4   rank 2
+P2   special solutions by back-substitution: ['(-3, 1, 0, 0)', '(0, 0, -2, 1)']   A s = ['(0, 0, 0)', '(0, 0, 0)']
+P3   R = ['(1, 3, 0, 0)', '(0, 0, 1, 2)', '(0, 0, 0, 0)']   F = ['(3, 0)', '(0, 2)']   columns of N: ['(-3, 1, 0, 0)', '(0, 0, -2, 1)']
+P4   (a) 3 by 5, rank 3: n - r = 2   (b) 5 by 3, rank 3: n - r = 0 (only x = 0)   (c) 3 by 5: n - r is at least 2 so never only zero
+P5   A: rank 2  special solutions ['(-2, 1, 0)']    A^T: rank 2  special solutions []
+P6   hand at (2, 2)   J = ['(-2, -2, -2, -1)', '(2, 1, 0, 0)']   U = ['(-2, -2, -2, -1)', '(0, -1, -2, -1)']
+     R = ['(1, 0, -1, -1/2)', '(0, 1, 2, 1)']   rank 2   pivot joints 1, 2   special solutions ['(1, -2, 1, 0)', '(1/2, -1, 0, 1)']
+P7   0.2 * s1 = (0.2, -0.4, 0.2, 0)   J q_dot = (0, 0)
+     follow-up, joint 4 also at 0.2: (0.3, -0.6, 0.2, 0.2)   J q_dot = (0, 0)
+P8   J = ['(-4, -3, -2, -1)', '(0, 0, 0, 0)']   R = ['(1, 3/4, 1/2, 1/4)', '(0, 0, 0, 0)']   rank 1   n - r = 3
+     special solutions ['(-3/4, 1, 0, 0)', '(-1/2, 0, 1, 0)', '(-1/4, 0, 0, 1)']
+P9   B = ['(1, 1, 0, 0)', '(0, 0, 1, 1)', '(-1, 1, 1, -1)']   U = ['(1, 1, 0, 0)', '(0, 2, 1, -1)', '(0, 0, 1, 1)']
+     R = ['(1, 0, 0, 1)', '(0, 1, 0, -1)', '(0, 0, 1, 1)']   rank 3   s = (-1, 1, -1, 1)   B s = (0, 0, 0)
+     rank with one thruster removed: [3, 3, 3, 3]
+P10  free thruster at zero: f = (1, -1, 2, 0)  total 4 N;  least effort at c = 1 : f = (0, 0, 1, 1)  total 2 N;  B f = (0, 2, 0)</code></pre></details>
 
 </article>
 </div>

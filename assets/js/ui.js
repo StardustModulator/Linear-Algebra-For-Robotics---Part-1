@@ -277,7 +277,7 @@
       (prev ? '<a href="' + prev.file + '"><span class="label">' + icon('arrow-left') + ' Lecture ' + pad(prev.n) + '</span><b>' + prev.title + '</b></a>'
             : '<a href="index.html"><span class="label">' + icon('arrow-left') + ' Home</span><b>All seven lectures</b></a>') +
       (next ? '<a class="next" href="' + next.file + '"><span class="label">Lecture ' + pad(next.n) + ' ' + icon('arrow-right') + '</span><b>' + next.title + '</b></a>'
-            : '<a class="next" href="index.html#kit"><span class="label">Finish ' + icon('arrow-right') + '</span><b>Open the article kit</b></a>');
+            : '<a class="next" href="capstone.html"><span class="label">Capstone ' + icon('arrow-right') + '</span><b>One robot, seven lectures</b></a>');
     body.appendChild(p);
   }
 

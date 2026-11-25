@@ -54,7 +54,7 @@
     <div class="lec-meta">
       <a class="btn primary" data-ocw="video" href="#"><i data-ic="video"></i><span>Watch the lecture on OCW</span></a>
       <a class="btn" data-ocw="summary" href="#"><i data-ic="book"></i><span>Lecture summary</span></a>
-      <a class="btn" href="article/03-multiplication-and-inverse-matrices.md"><i data-ic="pen"></i><span>Article notes</span></a>
+      <a class="btn" href="kit/notes-03.html"><i data-ic="pen"></i><span>Article notes</span></a>
     </div>
   </div>
 </section>
@@ -496,7 +496,7 @@
       <p><strong>Undo.</strong> The command <span class="m">D</span> drove the rover 2 m forward. Its inverse drives it 2 m backward, and together they leave the rover where it began:</p>
       <div class="eq left wrapok"><span data-mx="1 0 -2; 0 1 0; 0 0 1" data-cap="D⁻¹"></span><span data-mx="1 0 2; 0 1 0; 0 0 1" data-cap="D"></span><span class="op">=</span><span data-mx="1 0 0; 0 1 0; 0 0 1" data-cap="I · never moved"></span></div>
       <p>The inverse of the turn <span class="m">R</span> is a turn of 90° the other way. To undo a chain of moves, undo the last one first, as you take off shoes before socks: <span class="m">(RD)<sup>−1</sup> = D<sup>−1</sup>R<sup>−1</sup></span>. Lecture 4 proves that rule.</p>
-      <p><strong>Change viewpoint.</strong> The pose <span class="m">T</span> turns "where the rover sees a thing" into "where the thing is in the world". Very often a robot needs the opposite. Its map says where a landmark is in the world, and it has to work out where that is from its own seat. That conversion is <span class="m">T<sup>−1</sup></span>. Section 3.10 builds it and Lab 3.5 lets you drive it.</p>
+      <p><strong>Change viewpoint.</strong> The pose <span class="m">T</span> turns "where the rover sees a thing" into "where the thing is in the world". Very often a robot needs the opposite. Its map says where a landmark is in the world, and it has to work out where that is from its own seat. That conversion is <span class="m">T<sup>−1</sup></span>. Section 3.10 builds it and Lab 3.6 lets you drive it.</p>
     </div>
   </div>
   <div class="note warn">
@@ -546,7 +546,7 @@
   </div>
 
   <div class="lab board" id="lab-flat">
-    <div class="lab-head"><span class="lab-tag">LAB 3.6</span><h3>Flatten a shape until it cannot be recovered</h3><i data-ic="squeeze"></i></div>
+    <div class="lab-head"><span class="lab-tag">LAB 3.4</span><h3>Flatten a shape until it cannot be recovered</h3><i data-ic="squeeze"></i></div>
     <p class="lab-intro">The left panel is what goes in. The right panel is what comes out when every point is multiplied by <b>A</b>. Slide the second column of A onto the line of the first and watch the output lose a dimension.</p>
     <div class="lab-main stack">
       <div class="lab-stage">
@@ -610,7 +610,7 @@
   </div>
 
   <div class="lab board" id="lab-gj">
-    <div class="lab-head"><span class="lab-tag">LAB 3.4</span><h3>Gauss-Jordan, one row step at a time</h3><i data-ic="inverse"></i></div>
+    <div class="lab-head"><span class="lab-tag">LAB 3.5</span><h3>Gauss-Jordan, one row step at a time</h3><i data-ic="inverse"></i></div>
     <p class="lab-intro">Step through the elimination of <b>[ A | I ]</b>. The circled entry is the pivot, the blue row does the work and the amber row is the one that changes. Load a case, or type your own numbers into A.</p>
     <div class="lab-main">
       <div class="lab-stage">
@@ -658,7 +658,7 @@
       <p>A controller needs the reverse: which wheel speeds give the body velocity I want? Gauss-Jordan on <span class="m">[ F | I ]</span> gives</p>
       <div class="eq left"><span class="m">F<sup>−1</sup></span><span class="op">=</span><span data-mx="1 -1/4; 1 1/4" data-cols="0:h1,1:h2"></span></div>
       <p>Look at its columns. The <span class="hl1">first</span>, (1, 1), is the pair of wheel speeds that gives one unit of forward speed and no turn. The <span class="hl2">second</span>, (−1/4, 1/4), gives one unit of turn and no forward motion. That is what the right-hand sides (1, 0) and (0, 1) asked for. <strong>Column <span class="m">j</span> of an inverse answers the question "which input gives one unit of output <span class="m">j</span> and nothing else?"</strong></p>
-      <p>Every other command is a mix of those two columns. Moving at 0.6 m/s while turning at 2 rad/s needs 0.6 (1, 1) + 2 (−1/4, 1/4) = (0.1, 1.1) m/s at the wheels. Load <b>Rover wheels</b> in Lab 3.4 to watch this inverse appear. It is the wheel matrix <span class="m">W</span> of section 3.3.</p>
+      <p>Every other command is a mix of those two columns. Moving at 0.6 m/s while turning at 2 rad/s needs 0.6 (1, 1) + 2 (−1/4, 1/4) = (0.1, 1.1) m/s at the wheels. Load <b>Rover wheels</b> in Lab 3.5 to watch this inverse appear. It is the wheel matrix <span class="m">W</span> of section 3.3.</p>
     </div>
   </div>
 </section>
@@ -701,7 +701,7 @@
   </div>
 
   <div class="lab board" id="lab-frames">
-    <div class="lab-head"><span class="lab-tag">LAB 3.5</span><h3>Seen from the rover: the inverse at work</h3><i data-ic="eye"></i></div>
+    <div class="lab-head"><span class="lab-tag">LAB 3.6</span><h3>Seen from the rover: the inverse at work</h3><i data-ic="eye"></i></div>
     <p class="lab-intro">Drag the <b>rover</b> and the <b>landmark</b>, and turn the rover with the slider. The map gives the landmark in world coordinates. <b>T⁻¹</b> converts them into "ahead" and "left" for the rover.</p>
     <div class="lab-main">
       <div class="lab-stage">
@@ -868,8 +868,8 @@
     <div class="note-body">
       <p><strong>One-line summary:</strong> a matrix product is one action followed by another, an inverse is the action that takes it back, and a matrix with no inverse has thrown information away.</p>
       <p><strong>A robot sentence you can reuse:</strong> forward kinematics multiplies, changing viewpoint inverts, and a singular matrix is a sensor or a joint that has lost a direction.</p>
-      <p><strong>Good figures to capture:</strong> Lab 3.3 at 90° and 2 m, Lab 3.2 in its default pose, and Lab 3.6 at 0%, 90% and 100% side by side.</p>
-      <p>The full notes, worked numbers and references for this lecture are in <a href="article/03-multiplication-and-inverse-matrices.md">article/03-multiplication-and-inverse-matrices.md</a>, and runnable code is in <a href="code/l03_multiplication_inverses.py">code/l03_multiplication_inverses.py</a>.</p>
+      <p><strong>Good figures to capture:</strong> Lab 3.3 at 90° and 2 m, Lab 3.2 in its default pose, and Lab 3.4 at 0%, 90% and 100% side by side.</p>
+      <p>The full notes, worked numbers and references for this lecture are in <a href="kit/notes-03.html">article/03-multiplication-and-inverse-matrices.md</a>, and runnable code is in <a href="kit/code.html#l03_multiplication_inverses">code/l03_multiplication_inverses.py</a>.</p>
     </div>
   </div>
 </section>
